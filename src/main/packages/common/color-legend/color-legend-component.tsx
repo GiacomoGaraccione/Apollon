@@ -6,11 +6,10 @@ import { ThemedPath } from '../../../components/theme/themedComponents';
 export const ColorLegendComponent: FunctionComponent<Props> = ({ element, fillColor }) => (
   <g>
     <ThemedPath
-      d={`M 0 0 L ${element.bounds.width - 15} 0 L ${element.bounds.width} 15 L ${element.bounds.width} ${
-        element.bounds.height
-      } L 0 ${element.bounds.height} L 0 0 Z`}
-      fillColor={fillColor || element.fillColor}
-      strokeColor={element.strokeColor}
+      d={`M 0 0 L ${element.bounds.width - 15} 0 L ${element.bounds.width} 15 L ${element.bounds.width} ${element.bounds.height
+        } L 0 ${element.bounds.height} L 0 0 Z`}
+      fillColor="#ededed"
+      strokeColor="#949494"
       strokeWidth="1.2"
       strokeMiterlimit="10"
     />

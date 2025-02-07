@@ -86,13 +86,11 @@ const getInitialState = ({ type, canvas, translate, colorEnabled }: Props) => {
       previews.push(...composeBPMNPreview(canvas, translate));
       break;
   }
-  if (colorEnabled) {
-    utils.push(
-      new ColorLegend({
-        name: translate('packages.ColorLegend.ColorLegend'),
-      }),
-    );
-  }
+  utils.push(
+    new ColorLegend({
+      name: "Note",
+    }),
+  );
 
   return { previews, utils };
 };
