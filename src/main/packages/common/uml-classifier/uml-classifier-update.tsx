@@ -122,10 +122,17 @@ class ClassifierUpdate extends Component<Props, State> {
             </Switch.Item>
             <Switch.Item value={ClassElementType.Enumeration}>
               {this.props.translate('packages.ClassDiagram.Enumeration')}
-            </Switch.Item>
-          </Switch>
+            </Switch.Item></Switch>
           <Divider />
         </section>
+        <section>
+          <Switch value={element.type as keyof typeof ClassElementType} onChange={this.toggle} color="primary">
+            <Switch.Item value={ClassElementType.IntermediateClass}>
+              Intermediate Class
+            </Switch.Item>
+          </Switch>
+        </section>
+        <Divider />
         <section>
           <Header>{this.props.translate('popup.attributes')}</Header>
           {attributes.map((attribute, index) => (
@@ -138,8 +145,8 @@ class ClassifierUpdate extends Component<Props, State> {
                 index === attributes.length - 1
                   ? this.newAttributeField.current?.focus()
                   : this.setState({
-                      fieldToFocus: attributeRefs[index + 1],
-                    })
+                    fieldToFocus: attributeRefs[index + 1],
+                  })
               }
               onDelete={this.delete}
               onRefChange={(ref) => (attributeRefs[index] = ref)}
@@ -197,8 +204,8 @@ class ClassifierUpdate extends Component<Props, State> {
                 index === methods.length - 1
                   ? this.newMethodField.current?.focus()
                   : this.setState({
-                      fieldToFocus: methodRefs[index + 1],
-                    })
+                    fieldToFocus: methodRefs[index + 1],
+                  })
               }
               onDelete={this.delete}
               onRefChange={(ref) => (methodRefs[index] = ref)}
@@ -247,14 +254,18 @@ class ClassifierUpdate extends Component<Props, State> {
   private toggle = (type: keyof typeof ClassElementType) => {
     const { element, update } = this.props;
     const newType: UMLElementType = element.type === type ? ClassElementType.Class : type;
+    console.log(element.stereotype, newType)
+    const stereotype = !element.stereotype ? newType === "IntermediateClass" ? "IntermediateClass" : element.stereotype : undefined;
     const instance = new UMLElements[newType]({
       id: element.id,
       name: element.name,
-      type: element.type,
+      type: newType,
       owner: element.owner,
       bounds: element.bounds,
       ownedElements: element.ownedElements,
+      stereotype: stereotype,
     });
+    console.log(instance)
     update(element.id, instance);
   };
 

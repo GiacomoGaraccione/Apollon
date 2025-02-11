@@ -6,6 +6,7 @@ export const ClassElementType = {
   Enumeration: 'Enumeration',
   ClassAttribute: 'ClassAttribute',
   ClassMethod: 'ClassMethod',
+  IntermediateClass: 'IntermediateClass',
 } as const;
 
 export const ClassRelationshipType = {

@@ -109,4 +109,5 @@ export const UMLElements = {
   [UMLElementType.BPMNPool]: BPMNPool,
   [UMLElementType.BPMNSwimlane]: BPMNSwimlane,
   [UMLElementType.BPMNGroup]: BPMNGroup,
+  [UMLElementType.IntermediateClass]: UMLClass,
 };

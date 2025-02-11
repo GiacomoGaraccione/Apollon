@@ -66,8 +66,8 @@ import { BPMNDataStoreComponent } from './bpmn/bpmn-data-store/bpmn-data-store-c
 
 export const Components: {
   [key in UMLElementType | UMLRelationshipType]:
-    | FunctionComponent<PropsWithChildren<{ element: any; fillColor?: string }>>
-    | ConnectedComponent<FunctionComponent<any>, { element: any }>;
+  | FunctionComponent<PropsWithChildren<{ element: any; fillColor?: string }>>
+  | ConnectedComponent<FunctionComponent<any>, { element: any }>;
 } = {
   [UMLElementType.Package]: UMLClassPackageComponent,
   [UMLElementType.Class]: UMLClassifierComponent,
@@ -149,4 +149,5 @@ export const Components: {
   [UMLRelationshipType.SyntaxTreeLink]: SyntaxTreeLinkComponent,
   [UMLRelationshipType.FlowchartFlowline]: FlowchartFlowlineComponent,
   [UMLRelationshipType.BPMNFlow]: BPMNFlowComponent,
+  [UMLElementType.IntermediateClass]: UMLClassifierComponent
 };
