@@ -7,14 +7,14 @@ const appVersion = require('../package').version;
 const outputDir = path.resolve(__dirname, '../dist');
 
 module.exports = {
-  entry: './public/index.ts',
+  entry: './public/index.tsx',
   output: {
     path: outputDir,
     filename: '[name].js',
     library: { name: 'apollon', type: 'umd' },
   },
   resolve: {
-    extensions: ['.js', '.ts', '.tsx'],
+    extensions: ['.js', '.ts', '.tsx', ".css", ".scss"],
   },
   performance: {
     hints: false,
@@ -65,4 +65,8 @@ module.exports = {
       patterns: [{ from: 'public/assets', to: outputDir }],
     }),
   ],
+  devServer: {
+    historyApiFallback: true,
+    hot: true
+  }
 };

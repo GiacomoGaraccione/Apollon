@@ -1,6 +1,11 @@
 import * as Apollon from '../src/main';
 import * as themings from './themings.json';
-import('./styles.css');
+import './styles.css'
+require("./styles.css")
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, BrowserRouter as Router } from 'react-router-dom';
+import App from '../src/main/additions/App';
 
 const container = document.getElementById('apollon')!;
 let editor: Apollon.ApollonEditor | null = null;
@@ -80,4 +85,14 @@ const render = () => {
   }
   editor = new Apollon.ApollonEditor(container, options);
 };
-render();
+//render();
+
+const root = ReactDOM.createRoot(
+  document.getElementById("root") as HTMLElement
+);
+
+root.render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
+)
