@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
 import { ApollonMode } from "../typings";
 import { ApollonEditor } from "../apollon-editor";
+import { UMLStructureBuilder } from "../operations/UMLStructureBuilder";
 
 const options = {
     colorEnabled: false,
@@ -22,6 +23,7 @@ function SolutionCreator() {
     const [draw, setDraw] = useState(false)
     const [loading, setLoading] = useState(false)
     const [editor, setEditor] = useState<any>()
+    const [result, setResult] = useState("")
 
     useEffect(() => {
         API.getAllExercises().then((exs) => {
@@ -42,9 +44,12 @@ function SolutionCreator() {
     useEffect(() => {
         try {
             if (draw) {
-                console.log(selectedExercise)
-                console.log(currentSolution)
-                if (selectedExercise && currentSolution) {
+                if (result) {
+                    let builder = new UMLStructureBuilder(result)
+                    let model = builder.createUMLStructure()
+                    let cont = document.getElementById("apollon")!
+                    setEditor(new ApollonEditor(cont, { ...options, model: model }))
+                } else if (selectedExercise && currentSolution) {
                     let cont = document.getElementById("apollon")!
                     setEditor(new ApollonEditor(cont, { ...options, model: currentSolution }))
                 } else {
@@ -62,7 +67,8 @@ function SolutionCreator() {
             setLoading(true)
             setDraw(false)
             API.submitText(selectedExercise.title, selectedExercise.description).then((res) => {
-                console.log(res)
+                setDraw(true)
+                setResult(res.uml)
                 setLoading(false)
             }).catch((error) => {
                 console.error(error)
@@ -74,12 +80,12 @@ function SolutionCreator() {
     const saveReference = () => {
         try {
             if (selectedExercise && editor) {
-                console.log(editor?.model)
-                API.saveUMLReference(selectedExercise.title, JSON.stringify(editor?.model)).then((res) => {
+                console.log(editor.model)
+                /*API.saveUMLReference(selectedExercise.title, JSON.stringify(editor?.model)).then((res) => {
                     console.log(res)
                 }).catch((error) => {
                     console.error(error)
-                })
+                })*/
             }
         } catch (error) {
             console.error(error)
@@ -109,6 +115,7 @@ function SolutionCreator() {
                                         setCurrentSolution(solution)
                                         setMode("edit")
                                         setDraw(false)
+                                        setResult("")
                                     }}>Edit solution {index + 1}</ListGroup.Item>
                                 ))}
                             </ListGroup>
@@ -121,7 +128,11 @@ function SolutionCreator() {
                                 <ListGroup.Item className="blue" action>Edit synonyms</ListGroup.Item>
                             </ListGroup>}
                             {draw && <ListGroup className="scrollable-list">
-                                <ListGroup.Item className="green" action onClick={() => saveReference()}>Save solution</ListGroup.Item>
+                                {mode === "add" && <ListGroup.Item className="green" action onClick={() => saveReference()}>Save solution</ListGroup.Item>}
+                                {mode === "edit" && <>
+                                    <ListGroup.Item className="green" action>Update solution</ListGroup.Item>
+                                    <ListGroup.Item className="red" action>Delete solution</ListGroup.Item>
+                                </>}
                             </ListGroup>}
                         </>}
                     </Col>
