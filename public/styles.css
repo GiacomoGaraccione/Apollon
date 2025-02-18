@@ -760,14 +760,3 @@ ul.buttons.compact li {
   background-color: #9AD1D4 !important;
   border-color: #007EA7 !important;
 }
-
-:root {
-  --apollon-primary: #2a8fbd;
-  --apollon-primary-contrast: #212529;
-  --apollon-secondary: #6c757d;
-  --apollon-warning-yellow: #ffc800;
-  --apollon-background: #ffffff;
-  --apollon-background-variant: #e5e5e5;
-  --apollon-gray: #e9ecef;
-  --apollon-gray-variant: #343a40;
-}

@@ -392,7 +392,7 @@ class UMLStructureBuilder {
 
     createUMLStructure() {
         try {
-            let content = JSON.parse(this.plantUMLText.split("</think>")[1])
+            let content = JSON.parse(this.plantUMLText.substring(this.plantUMLText.indexOf("{"), this.plantUMLText.lastIndexOf("}") + 1))
             content.classes.forEach((cl: any) => {
                 this.addUMLClasses(cl)
             })

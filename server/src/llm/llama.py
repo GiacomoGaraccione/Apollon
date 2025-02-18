@@ -43,7 +43,7 @@ def generate_uml_content(text):
         Enumeration types are allowed as attribute types where suitable. If a class is an enumeration type, its possible values should be listed as attributes with no type.
         If a class has no attributes, then it should be reworked as an attribute of another class it is associated with.
         Consider the following textual description of a system:{text}
-        Generate the reference solution in the format specified above. Answer with the JSON code only and no other text.
+        Generate the reference solution in the format specified above. Answer with the JSON code only and no other text. Before the JSON code, write "```" and after the JSON code write "```".
 """ 
         response = ask_llama(prompt)
         return response

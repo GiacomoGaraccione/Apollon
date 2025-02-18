@@ -103,6 +103,17 @@ async function saveUMLReference(title: string, model: string) {
     return response.json()
 }
 
+async function updateUMLReference(title: string, model: string) {
+    const response = await fetch(URL + "exercises/" + title + "/reference", {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ solution: model })
+    })
+    return response.json()
+}
+
 
 const API = {
     getAllExercises,
@@ -115,6 +126,7 @@ const API = {
     getExerciseDiagrams,
     evaluateSimilarity,
     submitText,
-    saveUMLReference
+    saveUMLReference,
+    updateUMLReference
 }
 export default API

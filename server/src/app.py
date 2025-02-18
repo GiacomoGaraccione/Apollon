@@ -94,15 +94,31 @@ def save_synonyms(title):
     ex = db_ops.get_exercise(title)
     if not ex:
         return jsonify({"error": "Exercise not found"}), 404
-    solution = generate_solution_synonyms(solution)
-    print(ex.solutions)
+    #solution = generate_solution_synonyms(solution)
     parsed_solutions = json.loads(ex.solutions)
+    solution = json.loads(solution)
     parsed_solutions.append(solution)
     ex.solutions = json.dumps(parsed_solutions)
     if not db_ops.update_exercise_solutions(title, ex.solutions):
         return jsonify({"error": "Exercise not found"}), 404
-    #solution = generate_synonyms(solution, ex.description)
-    return jsonify({"solution": solution}), 200
+    return jsonify({"solution": parsed_solutions}), 200
+
+@app.route("/exercises/<title>/reference", methods=["PUT"])
+def update_references(title):
+    try:
+        data = request.json
+        solution = data.get("solution")
+        if not solution:
+            return jsonify({"error": "Missing solution"}), 400
+        ex = db_ops.get_exercise(title)
+        if not ex:
+            return jsonify({"error": "Exercise not found"}), 404
+        ex.solutions = solution
+        if not db_ops.update_exercise_solutions(title, ex.solutions):
+            return jsonify({"error": "Exercise not found"}), 404
+        return jsonify({"solution": solution}), 200
+    except:
+        return jsonify({"error": "Invalid JSON"}), 400
 
 if __name__ == "__main__":
     
