@@ -6,7 +6,7 @@ import { Puff } from "@agney/react-loading"
 import { ApollonMode } from "../typings";
 import { ApollonEditor } from "../apollon-editor";
 import { UMLStructureBuilder } from "../operations/UMLStructureBuilder";
-import { ReferenceBuilder } from "../operations/UMLMatcherTypes";
+import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
 import { ReferenceDisplayer, DividerLine } from "./ReferenceDisplayer";
 
 const options = {
@@ -82,7 +82,7 @@ function SolutionCreator() {
         }
     }
 
-    const saveReference = () => {
+    const saveDiagram = () => {
         try {
             if (selectedExercise && editor) {
                 let builder = new ReferenceBuilder(editor.model)
@@ -137,6 +137,22 @@ function SolutionCreator() {
         }
     }
 
+    const saveStructure = (updatedReference: ReferenceSolution) => {
+        try {
+            let updatedSolutions = [...solutions]
+            if (editor) {
+                updatedSolutions[position] = { ...updatedSolutions[position], model: editor?.model, reference: updatedReference }
+                API.updateUMLReference(selectedExercise.title, JSON.stringify(updatedSolutions)).then((res) => {
+                    setSolutions(updatedSolutions)
+                    setPosition(-1)
+                    setMode("")
+                    setReference(false)
+                })
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
 
     return (
         <>
@@ -184,7 +200,7 @@ function SolutionCreator() {
                             </ListGroup>}
                             <DividerLine />
                             {draw && <ListGroup className="scrollable-list">
-                                {mode === "add" && <ListGroup.Item className="green" action onClick={() => saveReference()}>Save solution</ListGroup.Item>}
+                                {mode === "add" && <ListGroup.Item className="green" action onClick={() => saveDiagram()}>Save solution</ListGroup.Item>}
                                 {mode === "edit" && <>
                                     <ListGroup.Item className="green" action onClick={() => {
                                         updateReference()
@@ -198,7 +214,8 @@ function SolutionCreator() {
                         <Row className="flex-grow-1" style={{ height: "80vh" }}>
                             <Row className="control flex-grow-1 overflow-auto framed buttons" style={{ borderStyle: "solid", borderColor: "#003249", borderRadius: "10px", paddingTop: "5px", marginBottom: "5px", width: "99%", justifyContent: "center", alignItems: "center" }}>
                                 {selectedExercise && draw && <div id="apollon" />}
-                                {selectedExercise && reference && <ReferenceDisplayer reference={currentSolution?.reference} />}
+                                {selectedExercise && reference && <ReferenceDisplayer
+                                    updateReference={saveStructure} reference={currentSolution?.reference} />}
                                 {/*selectedExercise && answer && <ReactMarkdown>{answer}</ReactMarkdown>*/}
                                 {selectedExercise && loading && <>
                                     <div style={{ width: "600px", flexDirection: 'row', color: "#007EA7" }}>

@@ -9,6 +9,8 @@ dist/
 cypress
 test-report.html
 **/.DS_Store
+/server/src/hf-api-token.txt
+/server/src/hf-token.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

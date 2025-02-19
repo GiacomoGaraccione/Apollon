@@ -116,6 +116,34 @@ function AttributeDisplayer(props: any) {
         }
     }
 
+    const deleteAttr = () => {
+        if (isEnum) {
+            const updatedEnums = props.reference.enumerations.map((enumeration: ReferenceEnumeration) => {
+                if (enumeration.name === props.owner.name) {
+                    let updatedLits = enumeration.literals.filter((lit: ReferenceAttribute) => lit.name !== props.attr.name)
+                    enumeration.literals = updatedLits
+                    return enumeration
+                } else {
+                    return enumeration
+                }
+            })
+            props.setReference({ ...props.reference, enumerations: updatedEnums })
+            props.setCurrentAttribute(null)
+        } else {
+            const updatedClasses = props.reference.classes.map((cls: ReferenceClass) => {
+                if (cls.name === props.owner.name) {
+                    let updatedAttrs = cls.attributes.filter((attr: ReferenceAttribute) => attr.name !== props.attr.name)
+                    cls.attributes = updatedAttrs
+                    return cls
+                } else {
+                    return cls
+                }
+            })
+            props.setReference({ ...props.reference, classes: updatedClasses })
+            props.setCurrentAttribute(null)
+        }
+    }
+
     return (
         <>
             <Card style={{ width: "fit-content" }}>
@@ -154,16 +182,19 @@ function AttributeDisplayer(props: any) {
                         </Row>
                             <DividerLine />
                             {editing === "attributeTypes" &&
-                                <ListEditor mode={editing} list={types} onListChange={setTypes} onSave={() => console.log("a")} />}
+                                <ListEditor mode={editing} list={types} onListChange={setTypes} onSave={() => { }} />}
                             {editing === "synonyms" &&
-                                <ListEditor mode={editing} list={synonyms} onListChange={setSynonyms} onSave={() => console.log("a")} />}
+                                <ListEditor mode={editing} list={synonyms} onListChange={setSynonyms} onSave={() => { }} />}
                         </>
                         }
                     </Form>
-                    {isEnum && <ListEditor mode={"synonyms"} list={synonyms} onListChange={setSynonyms} onSave={() => console.log("a")} />}
+                    {isEnum && <ListEditor mode={"synonyms"} list={synonyms} onListChange={setSynonyms} onSave={() => { }} />}
                 </Card.Body>
                 <Card.Footer>
-                    <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => save()} >Save changes</i></Button>
+                    <ButtonGroup className="btnGroup" style={{ width: "auto" }}>
+                        <Button onClick={() => save()} className="green"><i className="bi bi-check-circle-fill" > Save changes</i></Button>
+                        <Button onClick={() => deleteAttr()} className="red"><i className="bi bi-x-circle-fill"> Delete {!isEnum ? "attribute" : "literal"}</i></Button>
+                    </ButtonGroup>
                 </Card.Footer>
             </Card>
         </>
@@ -191,7 +222,13 @@ function ClassDisplayer(props: any) {
         let updatedClasses = props.reference.classes.map((cls: ReferenceClass) =>
             cls.name === props.cls.name ? { ...cls, name, weight, message, forbiddenAttributes, synonyms } : cls
         )
-        console.log(updatedClasses)
+        props.setReference({ ...props.reference, classes: updatedClasses })
+        props.setMode("")
+        props.setCurrentClass(null)
+    }
+
+    const deleteClass = () => {
+        let updatedClasses = props.reference.classes.filter((cls: ReferenceClass) => cls.name !== props.cls.name)
         props.setReference({ ...props.reference, classes: updatedClasses })
         props.setMode("")
         props.setCurrentClass(null)
@@ -236,16 +273,19 @@ function ClassDisplayer(props: any) {
                     </Form>
                     <DividerLine />
                     {editing === "forbiddenAttributes" && <>
-                        <ListEditor mode={editing} list={forbiddenAttributes} onListChange={setForbiddenAttributes} onSave={() => console.log("a")} />
+                        <ListEditor mode={editing} list={forbiddenAttributes} onListChange={setForbiddenAttributes} onSave={() => { }} />
                         <DividerLine />
                     </>}
                     {editing === "synonyms" && <>
-                        <ListEditor mode={editing} list={synonyms} onListChange={setSynonyms} onSave={() => console.log("a")} />
+                        <ListEditor mode={editing} list={synonyms} onListChange={setSynonyms} onSave={() => { }} />
                         <DividerLine />
                     </>}
                 </Card.Body>
                 <Card.Footer>
-                    <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => save()} >Save changes</i></Button>
+                    <ButtonGroup className="btnGroup" style={{ width: "auto" }}>
+                        <Button className="green" onClick={() => save()}><i className="bi bi-check-circle-fill" > Save changes</i></Button>
+                        <Button className="red" onClick={() => deleteClass()}><i className="bi bi-x-circle-fill"> Delete class</i></Button>
+                    </ButtonGroup>
                 </Card.Footer>
             </Card>
         </>
@@ -270,6 +310,13 @@ function EnumDisplayer(props: any) {
             enumeration.name === props.enum.name ? { ...enumeration, name, weight, message, synonyms } : enumeration
         );
         props.setReference({ ...props.reference, enumerations: updatedEnumerations });
+        props.setMode("")
+        props.setCurrentEnum(null)
+    }
+
+    const deleteEnum = () => {
+        const updatedEnumerations = props.reference.enumerations.filter((enumeration: ReferenceEnumeration) => enumeration.name !== props.enum.name)
+        props.setReference({ ...props.reference, enumerations: updatedEnumerations })
         props.setMode("")
         props.setCurrentEnum(null)
     }
@@ -305,10 +352,13 @@ function EnumDisplayer(props: any) {
                         </Row>
                         <DividerLine />
                     </Form>
-                    <ListEditor mode={"synonyms"} list={synonyms} onListChange={setSynonyms} onSave={() => console.log("a")} />
+                    <ListEditor mode={"synonyms"} list={synonyms} onListChange={setSynonyms} onSave={() => { }} />
                 </Card.Body>
                 <Card.Footer>
-                    <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => save()} >Save changes</i></Button>
+                    <ButtonGroup className="btnGroup" style={{ width: "auto" }}>
+                        <Button className="green" onClick={() => save()}><i className="bi bi-check-circle-fill"  > Save changes</i></Button>
+                        <Button className="red" onClick={() => deleteEnum()}><i className="bi bi-x-circle-fill"> Delete enumeration</i></Button>
+                    </ButtonGroup>
                 </Card.Footer>
             </Card>
         </>
@@ -366,13 +416,13 @@ function ClassInAssociationDisplayer(props: any) {
                         </Row>
                         <Row>
                             <Col xs={12}>
-                                <ListEditor mode={"multiplicities"} list={multiplicities} onListChange={setMultiplicities} onSave={() => console.log("a")} />
+                                <ListEditor mode={"multiplicities"} list={multiplicities} onListChange={setMultiplicities} onSave={() => { }} />
                             </Col>
                         </Row>
                     </Form>
                 </Card.Body>
                 <Card.Footer>
-                    <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => save()}>Save changes</i></Button>
+                    <Button className="green" onClick={() => save()}><i className="bi bi-check-circle-fill" > Save changes</i></Button>
                 </Card.Footer>
             </Card>
         </>
@@ -404,6 +454,13 @@ function AssociationDisplayer(props: any) {
         let updatedAssociations = props.reference.associations.map((association: ReferenceAssociation) =>
             association.elementId === props.assoc.elementId ? { ...association, name, weight, message, type, synonyms, source, target } : association
         )
+        props.setReference({ ...props.reference, associations: updatedAssociations });
+        props.setCurrentAssociation(null)
+        props.setMode("")
+    }
+
+    const deleteAssociation = () => {
+        let updatedAssociations = props.reference.associations.filter((association: ReferenceAssociation) => association.elementId !== props.assoc.elementId)
         props.setReference({ ...props.reference, associations: updatedAssociations });
         props.setCurrentAssociation(null)
         props.setMode("")
@@ -456,16 +513,18 @@ function AssociationDisplayer(props: any) {
                                 </Row>
                             </Form>
                             <DividerLine />
-                            <ListEditor mode={"synonyms"} list={synonyms} onListChange={setSynonyms} onSave={() => console.log("a")} />
+                            <ListEditor mode={"synonyms"} list={synonyms} onListChange={setSynonyms} onSave={() => { }} />
                             <DividerLine />
                         </Card.Body>
                         <Card.Footer>
-                            <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => save()} >Save changes</i></Button>
+                            <ButtonGroup className="btnGroup" style={{ width: "auto" }}>
+                                <Button onClick={() => save()} className="green"><i className="bi bi-check-circle-fill" > Save changes</i></Button>
+                                <Button onClick={() => deleteAssociation()} className="red"><i className="bi bi-x-circle-fill"> Delete Association</i> </Button>
+                            </ButtonGroup>
                         </Card.Footer>
                     </Card>
                 </Col>
                 <Col xs={6}>
-
                     {editing === "source" && <ClassInAssociationDisplayer {...source} classes={props.classes} setReference={props.setReference}
                         reference={props.reference} setEditing={setEditing} assoc={props.assoc} isSource={true} setCurrentAssociation={props.setCurrentAssociation} />}
                     {editing === "target" && <ClassInAssociationDisplayer {...target} classes={props.classes} setReference={props.setReference}
@@ -489,10 +548,10 @@ function ForbiddenClassDisplayer(props: any) {
                     }} onSave={() => props.setMode("")} />
                 </Card.Body>
                 <Card.Footer>
-                    <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => {
+                    <Button className="green" onClick={() => {
                         props.setReference({ ...props.reference, forbiddenClasses: props.forbiddenClasses })
                         props.setMode("")
-                    }} >Save changes</i></Button>
+                    }}><i className="bi bi-check-circle-fill" > Save changes</i></Button>
                 </Card.Footer>
             </Card>
         </>
@@ -571,7 +630,7 @@ function ForbiddenAssociationDisplayer(props: { onSave: () => void, list: { sour
                     <Button className="green" onClick={handleAdd}><i className="bi bi-plus-circle-fill"></i></Button>
                 </Card.Body>
                 <Card.Footer>
-                    <Button className="green"><i className="bi bi-check-circle-fill" onClick={() => save()} >Save changes</i></Button>
+                    <Button className="green" onClick={() => save()}><i className="bi bi-check-circle-fill" > Save changes</i></Button>
                 </Card.Footer>
             </Card>
         </>
@@ -620,7 +679,12 @@ function ReferenceDisplayer(props: any) {
                         </ListGroup>
                         <DividerLine />
                         {mode === "classes" && <>
-                            <Button className="green"><i className="bi bi-plus-circle-fill">{""} Add new class</i></Button>
+                            <Button className="green" onClick={() => {
+                                let newCls = new ReferenceClass()
+                                reference.classes.push(newCls)
+                                setReference(reference)
+                                setCurrentClass(newCls)
+                            }} ><i className="bi bi-plus-circle-fill"> Add new class</i></Button>
                             <DividerLine />
                             <ListGroup className="scrollable-list">
                                 {reference.classes.map((refClass, index) => (
@@ -632,7 +696,12 @@ function ReferenceDisplayer(props: any) {
                             </ListGroup>
                             <DividerLine />
                             {currentClass && <>
-                                <Button className="green"><i className="bi bi-plus-circle-fill">{""} Add new attribute</i></Button>
+                                <Button className="green" onClick={() => {
+                                    let newAttr = new ReferenceAttribute()
+                                    currentClass.attributes.push(newAttr)
+                                    setReference(reference)
+                                    setCurrentAttribute(newAttr)
+                                }} ><i className="bi bi-plus-circle-fill"> Add new attribute</i></Button>
                                 <DividerLine />
                                 <ListGroup className="scrollable-list">
                                     {currentClass.attributes.map((attr) => (
@@ -641,7 +710,15 @@ function ReferenceDisplayer(props: any) {
                                 </ListGroup> </>}
                         </>}
                         {mode === "associations" && <>
-                            <Button className="green"><i className="bi bi-plus-circle-fill">{""} Add new association</i></Button>
+                            <Button className="green" onClick={() => {
+                                let newAssoc = new ReferenceAssociation()
+                                newAssoc.source = { role: "", multiplicities: ["0..1", "1"], referenceClass: reference.classes[0] }
+                                newAssoc.target = { role: "", multiplicities: ["0..1", "1"], referenceClass: reference.classes[0] }
+                                newAssoc.elementId = "newAssoc" + (reference.associations.length + 1)
+                                reference.associations.push(newAssoc)
+                                setReference(reference)
+                                setCurrentAssociation(newAssoc)
+                            }} ><i className="bi bi-plus-circle-fill"> Add new association</i></Button>
                             <DividerLine />
                             <ListGroup className="scrollable-list">
                                 {reference.associations.map((refAssoc) => (
@@ -652,7 +729,12 @@ function ReferenceDisplayer(props: any) {
                             </ListGroup>
                         </>}
                         {mode === "enumerations" && <>
-                            <Button className="green"><i className="bi bi-plus-circle-fill">{""} Add new enumeration</i></Button>
+                            <Button className="green" onClick={() => {
+                                let newEnum = new ReferenceEnumeration()
+                                reference.enumerations.push(newEnum)
+                                setReference(reference)
+                                setCurrentEnum(newEnum)
+                            }}><i className="bi bi-plus-circle-fill" > Add new enumeration</i></Button>
                             <DividerLine />
                             <ListGroup className="scrollable-list">
                                 {reference.enumerations.map((refEnum) => (
@@ -664,7 +746,12 @@ function ReferenceDisplayer(props: any) {
                             </ListGroup>
                             <DividerLine />
                             {currentEnum && <>
-                                <Button className="green"><i className="bi bi-plus-circle-fill">{""} Add new literal</i></Button>
+                                <Button className="green" onClick={() => {
+                                    let newLit = new ReferenceAttribute()
+                                    currentEnum.literals.push(newLit)
+                                    setReference(reference)
+                                    setCurrentAttribute(newLit)
+                                }}><i className="bi bi-plus-circle-fill" > Add new literal</i></Button>
                                 <DividerLine />
                                 <ListGroup className="scrollable-list">
                                     {currentEnum.literals.map((attr) => (
@@ -725,6 +812,11 @@ function ReferenceDisplayer(props: any) {
                                 </Col>
                             </Row>}
                         </Row>
+                    </Col>
+                </Row>
+                <Row style={{ justifyContent: "center", alignItems: "center", justifyItems: "center" }}>
+                    <Col>
+                        <Button className="green" style={{ width: "fit-content" }} onClick={() => props.updateReference(reference)} ><i className="bi bi-check-circle-fill"> Save changes</i></Button>
                     </Col>
                 </Row>
             </>}
