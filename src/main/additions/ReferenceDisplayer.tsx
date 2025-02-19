@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, ListGroup, Badge, Button, Form, Alert, Row, Col, ButtonGroup } from "react-bootstrap";
-import { ReferenceSolution, ReferenceClass, Weight, ReferenceAttribute, ReferenceEnumeration, ReferenceAssociation } from "../operations/UMLMatcherTypes";
+import { ReferenceSolution, ReferenceClass, Weight, ReferenceAttribute, ReferenceEnumeration, ReferenceAssociation, EnumerationAssociation } from "../operations/UMLMatcherTypes";
 
 function DividerLine() {
     return (
@@ -365,6 +365,73 @@ function EnumDisplayer(props: any) {
     )
 }
 
+function EnumAssociationDisplayer(props: any) {
+    const [cls, setCls] = useState(props.enumAssoc.class)
+    const [enumeration, setEnumeration] = useState(props.enumAssoc.enumeration)
+    const [elementId, setElementId] = useState(props.enumAssoc.elementId)
+
+    const save = () => {
+        let updatedEnumAssocs = props.reference.enumerationAssociations.map((enumAssoc: EnumerationAssociation) =>
+            enumAssoc.elementId === props.enumAssoc.elementId ? { ...enumAssoc, class: cls, enumeration, elementId } : enumAssoc
+        )
+        props.setReference({ ...props.reference, enumerationAssociations: updatedEnumAssocs });
+        props.setMode("")
+        props.setCurrentEnumAssociation(null)
+    }
+
+    const deleteEnumAssoc = () => {
+        let updatedEnumAssocs = props.reference.enumerationAssociations.filter((enumAssoc: EnumerationAssociation) => enumAssoc.elementId !== props.enumAssoc.elementId)
+        props.setReference({ ...props.reference, enumerationAssociations: updatedEnumAssocs });
+        props.setMode("")
+        props.setCurrentEnumAssociation(null)
+    }
+
+    return (
+        <>
+            <Card style={{ width: "fit-content" }}>
+                <Card.Header className="cyan">
+                    <Card.Title>{elementId.indexOf("assoc_") >= 0 ? elementId.split("assoc_")[1] : elementId}</Card.Title>
+                </Card.Header>
+                <Form>
+                    <Row>
+                        <Col xs={6}>
+                            <Form.Label>Class</Form.Label>
+                            <Form.Control as="select" value={cls.name} onChange={(ev) => {
+                                let newCl = props.classes.find((cl: ReferenceClass) => cl.name === ev.target.value)
+                                setCls(newCl)
+                                setElementId("assoc_" + newCl.name + "_" + enumeration.name)
+                            }} >
+                                {props.classes.map((cl: ReferenceClass) => (
+                                    <option value={cl.name}>{cl.name}</option>
+                                ))}
+                            </Form.Control>
+                        </Col>
+                        <Col xs={6}>
+                            <Form.Label>Enumeration</Form.Label>
+                            <Form.Control as="select" value={enumeration.name} onChange={(ev) => {
+                                let newEnum = props.enumerations.find((en: ReferenceEnumeration) => en.name === ev.target.value)
+                                setEnumeration(newEnum)
+                                setElementId("assoc_" + cls.name + "_" + newEnum.name)
+                            }} >
+                                {props.enumerations.map((en: ReferenceEnumeration) => (
+                                    <option value={en.name}>{en.name}</option>
+                                ))}
+                            </Form.Control>
+                        </Col>
+                    </Row>
+                </Form>
+                <DividerLine />
+                <Card.Footer>
+                    <ButtonGroup className="btnGroup" style={{ width: "auto" }}>
+                        <Button className="green" onClick={() => save()} ><i className="bi bi-check-circle-fill"> Save changes</i> </Button>
+                        <Button className="red" onClick={() => deleteEnumAssoc()} ><i className="bi bi-x-circle-fill"> Delete enumeration link</i> </Button>
+                    </ButtonGroup>
+                </Card.Footer>
+            </Card>
+        </>
+    )
+}
+
 function ClassInAssociationDisplayer(props: any) {
     const [role, setRole] = useState(props.role)
     const [multiplicities, setMultiplicities] = useState(props.multiplicities)
@@ -396,7 +463,7 @@ function ClassInAssociationDisplayer(props: any) {
     return (
         <>
             <Card style={{ width: "fit-content" }}>
-                <Card.Header>
+                <Card.Header className="green">
                     <Card.Title>{cls.name}</Card.Title>
                 </Card.Header>
                 <Card.Body>
@@ -419,6 +486,7 @@ function ClassInAssociationDisplayer(props: any) {
                                 <ListEditor mode={"multiplicities"} list={multiplicities} onListChange={setMultiplicities} onSave={() => { }} />
                             </Col>
                         </Row>
+                        <DividerLine />
                     </Form>
                 </Card.Body>
                 <Card.Footer>
@@ -472,7 +540,7 @@ function AssociationDisplayer(props: any) {
                 <Col xs={editing === "synonyms" ? 12 : 6}>
                     <Card style={{ width: "fit-content" }}>
                         <Card.Header className="red">
-                            <Card.Title>{name} - {props.assoc.source.referenceClass ? props.assoc.source.referenceClass.name : ""} & {props.assoc.target.referenceClass ? props.assoc.target.referenceClass.name : ""}</Card.Title>
+                            <Card.Title>{props.assoc.elementId.indexOf("assoc_") >= 0 ? props.assoc.elementId.split("assoc_")[1] : props.assoc.elementId} </Card.Title>
                         </Card.Header>
                         <Card.Body>
                             <Form>
@@ -644,10 +712,12 @@ function ReferenceDisplayer(props: any) {
     const [currentAttribute, setCurrentAttribute] = useState<ReferenceAttribute | null>()
     const [currentEnum, setCurrentEnum] = useState<ReferenceEnumeration | null>()
     const [currentAssociation, setCurrentAssociation] = useState<ReferenceAssociation | null>()
+    const [currentEnumAssociation, setCurrentEnumAssociation] = useState<EnumerationAssociation | null>()
     const [mode, setMode] = useState("")
 
     useEffect(() => {
         setReference(props.reference)
+        console.log(props.reference)
     }, [props.reference])
 
 
@@ -661,19 +731,30 @@ function ReferenceDisplayer(props: any) {
                                 setCurrentEnum(null)
                                 setMode("classes")
                                 setCurrentAssociation(null)
+                                setCurrentEnumAssociation(null)
+                                setCurrentEnum(null)
                             }} >Classes</ListGroup.Item>
                             <ListGroup.Item style={{ fontWeight: mode === "associations" ? "bold" : "" }} className="red" action onClick={() => {
                                 setCurrentClass(null)
                                 setCurrentEnum(null)
                                 setCurrentAttribute(null)
+                                setCurrentEnumAssociation(null)
                                 setMode("associations")
                             }}>Associations</ListGroup.Item>
                             <ListGroup.Item style={{ fontWeight: mode === "enumerations" ? "bold" : "" }} className="blue" action onClick={() => {
                                 setCurrentAttribute(null)
                                 setCurrentClass(null)
                                 setCurrentAssociation(null)
+                                setCurrentEnumAssociation(null)
                                 setMode("enumerations")
                             }}>Enumerations</ListGroup.Item>
+                            <ListGroup.Item style={{ fontWeight: mode === "enumAssociations" ? "bold" : "" }} className="cyan" action onClick={() => {
+                                setCurrentAttribute(null)
+                                setCurrentClass(null)
+                                setCurrentAssociation(null)
+                                setCurrentEnum(null)
+                                setMode("enumAssociations")
+                            }} >Enumeration Links</ListGroup.Item>
                             <ListGroup.Item style={{ fontWeight: mode === "forbiddenClasses" ? "bold" : "" }} className="yellow" action onClick={() => setMode("forbiddenClasses")}>Forbidden Classes</ListGroup.Item>
                             <ListGroup.Item style={{ fontWeight: mode === "forbiddenAssociations" ? "bold" : "" }} className="purple" action onClick={() => setMode("forbiddenAssociations")}>Forbidden Associations</ListGroup.Item>
                         </ListGroup>
@@ -722,9 +803,9 @@ function ReferenceDisplayer(props: any) {
                             <DividerLine />
                             <ListGroup className="scrollable-list">
                                 {reference.associations.map((refAssoc) => (
-                                    <ListGroup.Item action active={currentAssociation?.name === refAssoc.name} onClick={() => {
+                                    <ListGroup.Item action active={currentAssociation?.elementId === refAssoc.elementId} onClick={() => {
                                         setCurrentAssociation(refAssoc)
-                                    }}>{refAssoc.name} - {refAssoc.source.referenceClass ? refAssoc.source.referenceClass.name : ""} & {refAssoc.target.referenceClass ? refAssoc.target.referenceClass.name : ""} </ListGroup.Item>
+                                    }} style={{ whiteSpace: "normal" }}>{refAssoc.elementId.indexOf("assoc_") >= 0 ? refAssoc.elementId.split("assoc_")[1] : refAssoc.elementId}</ListGroup.Item>
                                 ))}
                             </ListGroup>
                         </>}
@@ -758,6 +839,24 @@ function ReferenceDisplayer(props: any) {
                                         <ListGroup.Item action active={currentAttribute?.name === attr.name} onClick={() => setCurrentAttribute(attr)} >{attr.name}</ListGroup.Item>
                                     ))}
                                 </ListGroup> </>}
+                        </>}
+                        {mode === "enumAssociations" && <>
+                            <Button className="green" onClick={() => {
+                                let newEnumAssoc = new EnumerationAssociation()
+                                newEnumAssoc.class = reference.classes[0]
+                                newEnumAssoc.enumeration = reference.enumerations[0]
+                                newEnumAssoc.elementId = "assoc_" + reference.classes[0].name + "_" + reference.enumerations[0].name
+                                reference.enumerationAssociations.push(newEnumAssoc)
+                                setReference(reference)
+                                setCurrentEnumAssociation(newEnumAssoc)
+                            }}><i className="bi bi-plus-circle-fill"> Add new enumeration link</i> </Button>
+                            <DividerLine />
+                            <ListGroup className="scrollable-list">
+                                {reference.enumerationAssociations.map((assoc) => (
+                                    <ListGroup.Item action active={currentEnumAssociation?.elementId === assoc.elementId} onClick={() =>
+                                        setCurrentEnumAssociation(assoc)} style={{ whiteSpace: "normal" }}>{assoc.elementId.indexOf("assoc_") >= 0 ? assoc.elementId.split("assoc_")[1] : assoc.elementId}</ListGroup.Item>
+                                ))}
+                            </ListGroup>
                         </>}
                     </Col>
                     <Col xs={10}>
@@ -798,6 +897,14 @@ function ReferenceDisplayer(props: any) {
                                                 setMode={setMode} setCurrentAttribute={setCurrentAttribute} isEnum={true} owner={currentEnum} />}
                                     </Col>
                                 </Row>                            </>}
+                            {mode === "enumAssociations" && currentEnumAssociation && <>
+                                <Row style={{ justifyContent: "center", alignItems: "center", justifyItems: "center" }}>
+                                    <Col style={{ width: "auto" }} xs={6}>
+                                        <EnumAssociationDisplayer enumAssoc={currentEnumAssociation} classes={reference.classes} enumerations={reference.enumerations}
+                                            setReference={setReference} reference={reference} setMode={setMode} setCurrentEnumAssociation={setCurrentEnumAssociation} />
+                                    </Col>
+                                </Row>
+                            </>}
                             {mode === "forbiddenClasses" &&
                                 <Row style={{ justifyContent: "center", alignItems: "center", justifyItems: "center" }}>
                                     <Col style={{ width: "auto" }} xs={6}>

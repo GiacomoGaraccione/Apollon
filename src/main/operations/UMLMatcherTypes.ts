@@ -95,9 +95,11 @@ export class ReferenceBuilder {
             let refSource = new ReferenceClassInAssociation()
             let refTarget = new ReferenceClassInAssociation()
             let refSourceClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[source].name)
+            console.log(source, refSourceClass)
             if (!refSourceClass) return null
             refSource.referenceClass = refSourceClass
             let refTargetClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[target].name)
+            console.log(target, refTargetClass)
             if (!refTargetClass) return null
             refTarget.referenceClass = refTargetClass
             refSource.role = rel.source.role
@@ -110,6 +112,25 @@ export class ReferenceBuilder {
             refAssoc.type = rel.type === "ClassInheritance" ? "Inheritance" : "Default"
             refAssoc.elementId = rel.id
             return refAssoc
+        }
+        return null
+    }
+
+    createEnumerationAssociation(rel: UMLCustomAssociation): EnumerationAssociation | null {
+        let source = Object.keys(this.model.elements).find((elementId) => this.model.elements[elementId].id === rel.source.element)
+        let target = Object.keys(this.model.elements).find((elementId) => this.model.elements[elementId].id === rel.target.element)
+        if (source && target) {
+            let refEnum = this.referenceSolution.enumerations.find((en) => en.name === this.model.elements[source].name)
+            if (!refEnum) refEnum = this.referenceSolution.enumerations.find((en) => en.name === this.model.elements[target].name)
+            if (!refEnum) return null
+            let refClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[source].name)
+            if (!refClass) refClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[target].name)
+            if (!refClass) return null
+            let enumAssoc = new EnumerationAssociation()
+            enumAssoc.class = refClass
+            enumAssoc.enumeration = refEnum
+            enumAssoc.elementId = rel.id
+            return enumAssoc
         }
         return null
     }
@@ -142,9 +163,12 @@ export class ReferenceBuilder {
         Object.keys(this.model.relationships).forEach((relId) => {
             let rel = this.model.relationships[relId] as UMLCustomAssociation
             let refAssoc = this.createReferenceAssociation(rel)
-            if (refAssoc) this.referenceSolution.associations.push(refAssoc)
+            if (refAssoc) { this.referenceSolution.associations.push(refAssoc) }
+            else {
+                let refEnumAssoc = this.createEnumerationAssociation(rel)
+                if (refEnumAssoc) this.referenceSolution.enumerationAssociations.push(refEnumAssoc)
+            }
         })
-        console.log(this.referenceSolution)
         return this.referenceSolution
     }
 }
