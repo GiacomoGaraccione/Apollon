@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
 import { ApollonMode } from "../typings";
 import { ApollonEditor } from "../apollon-editor";
-import { UMLStructureBuilder } from "../operations/UMLStructureBuilder";
+import { UMLStructureBuilderFromLLM, UMLStructureBuilderFromReference } from "../operations/UMLStructureBuilder";
 import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
 import { ReferenceDisplayer, DividerLine } from "./ReferenceDisplayer";
 
@@ -39,7 +39,6 @@ function SolutionCreator() {
 
     useEffect(() => {
         if (selectedExercise) {
-            console.log(JSON.parse(selectedExercise.solutions))
             setSolutions(JSON.parse(selectedExercise.solutions))
             setMode("")
         }
@@ -49,13 +48,12 @@ function SolutionCreator() {
         try {
             if (draw) {
                 if (result) {
-                    let builder = new UMLStructureBuilder(result)
+                    let builder = new UMLStructureBuilderFromLLM(result)
                     let model = builder.createUMLStructure()
                     let cont = document.getElementById("apollon")!
                     setEditor(new ApollonEditor(cont, { ...options, model: model }))
                 } else if (selectedExercise && currentSolution) {
                     let cont = document.getElementById("apollon")!
-                    console.log(currentSolution)
                     setEditor(new ApollonEditor(cont, { ...options, model: currentSolution.model }))
                 } else {
                     let cont = document.getElementById("apollon")!
@@ -120,7 +118,6 @@ function SolutionCreator() {
             if (editor) {
                 let builder = new ReferenceBuilder(editor.model)
                 let ref = builder.buildReference()
-                console.log(ref)
                 let updatedSolutions = [...solutions];
                 updatedSolutions[position] = { ...updatedSolutions[position], model: editor.model, reference: ref };
                 API.updateUMLReference(selectedExercise.title, JSON.stringify(updatedSolutions)).then((res) => {
@@ -140,15 +137,15 @@ function SolutionCreator() {
     const saveStructure = (updatedReference: ReferenceSolution) => {
         try {
             let updatedSolutions = [...solutions]
-            if (editor) {
-                updatedSolutions[position] = { ...updatedSolutions[position], model: editor?.model, reference: updatedReference }
-                API.updateUMLReference(selectedExercise.title, JSON.stringify(updatedSolutions)).then((res) => {
-                    setSolutions(updatedSolutions)
-                    setPosition(-1)
-                    setMode("")
-                    setReference(false)
-                })
-            }
+            let builder = new UMLStructureBuilderFromReference(updatedReference, updatedSolutions[position].model)
+            let model = builder.createUMLStructure()
+            updatedSolutions[position] = { ...updatedSolutions[position], model: model, reference: updatedReference }
+            API.updateUMLReference(selectedExercise.title, JSON.stringify(updatedSolutions)).then((res) => {
+                setSolutions(updatedSolutions)
+                setPosition(-1)
+                setMode("")
+                setReference(false)
+            })
         } catch (error) {
             console.error(error)
         }

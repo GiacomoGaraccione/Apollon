@@ -222,7 +222,21 @@ function ClassDisplayer(props: any) {
         let updatedClasses = props.reference.classes.map((cls: ReferenceClass) =>
             cls.name === props.cls.name ? { ...cls, name, weight, message, forbiddenAttributes, synonyms } : cls
         )
-        props.setReference({ ...props.reference, classes: updatedClasses })
+        let updatedAssociations = props.reference.associations.map((assoc: ReferenceAssociation) => {
+            if (assoc.source.referenceClass.name === props.cls.name) {
+                let newCls = { ...props.cls, name, weight, message, forbiddenAttributes, synonyms }
+                assoc.source.referenceClass = newCls
+                assoc.elementId = "assoc_" + newCls.name + "_" + assoc.target.referenceClass.name
+                return assoc
+            } else if (assoc.target.referenceClass.name === props.cls.name) {
+                let newCls = { ...props.cls, name, weight, message, forbiddenAttributes, synonyms }
+                assoc.target.referenceClass = newCls
+                assoc.elementId = "assoc_" + assoc.source.referenceClass.name + "_" + newCls.name
+                return assoc
+            }
+            else return assoc
+        })
+        props.setReference({ ...props.reference, classes: updatedClasses, associations: updatedAssociations })
         props.setMode("")
         props.setCurrentClass(null)
     }
@@ -309,7 +323,16 @@ function EnumDisplayer(props: any) {
         const updatedEnumerations = props.reference.enumerations.map((enumeration: ReferenceEnumeration) =>
             enumeration.name === props.enum.name ? { ...enumeration, name, weight, message, synonyms } : enumeration
         );
-        props.setReference({ ...props.reference, enumerations: updatedEnumerations });
+        const updatedEnumAssociations = props.reference.enumerationAssociations.map((enumAssoc: EnumerationAssociation) => {
+            if (enumAssoc.enumeration.name === props.enum.name) {
+                let newEnum = { ...enumAssoc.enumeration, name, weight, message, synonyms }
+                enumAssoc.enumeration = newEnum
+                enumAssoc.elementId = "assoc_" + enumAssoc.class.name + "_" + newEnum.name
+                return enumAssoc
+            }
+            return enumAssoc
+        })
+        props.setReference({ ...props.reference, enumerations: updatedEnumerations, enumerationAssociations: updatedEnumAssociations });
         props.setMode("")
         props.setCurrentEnum(null)
     }
@@ -717,7 +740,6 @@ function ReferenceDisplayer(props: any) {
 
     useEffect(() => {
         setReference(props.reference)
-        console.log(props.reference)
     }, [props.reference])
 
 
@@ -923,7 +945,10 @@ function ReferenceDisplayer(props: any) {
                 </Row>
                 <Row style={{ justifyContent: "center", alignItems: "center", justifyItems: "center" }}>
                     <Col>
-                        <Button className="green" style={{ width: "fit-content" }} onClick={() => props.updateReference(reference)} ><i className="bi bi-check-circle-fill"> Save changes</i></Button>
+                        <Button className="green" style={{ width: "fit-content" }} onClick={() => {
+                            props.updateReference(reference)
+                        }}
+                        ><i className="bi bi-check-circle-fill"> Save changes</i></Button>
                     </Col>
                 </Row>
             </>}
