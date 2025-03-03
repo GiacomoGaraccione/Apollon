@@ -1,4 +1,6 @@
+import json
 import requests
+import ast
 
 
 def ask_llama(prompt, temp=0.7):
@@ -61,3 +63,50 @@ def generate_synonyms(solution, text):
 """
     response = ask_llama(prompt)
     return response
+
+def get_synonyms_batch(terms, language):
+    prompt = f"""
+    Provide synonyms for the following words in {language}: {', '.join(terms)}.
+    Answer only with a JSON object where the keys are the words and the values are lists of synonyms.
+    Enclose the JSON object in triple backticks.
+"""
+    response = ask_llama(prompt)
+    return response
+
+def get_synonyms(data):
+    try:
+        terms = set()
+        for cls in data.get("classes", []):
+            terms.add(cls["name"])
+            for attr in cls.get("attributes", []):
+                terms.add(attr["name"])
+        for assoc in data.get("associations", []):
+            terms.add(assoc["name"])
+        for enum in data.get("enumerations", []):
+            terms.add(enum["name"])
+        terms = list(terms)
+
+        eng_synonyms = get_synonyms_batch(terms, "English")
+        ita_synonyms = get_synonyms_batch(terms, "Italian")
+        eng_synonyms = json.loads(eng_synonyms[eng_synonyms.find('{'):eng_synonyms.rfind('}')+1])
+        ita_synonyms = json.loads(ita_synonyms[ita_synonyms.find('{'):ita_synonyms.rfind('}')+1])
+        synonym_map = {
+            term: {
+                "english": eng_synonyms.get(term, []),
+                "italian": ita_synonyms.get(term, [])
+            } for term in terms
+        }
+
+        # Assign synonyms back to the reference structure
+        for cls in data.get("classes", []):
+            cls["synonyms"] = cls.get("synonyms", []) + synonym_map.get(cls["name"], {}).get("english", []) + synonym_map.get(cls["name"], {}).get("italian", [])
+            for attr in cls.get("attributes", []):
+                attr["synonyms"] = attr.get("synonyms", []) + synonym_map.get(attr["name"], {}).get("english", []) + synonym_map.get(attr["name"], {}).get("italian", [])
+        for assoc in data.get("associations", []):
+            assoc["synonyms"] = assoc.get("synonyms", []) + synonym_map.get(assoc["name"], {}).get("english", []) + synonym_map.get(assoc["name"], {}).get("italian", [])
+        for enum in data.get("enumerations", []):
+            enum["synonyms"] = enum.get("synonyms", []) + synonym_map.get(enum["name"], {}).get("english", []) + synonym_map.get(enum["name"], {}).get("italian", [])
+        return data
+    except Exception as e:
+        print(e)
+        raise Exception("Error getting reference synonyms")

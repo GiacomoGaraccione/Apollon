@@ -4,7 +4,7 @@ from db.models import Base
 import db.operations as db_ops
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from llm.llama import generate_uml_content, generate_synonyms
+from llm.llama import generate_uml_content, generate_synonyms, get_synonyms
 from llm.nlp import generate_solution_synonyms
 
 Base.metadata.create_all(engine)
@@ -118,6 +118,16 @@ def update_references(title):
             return jsonify({"error": "Exercise not found"}), 404
         return jsonify({"solution": solution}), 200
     except:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+@app.route("/exercises/<title>/reference/synonyms", methods=["POST"])
+def get_reference_synonyms(title):
+    try:
+        data = request.json
+        synonyms = get_synonyms(data["reference"])
+        return jsonify({"synonyms": synonyms}), 200
+    except Exception as e:
+        print(e)
         return jsonify({"error": "Invalid JSON"}), 400
 
 if __name__ == "__main__":

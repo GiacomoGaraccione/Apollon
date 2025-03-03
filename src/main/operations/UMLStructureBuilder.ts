@@ -429,9 +429,8 @@ class UMLStructureBuilderFromReference {
     positions: Map<string, Region> | null
     regionWidth: number
     totalHeight: number
-    originalModel: UMLModel
 
-    constructor(reference: ReferenceSolution, model: UMLModel) {
+    constructor(reference: ReferenceSolution) {
         this.reference = reference
         this.associationInfo = []
         this.model = {
@@ -445,7 +444,6 @@ class UMLStructureBuilderFromReference {
         } as unknown as UMLModel
         this.regionWidth = 0
         this.totalHeight = 0
-        this.originalModel = model
     }
 
     addUMLClass(cl: ReferenceClass) {

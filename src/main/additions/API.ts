@@ -1,3 +1,5 @@
+import { ReferenceSolution } from "../operations/UMLMatcherTypes"
+
 const URL = "http://localhost:5000/"
 
 async function getAllExercises() {
@@ -114,6 +116,17 @@ async function updateUMLReference(title: string, model: string) {
     return response.json()
 }
 
+async function getUMLReferenceSynonyms(title: string, text: string, reference: ReferenceSolution) {
+    const response = await fetch(URL + "exercises/" + title + "/reference/synonyms", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text, reference })
+    })
+    return response.json()
+}
+
 
 const API = {
     getAllExercises,
@@ -127,6 +140,7 @@ const API = {
     evaluateSimilarity,
     submitText,
     saveUMLReference,
-    updateUMLReference
+    updateUMLReference,
+    getUMLReferenceSynonyms
 }
 export default API

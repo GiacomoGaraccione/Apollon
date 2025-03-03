@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Form, Col, Container, Row, ListGroup, Alert, Modal } from "react-bootstrap";
+import { Form, Col, Container, Row, ListGroup, Alert, Modal, Button } from "react-bootstrap";
 import API from "./API"
 import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
@@ -8,6 +8,8 @@ import { ApollonEditor } from "../apollon-editor";
 import { UMLStructureBuilderFromLLM, UMLStructureBuilderFromReference } from "../operations/UMLStructureBuilder";
 import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
 import { ReferenceDisplayer, DividerLine } from "./ReferenceDisplayer";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 const options = {
     colorEnabled: false,
@@ -87,6 +89,9 @@ function SolutionCreator() {
                 let ref = builder.buildReference()
                 API.saveUMLReference(selectedExercise.title, JSON.stringify({ model: editor.model, reference: ref })).then((res) => {
                     setSolutions(res.solution)
+                    setDraw(false)
+                    setMode("")
+                    setCurrentSolution(null)
                 }).catch((error) => {
                     console.error(error)
                 })
@@ -137,15 +142,55 @@ function SolutionCreator() {
     const saveStructure = (updatedReference: ReferenceSolution) => {
         try {
             let updatedSolutions = [...solutions]
-            let builder = new UMLStructureBuilderFromReference(updatedReference, updatedSolutions[position].model)
+            let builder = new UMLStructureBuilderFromReference(updatedReference)
             let model = builder.createUMLStructure()
-            updatedSolutions[position] = { ...updatedSolutions[position], model: model, reference: updatedReference }
+            console.log(position)
+            if (position >= 0) {
+                updatedSolutions[position] = { ...updatedSolutions[position], model: model, reference: updatedReference }
+            } else {
+                updatedSolutions.push({ model: model, reference: updatedReference })
+            }
             API.updateUMLReference(selectedExercise.title, JSON.stringify(updatedSolutions)).then((res) => {
                 setSolutions(updatedSolutions)
                 setPosition(-1)
                 setMode("")
                 setReference(false)
             })
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const downloadSources = () => {
+        try {
+            if (currentSolution && selectedExercise) {
+                let zip = new JSZip()
+                let folder = zip.folder(selectedExercise.title)
+                folder?.file("model.json", JSON.stringify(currentSolution.model))
+                folder?.file("reference.json", JSON.stringify(currentSolution.reference))
+                zip.generateAsync({ type: "blob" })
+                    .then((content) => saveAs(content, selectedExercise.title + " - sources.zip"))
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const getSynonyms = () => {
+        try {
+            if (currentSolution && selectedExercise) {
+                console.log(currentSolution.reference)
+                setLoading(true)
+                API.getUMLReferenceSynonyms(selectedExercise.title, selectedExercise.description, currentSolution.reference).then((res) => {
+                    console.log(res)
+                    setCurrentSolution({ model: currentSolution.model, reference: res.synonyms })
+                    setReference(true)
+                    setLoading(false)
+                }).catch((err) => {
+                    console.error(err)
+                    setLoading(false)
+                })
+            }
         } catch (error) {
             console.error(error)
         }
@@ -164,12 +209,12 @@ function SolutionCreator() {
                         <DividerLine />
                         {selectedExercise && <>
                             <ListGroup className="scrollable-list">
-                                <ListGroup.Item className="green" action onClick={() => {
+                                <ListGroup.Item style={{ fontWeight: mode === "add" ? "bold" : "" }} className="green" action onClick={() => {
                                     setCurrentSolution(null)
                                     setMode("add")
                                     setDraw(false)
                                     setPosition(-1)
-                                }}>Add new solution</ListGroup.Item>
+                                }}><i className="bi bi-plus-circle-fill"> Add new solution</i></ListGroup.Item>
                                 {solutions.map((solution, index) => (
                                     <ListGroup.Item style={{ fontWeight: currentSolution === solution ? "bold" : "" }} action key={index} className="orange" onClick={() => {
                                         setCurrentSolution(solution)
@@ -177,43 +222,54 @@ function SolutionCreator() {
                                         setDraw(false)
                                         setResult("")
                                         setPosition(index)
-                                    }}>Edit solution {index + 1}</ListGroup.Item>
+                                    }}><i className="bi bi-pencil-fill"> Edit solution {index + 1}</i></ListGroup.Item>
                                 ))}
                             </ListGroup>
                             <DividerLine />
                             {mode && mode !== "edit" && <ListGroup className="scrollable-list">
-                                <ListGroup.Item className="pink" action onClick={() => submitText()}>Start from description</ListGroup.Item>
-                                <ListGroup.Item className="green" action onClick={() => setDraw(true)}>Draw diagram</ListGroup.Item>
+                                <ListGroup.Item className="pink" action onClick={() => submitText()}> <i className="bi bi-robot"> Create diagram from description</i></ListGroup.Item>
+                                <ListGroup.Item className="green" action onClick={() => setDraw(true)}><i className="bi bi-diagram-3"> Create blank diagram</i> </ListGroup.Item>
+                                <ListGroup.Item className="cyan" action onClick={() => { }}><i className="bi bi-robot"> Create reference from description</i> </ListGroup.Item>
+                                <ListGroup.Item className="orange" action onClick={() => {
+                                    let newReference = new ReferenceSolution()
+                                    setReference(true)
+                                    setCurrentSolution({ model: {}, reference: newReference })
+                                    setEditor({ ...editor, model: {} })
+                                }}><i className="bi bi-file-earmark-text-fill"> Create empty reference</i> </ListGroup.Item>
                             </ListGroup>}
                             {mode && mode !== "add" && <ListGroup className="framed buttons scrollable-list">
                                 <ListGroup.Item className="pink" action onClick={() => {
                                     setReference(false)
                                     setDraw(true)
-                                }}>Edit diagram</ListGroup.Item>
+                                }}><i className="bi bi-pencil-fill"> Edit diagram</i></ListGroup.Item>
                                 <ListGroup.Item className="blue" action onClick={() => {
                                     setDraw(false)
                                     setReference(true)
-                                }} >Edit reference</ListGroup.Item>
+                                }} ><i className="bi bi-pencil-fill"> Edit reference</i></ListGroup.Item>
+                                <ListGroup.Item className="cyan" action onClick={() => getSynonyms()} ><i className="bi bi-robot"> Enhance Synonyms</i> </ListGroup.Item>
+                                <ListGroup.Item className="green" action onClick={() => downloadSources()}><i className="bi bi-download" > Download sources</i> </ListGroup.Item>
+                                <ListGroup.Item className="red" action onClick={() => deleteReference()} ><i className="bi bi-trash3-fill"> Delete solution</i> </ListGroup.Item>
                             </ListGroup>}
                             <DividerLine />
-                            {draw && <ListGroup className="scrollable-list">
-                                {mode === "add" && <ListGroup.Item className="green" action onClick={() => saveDiagram()}>Save solution</ListGroup.Item>}
-                                {mode === "edit" && <>
-                                    <ListGroup.Item className="green" action onClick={() => {
-                                        updateReference()
-                                    }} >Update solution</ListGroup.Item>
-                                    <ListGroup.Item className="red" action onClick={() => deleteReference()} >Delete solution</ListGroup.Item>
-                                </>}
-                            </ListGroup>}
                         </>}
                     </Col>
                     <Col xs={10}>
                         <Row className="flex-grow-1" style={{ height: "80vh" }}>
                             <Row className="control flex-grow-1 overflow-auto framed buttons" style={{ borderStyle: "solid", borderColor: "#003249", borderRadius: "10px", paddingTop: "5px", marginBottom: "5px", width: "99%", justifyContent: "center", alignItems: "center" }}>
-                                {selectedExercise && draw && <div id="apollon" />}
+                                {selectedExercise && draw && <>
+
+                                    {draw && <ListGroup className="scrollable-list">
+
+                                    </ListGroup>}
+                                    <div id="apollon" />
+                                    <Row style={{ justifyContent: "center", alignItems: "center", justifyItems: "center" }}>
+                                        <Col>
+                                            <Button className="green" style={{ width: "fit-content" }} onClick={() => mode === "add" ? saveDiagram() : updateReference()} ><i className="bi bi-check-circle-fill"> Save diagram</i> </Button>
+
+                                        </Col>
+                                    </Row></>}
                                 {selectedExercise && reference && <ReferenceDisplayer
                                     updateReference={saveStructure} reference={currentSolution?.reference} />}
-                                {/*selectedExercise && answer && <ReactMarkdown>{answer}</ReactMarkdown>*/}
                                 {selectedExercise && loading && <>
                                     <div style={{ width: "600px", flexDirection: 'row', color: "#007EA7" }}>
                                         <Puff />

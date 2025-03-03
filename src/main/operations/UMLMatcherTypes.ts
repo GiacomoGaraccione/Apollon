@@ -150,7 +150,6 @@ export class ReferenceBuilder {
         return refEnum
     }
 
-
     buildReference(): ReferenceSolution {
         Object.keys(this.model.elements).forEach((elementId) => {
             let element = this.model.elements[elementId]
