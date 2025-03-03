@@ -73,9 +73,7 @@ class ClassAssociationComponent extends Component<Props, State> {
       <div>
         <section>
           <Flex>
-            <Header gutter={false} style={{ flexGrow: 1 }}>
-              {this.props.translate('popup.association')}
-            </Header>
+            <Textfield value={element.name} onChange={(name) => { this.props.update(this.props.element.id, { name }) }} ></Textfield>
             <ColorButton onClick={this.toggleColor} />
             <Button color="link" onClick={() => this.props.flip(element.id)}>
               <ExchangeIcon />

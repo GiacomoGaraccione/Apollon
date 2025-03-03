@@ -134,10 +134,31 @@ export const UMLAssociationComponent: FunctionComponent<Props> = ({ element }) =
     }
   })(element.type);
 
+  let position = { x: 0, y: 0 }
+  let direction = "v"
   const path = element.path.map((point) => new Point(point.x, point.y));
   const source: Point = computeTextPositionForUMLAssociation(path);
   const target: Point = computeTextPositionForUMLAssociation(path.reverse(), !!marker);
   const id = `marker-${element.id}`;
+
+  let distance = path.reduce((length, point, i, points) => (i + 1 < points.length ? points[i + 1].subtract(point).length : length), 0) / 2
+  for (let index = 0; index < path.length - 1; index++) {
+    const vector = path[index + 1].subtract(path[index])
+    if (vector.length > distance) {
+      const norm = vector.normalize()
+      direction = Math.abs(norm.x) > Math.abs(norm.y) ? "h" : "v"
+      position = path[index].add(norm.scale(distance))
+      break
+    }
+    distance -= vector.length
+  }
+  const layoutText = (dir: string) => {
+    return dir === "v" ? {
+      dx: 5, dominantBaseline: "middle", textAnchor: "start"
+    } : {
+      dy: -5, dominantBaseline: "text-after-edge", textAnchor: "middle"
+    }
+  }
 
   const textFill = element.textColor ? { fill: element.textColor } : {};
   return (
@@ -187,6 +208,13 @@ export const UMLAssociationComponent: FunctionComponent<Props> = ({ element }) =
       >
         {element.target.role}
       </text>
+      <text
+        x={position.x || 0}
+        y={position.y || 0}
+        {...layoutText(direction)}
+        pointerEvents="none"
+        style={{ ...textFill }}
+      >{element.name} </text>
     </g>
   );
 };
