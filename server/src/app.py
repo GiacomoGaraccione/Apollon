@@ -81,7 +81,6 @@ def extract_uml_content(title):
         response = generate_uml_content(text)
         return jsonify({"uml": response}), 200
     except Exception as e:
-        print(e)
         return jsonify({"error": "Error generating UML content"}), 500
 
 @app.route("/exercises/<title>/reference", methods=["POST"])

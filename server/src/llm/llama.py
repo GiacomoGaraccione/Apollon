@@ -1,7 +1,24 @@
 import json
 import requests
-import ast
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+from huggingface_hub import login, InferenceClient
 
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#model_id = "deepseek-ai/DeepSeek-R1-Distill-Qwen-8B"
+#tokenizer = AutoTokenizer.from_pretrained(model_id)
+#model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float16, device_map="auto")
+#model = model.to(device)
+
+#def ask(prompt, temp = 0.7):
+ #   try:
+ #       inputs = tokenizer(prompt, return_tensors="pt", padding="max_length", truncation=True, max_length=2048).to(device)
+ #       outputs = model.generate(**inputs, do_sample=True, temperature=temp, max_length=20248, pad_token_id=tokenizer.eos_token_id)
+ #       response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+ #       return response
+ #   except Exception as e:
+ #       print(e)
+ #       raise Exception("Error asking Llama")
 
 def ask_llama(prompt, temp=0.7):
     try:
@@ -12,9 +29,28 @@ def ask_llama(prompt, temp=0.7):
             "Authorization": f"Bearer {token}"
         }
         payload = {"inputs": prompt}
-        full_output = requests.post(API_URL, headers=headers, json=payload).json()[0]["generated_text"]
-        response = full_output[len(prompt):].strip()
-        return response
+        try:
+            #full_output = requests.post(API_URL, headers=headers, json=payload)
+            client = InferenceClient(api_key=token)
+            full_output = client.chat.completions.create(
+                model="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+                messages=[{"role": "system", "content": prompt}]
+            )
+        except requests.exceptions.RequestException as e:
+            print("Exception Type: ", type(e).__name__)
+            print("Exception Args: ", e.args)
+            raise Exception("Error asking Llama")
+        print(full_output)
+        try:
+            response = full_output.json()
+        except:
+            raise Exception("Error asking Llama")
+        if isinstance(response, list) and len(response) >0 and "generated_text" in response[0]:
+            full_output = response[0]["generated_text"]
+            response_text = full_output[len(prompt):].strip()
+            return response_text
+        else:
+            raise ValueError(f"Unexpected response format: {response}")
     except Exception as e:
         print(e)
         raise Exception("Error asking Llama")
@@ -48,9 +84,9 @@ def generate_uml_content(text):
         Generate the reference solution in the format specified above. Answer with the JSON code only and no other text. Before the JSON code, write "```" and after the JSON code write "```".
 """ 
         response = ask_llama(prompt)
+        #response = ask(prompt)
         return response
     except Exception as e:
-        print(e)
         raise Exception("Error generating UML content")
 
 def generate_synonyms(solution, text):

@@ -95,11 +95,9 @@ export class ReferenceBuilder {
             let refSource = new ReferenceClassInAssociation()
             let refTarget = new ReferenceClassInAssociation()
             let refSourceClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[source].name)
-            console.log(source, refSourceClass)
             if (!refSourceClass) return null
             refSource.referenceClass = refSourceClass
             let refTargetClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[target].name)
-            console.log(target, refTargetClass)
             if (!refTargetClass) return null
             refTarget.referenceClass = refTargetClass
             refSource.role = rel.source.role

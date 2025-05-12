@@ -59,7 +59,7 @@ function SolutionCreator() {
                     setEditor(new ApollonEditor(cont, { ...options, model: currentSolution.model }))
                 } else {
                     let cont = document.getElementById("apollon")!
-                    setEditor(new ApollonEditor(cont, { ...options }))
+                    setEditor(new ApollonEditor(cont, { ...options, type: "UseCaseDiagram" }))
                 }
             }
         } catch (error) {
@@ -73,6 +73,7 @@ function SolutionCreator() {
             setDraw(false)
             API.submitText(selectedExercise.title, selectedExercise.description).then((res) => {
                 setDraw(true)
+                console.log(res.uml)
                 setResult(res.uml)
                 setLoading(false)
             }).catch((error) => {
@@ -82,12 +83,13 @@ function SolutionCreator() {
         }
     }
 
-    const saveDiagram = () => {
+    const saveDiagram = async () => {
         try {
             if (selectedExercise && editor) {
                 let builder = new ReferenceBuilder(editor.model)
                 let ref = builder.buildReference()
-                API.saveUMLReference(selectedExercise.title, JSON.stringify({ model: editor.model, reference: ref })).then((res) => {
+                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+                API.saveUMLReference(selectedExercise.title, JSON.stringify({ model: editor.model, reference: ref, svg: svg })).then((res) => {
                     setSolutions(res.solution)
                     setDraw(false)
                     setMode("")
@@ -118,13 +120,14 @@ function SolutionCreator() {
         }
     }
 
-    const updateReference = () => {
+    const updateReference = async () => {
         try {
             if (editor) {
                 let builder = new ReferenceBuilder(editor.model)
                 let ref = builder.buildReference()
                 let updatedSolutions = [...solutions];
-                updatedSolutions[position] = { ...updatedSolutions[position], model: editor.model, reference: ref };
+                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+                updatedSolutions[position] = { ...updatedSolutions[position], model: editor.model, reference: ref, svg: svg };
                 API.updateUMLReference(selectedExercise.title, JSON.stringify(updatedSolutions)).then((res) => {
                     setSolutions(updatedSolutions);
                     setPosition(-1);
@@ -144,7 +147,6 @@ function SolutionCreator() {
             let updatedSolutions = [...solutions]
             let builder = new UMLStructureBuilderFromReference(updatedReference)
             let model = builder.createUMLStructure()
-            console.log(position)
             if (position >= 0) {
                 updatedSolutions[position] = { ...updatedSolutions[position], model: model, reference: updatedReference }
             } else {
@@ -161,13 +163,15 @@ function SolutionCreator() {
         }
     }
 
-    const downloadSources = () => {
+    const downloadSources = async () => {
         try {
             if (currentSolution && selectedExercise) {
                 let zip = new JSZip()
                 let folder = zip.folder(selectedExercise.title)
                 folder?.file("model.json", JSON.stringify(currentSolution.model))
                 folder?.file("reference.json", JSON.stringify(currentSolution.reference))
+                console.log(currentSolution.svg, typeof currentSolution.svg)
+                folder?.file("model.svg", currentSolution.svg.svg)
                 zip.generateAsync({ type: "blob" })
                     .then((content) => saveAs(content, selectedExercise.title + " - sources.zip"))
             }
@@ -179,10 +183,8 @@ function SolutionCreator() {
     const getSynonyms = () => {
         try {
             if (currentSolution && selectedExercise) {
-                console.log(currentSolution.reference)
                 setLoading(true)
                 API.getUMLReferenceSynonyms(selectedExercise.title, selectedExercise.description, currentSolution.reference).then((res) => {
-                    console.log(res)
                     setCurrentSolution({ model: currentSolution.model, reference: res.synonyms })
                     setReference(true)
                     setLoading(false)
