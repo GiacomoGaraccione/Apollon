@@ -15,7 +15,11 @@
     "forceConsistentCasingInFileNames": true,
     "downlevelIteration": true,
     "resolveJsonModule": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "styles/*": ["src/main/additions/Components/*"]
+    }
   },
   "include": ["src/main/index.ts"]
 }

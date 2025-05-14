@@ -9,7 +9,7 @@ import { UMLStructureBuilderFromLLM, UMLStructureBuilderFromReference } from "..
 import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
 import { ReferenceDisplayer, DividerLine } from "./ReferenceDisplayer";
 import JSZip from "jszip";
-import { saveAs } from "file-saver";
+import saveAs from "file-saver";
 
 const options = {
     colorEnabled: false,

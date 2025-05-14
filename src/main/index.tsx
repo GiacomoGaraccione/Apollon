@@ -1,13 +1,19 @@
-import * as Apollon from '../src/main';
-import * as themings from './themings.json';
-import './styles.css'
-require("./styles.css")
+import * as Apollon from '.';
+import * as themings from '../../public/themings.json';
+//import './styles.css'
+//require("./styles.css")
+import "./additions/Components/Teacher/style.scss";
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, BrowserRouter as Router } from 'react-router-dom';
-import App from '../src/main/additions/App';
+import App from './additions/App';
+import "@mantine/core/styles.css"
+import '@mantine/notifications/styles.css';
+import '@mantine/notifications/styles.css';
+import { MantineProvider } from '@mantine/core';
 
-const container = document.getElementById('apollon')!;
+
+/*const container = document.getElementById('apollon')!;
 let editor: Apollon.ApollonEditor | null = null;
 let options: Apollon.ApollonOptions = {
   model: JSON.parse(window.localStorage.getItem('apollon')!),
@@ -84,7 +90,7 @@ const render = () => {
     editor.destroy();
   }
   editor = new Apollon.ApollonEditor(container, options);
-};
+};*/
 //render();
 
 const root = ReactDOM.createRoot(
@@ -93,6 +99,8 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <BrowserRouter>
-    <App />
+    <MantineProvider>
+      <App />
+    </MantineProvider>
   </BrowserRouter>
 )

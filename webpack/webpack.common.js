@@ -7,11 +7,11 @@ const appVersion = require('../package').version;
 const outputDir = path.resolve(__dirname, '../dist');
 
 module.exports = {
-  entry: './public/index.tsx',
+  entry: './src/main/index.tsx',
   output: {
     path: outputDir,
     filename: '[name].js',
-    library: { name: 'apollon', type: 'umd' },
+    publicPath: "/",
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', ".css", ".scss"],
@@ -41,6 +41,10 @@ module.exports = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
+      {
+        test: /\.scss$/,
+        use: ["style-loader", "css-loader", "sass-loader"],
+      }
     ],
   },
   optimization: {

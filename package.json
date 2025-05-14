@@ -15,7 +15,10 @@
   "module": "lib/es6/index.js",
   "typings": "lib/es6/index.d.ts",
   "repository": "github:ls1intum/apollon",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css",
+    "*.scss"
+  ],
   "engines": {
     "node": ">=18.17.0"
   },
@@ -54,8 +57,18 @@
   },
   "dependencies": {
     "@agney/react-loading": "0.1.2",
+    "@dicebear/collection": "9.2.2",
+    "@dicebear/core": "9.2.2",
+    "@mantine/core": "8.0.0",
+    "@mantine/dropzone": "8.0.0",
+    "@mantine/form": "8.0.0",
+    "@mantine/hooks": "8.0.0",
+    "@mantine/modals": "8.0.0",
+    "@mantine/notifications": "8.0.0",
+    "@tabler/icons-react": "3.31.0",
     "bootstrap": "5.3.3",
     "bootstrap-icons": "1.11.3",
+    "clsx": "2.1.1",
     "fast-json-patch": "3.1.1",
     "file-saver": "2.0.5",
     "is-mobile": "4.0.0",
@@ -123,6 +136,8 @@
     "postcss-syntax": "0.36.2",
     "prettier": "3.2.5",
     "redux-mock-store": "1.5.4",
+    "sass": "1.88.0",
+    "sass-loader": "16.0.5",
     "serve": "14.2.1",
     "sleep-promise": "9.1.0",
     "start-server-and-test": "2.0.3",

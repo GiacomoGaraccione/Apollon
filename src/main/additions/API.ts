@@ -1,146 +1,386 @@
-import { ReferenceSolution } from "../operations/UMLMatcherTypes"
+import { User } from "./Components/Login/UserContext"
+import { Course, Exercise, Boss } from "./Utils/Models"
 
-const URL = "http://localhost:5000/"
+const baseURL = "http://localhost:5000"
 
-async function getAllExercises() {
-    const response = await fetch(URL + "exercises")
-    return response.json()
-}
+// ----------------- Auth APIs -----------------
 
-async function createExercise(title: string, description: string) {
-    const response = await fetch(URL + "exercises", {
+async function login(username: string, password: string) {
+    let response = await fetch(baseURL + "/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ title, description })
+        body: JSON.stringify({ username, password })
     })
-    return response.json()
+    if (response.ok) {
+        let user = await response.json()
+        let u = new User(user.userId, user.username, user.name, user.surname, user.role)
+        localStorage.setItem("csrf-token", user.csrf_token || "")
+        return u
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function updateExercise(originalTitle: string, title: string, description: string) {
-    const response = await fetch(URL + "exercises/" + originalTitle, {
+async function getUserInfo() {
+    let response = await fetch(baseURL + "/auth/current", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    if (response.ok) {
+        let user = await response.json()
+        return user
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function logout() {
+    let response = await fetch(baseURL + "/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        localStorage.removeItem("csrf-token")
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+// ----------------- User APIs -----------------
+
+async function getAllUsers() {
+    let response = await fetch(baseURL + "/users/", { credentials: "include" })
+    if (response.ok) {
+        const ret = await response.json()
+        let usersList = ret.users.map((user: any) => {
+            return new User(user.userId, user.username, user.name, user.surname, user.role)
+        })
+        return usersList
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function createUser(userId: string, name: string, surname: string, role: string) {
+    let response = await fetch(baseURL + "/users/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ userId, name, surname, role })
+    })
+    if (response.ok) {
+        let user = await response.json()
+        return user
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function deleteUser(username: string) {
+    let response = await fetch(baseURL + "/users/" + username, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateStudentId(username: string, newId: string) {
+    let response = await fetch(baseURL + "/users/" + username, {
         method: "PUT",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ title, description })
+        body: JSON.stringify({ userId: newId })
     })
-    return response.json()
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function saveExercise(title: string, solution: string) {
-    const response = await fetch(URL + "exercises", {
+// ----------------- Course APIs -----------------
+
+async function getAllCourses() {
+    let response = await fetch(baseURL + "/courses/", { credentials: "include" })
+    if (response.ok) {
+        const ret = await response.json()
+        let coursesList: Course[] = ret.courses.map((course: any) => {
+            let studentsList: User[] = course.students.map((student: any) => {
+                return new User(student.userId, student.username, student.name, student.surname, student.role)
+            })
+            let exercisesList: Exercise[] = course.exercises.map((exercise: any) => {
+                let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
+                return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss)
+            })
+            return new Course(course.courseId, course.name, studentsList, exercisesList)
+        })
+        return coursesList
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getCourse(courseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId, { credentials: "include" })
+    if (response.ok) {
+        const ret = await response.json()
+        let studentsList: User[] = ret.students.map((student: any) => {
+            return new User(student.userId, student.username, student.name, student.surname, student.role)
+        })
+        let exercisesList: Exercise[] = ret.exercises.map((exercise: any) => {
+            let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
+            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss)
+        })
+        return new Course(ret.courseId, ret.name, studentsList, exercisesList)
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function createCourse(courseId: string, courseName: string) {
+    let response = await fetch(baseURL + "/courses/", {
         method: "POST",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ title, solution })
+        body: JSON.stringify({ courseId, courseName })
     })
-    return response.json()
+    if (response.ok) {
+        let course = await response.json()
+        return course
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function uploadStudentDiagram(title: string, name: string, model: string) {
-    const response = await fetch(URL + "exercises/" + title + "/upload", {
+async function deleteCourse(courseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getNonEnrolledStudents(courseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/non-enrolled-students", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        let usersList = ret.students.map((user: any) => {
+            return new User(user.userId, user.username, user.name, user.surname, user.role)
+        })
+        return usersList
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function enrollStudents(courseId: string, userIds: string[]) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/students", {
         method: "POST",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ name, model })
+        body: JSON.stringify({ userIds })
     })
-    return response.json()
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function getExercise(title: string) {
-    const response = await fetch(URL + "exercises/" + title)
-    return response.json()
+async function unenrollStudent(courseId: string, userId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/students/" + userId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function saveDiagram(title: string, name: string, content: string) {
-    const response = await fetch(URL + "exercises/" + title, {
+// ----------------- Exercise APIs -----------------
+
+async function addExercise(courseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises", {
         method: "POST",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ name, content })
+        body: JSON.stringify({ title, description, level, experience, visible, gamified })
     })
-    return response.json()
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function getExerciseDiagrams(title: string) {
-    const response = await fetch(URL + "exercises/" + title + "/diagrams")
-    return response.json()
-}
-
-async function evaluateSimilarity(referenceSolution: any, studentModel: any) {
-    const response = await fetch(URL + "compute-similarity", {
-        method: "POST",
+async function deleteExercise(courseId: string, exerciseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId, {
+        method: "DELETE",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ studentModel: studentModel, referenceSolution: referenceSolution })
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
     })
-    return response.json()
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function submitText(title: string, text: string) {
-    const response = await fetch(URL + "exercises/" + title + "/text", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ text })
-    })
-    return response.json()
-}
-
-async function saveUMLReference(title: string, model: string) {
-    const response = await fetch(URL + "exercises/" + title + "/reference", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ solution: model })
-    })
-    return response.json()
-}
-
-async function updateUMLReference(title: string, model: string) {
-    const response = await fetch(URL + "exercises/" + title + "/reference", {
+async function updateExercise(courseId: string, exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId, {
         method: "PUT",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ solution: model })
+        body: JSON.stringify({ title, description, level, experience, visible, gamified })
     })
-    return response.json()
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
 
-async function getUMLReferenceSynonyms(title: string, text: string, reference: ReferenceSolution) {
-    const response = await fetch(URL + "exercises/" + title + "/reference/synonyms", {
+async function createBoss(courseId: string, exerciseId: string, introDialogue: string, victoryDialogue: string, bossOptions: any) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/boss", {
         method: "POST",
+        credentials: "include",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ text, reference })
+        body: JSON.stringify({ introDialogue, victoryDialogue, bossOptions })
     })
-    return response.json()
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
 }
-
 
 const API = {
-    getAllExercises,
-    createExercise,
-    updateExercise,
-    uploadStudentDiagram,
-    saveExercise,
-    getExercise,
-    saveDiagram,
-    getExerciseDiagrams,
-    evaluateSimilarity,
-    submitText,
-    saveUMLReference,
-    updateUMLReference,
-    getUMLReferenceSynonyms
+    login, getUserInfo, logout,
+    getAllUsers, createUser, deleteUser, updateStudentId,
+    getAllCourses, getCourse, createCourse, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent,
+    addExercise, deleteExercise, updateExercise, createBoss
 }
+
 export default API
