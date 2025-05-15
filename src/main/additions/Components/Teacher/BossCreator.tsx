@@ -129,7 +129,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={color}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -158,7 +158,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={"#000000"}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -187,7 +187,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={"#000000"}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -216,7 +216,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={"#000000"}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -245,7 +245,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={"#000000"}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -274,7 +274,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={"#000000"}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -303,7 +303,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={"#000000"}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}
@@ -332,7 +332,7 @@ function BossCreator() {
                                             }} >
                                                 <Stack align="center" >
                                                     <Text>{key}</Text>
-                                                    <Image w={150} fit="contain" h={4}
+                                                    <Image w={100} fit="contain" h={100}
                                                         radius="xl"
                                                         color={color}
                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(botStr)}`}

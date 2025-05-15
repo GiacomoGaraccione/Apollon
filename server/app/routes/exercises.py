@@ -120,3 +120,36 @@ def create_exercise_boss(courseId, exerciseId):
         except Exception as e:
             print(e)
             return jsonify({"message": "Invalid JSON"}), 400
+        
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/solutions", methods=["POST"])
+@jwt_required()
+@role_required("Teacher")
+def add_solution(courseId, exerciseId):
+    with get_session() as session:
+        try:
+            data = request.json
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            existing_ids = (session.query(Solution.solutionId).filter_by(exerciseId=exerciseId).all())
+            ids = []
+            for eid, in existing_ids:
+                try:
+                    idx = int(eid.split("_")[2])
+                    ids.append(idx)
+                except ValueError:
+                    continue
+            next = max(ids, default=0) + 1
+            solution = Solution(
+                content=json.dumps(data["content"]),
+                exerciseId=exerciseId,
+                exercise=exercise,
+                solutionId=f"{exerciseId}_{next}"
+            )
+            session.add(solution)
+            session.commit()
+            return jsonify(exercise.serialize()), 201
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Invalid JSON"}), 400

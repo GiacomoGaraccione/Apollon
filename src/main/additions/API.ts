@@ -1,5 +1,7 @@
+import { UMLModel } from "../typings"
 import { User } from "./Components/Login/UserContext"
-import { Course, Exercise, Boss } from "./Utils/Models"
+import { Course, Exercise, Boss, Solution } from "./Utils/Models"
+import { ReferenceSolution } from "./Utils/UMLMatcherTypes"
 
 const baseURL = "http://localhost:5000"
 
@@ -156,7 +158,11 @@ async function getAllCourses() {
             })
             let exercisesList: Exercise[] = course.exercises.map((exercise: any) => {
                 let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
-                return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss)
+                let solutionsList: Solution[] = exercise.solutions.map((solution: any) => {
+                    let sol = JSON.parse(solution.content)
+                    return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
+                })
+                return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
             })
             return new Course(course.courseId, course.name, studentsList, exercisesList)
         })
@@ -178,7 +184,11 @@ async function getCourse(courseId: string) {
         })
         let exercisesList: Exercise[] = ret.exercises.map((exercise: any) => {
             let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
-            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss)
+            let solutionsList: Solution[] = exercise.solutions.map((solution: any) => {
+                let sol = JSON.parse(solution.content)
+                return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
+            })
+            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
         })
         return new Course(ret.courseId, ret.name, studentsList, exercisesList)
     } else {
@@ -376,11 +386,32 @@ async function createBoss(courseId: string, exerciseId: string, introDialogue: s
     }
 }
 
+async function addSolution(courseId: string, exerciseId: string, reference: ReferenceSolution, model: UMLModel, image: any) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/solutions", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ content: { reference, model, image } })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent,
-    addExercise, deleteExercise, updateExercise, createBoss
+    addExercise, deleteExercise, updateExercise, createBoss, addSolution
 }
 
 export default API

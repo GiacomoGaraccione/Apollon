@@ -1,4 +1,6 @@
+import { UMLModel } from "../.."
 import { User } from "../Components/Login/UserContext"
+import { ReferenceSolution } from "./UMLMatcherTypes"
 
 class Course {
     courseId: string
@@ -23,8 +25,9 @@ class Exercise {
     visible: boolean
     gamified: boolean
     boss: Boss | null
+    solutions: Solution[] = []
 
-    constructor(exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean, boss: Boss | null = null) {
+    constructor(exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean, boss: Boss | null = null, solutions: any[]) {
         this.boss = boss
         this.exerciseId = exerciseId
         this.title = title
@@ -33,6 +36,7 @@ class Exercise {
         this.experience = experience
         this.visible = visible
         this.gamified = gamified
+        this.solutions = solutions
     }
 }
 
@@ -48,4 +52,18 @@ class Boss {
     }
 }
 
-export { Course, Exercise, Boss }
+class Solution {
+    reference: ReferenceSolution
+    model: UMLModel
+    image: any
+    solutionId: string
+
+    constructor(reference: ReferenceSolution, model: UMLModel, image: any, solutionId: string) {
+        this.image = image
+        this.reference = reference
+        this.model = model
+        this.solutionId = solutionId
+    }
+}
+
+export { Course, Exercise, Boss, Solution }

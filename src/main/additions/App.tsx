@@ -11,6 +11,7 @@ import CourseView from './Components/Teacher/CourseView';
 import CoursePage from './Components/Teacher/CoursePage';
 import { ExerciseCreator, ExerciseEditor } from './Components/Teacher/ExerciseCreator';
 import BossCreator from './Components/Teacher/BossCreator';
+import SolutionCreator from './Components/Teacher/SolutionCreator';
 
 
 function App() {
@@ -88,6 +89,9 @@ function App() {
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/boss" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <BossCreator />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exercises/:exerciseId/solutions" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <SolutionCreator />) : <Navigate to="/login" />)
                         } />
                     </Routes>
                 </AppShell.Main>
