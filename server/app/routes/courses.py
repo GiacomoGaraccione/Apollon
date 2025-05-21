@@ -4,6 +4,7 @@ from app.models import User, Course
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
 from sqlalchemy.orm import joinedload
+import json
 
 courses_bp = Blueprint('courses', __name__)
 
@@ -45,6 +46,22 @@ def get_course(courseId):
             if course is None:
                 return jsonify({'message': 'Course not found'}), 404
             return jsonify(course.serialize()), 200
+        except:
+            return jsonify({'message': 'Database connection error'}), 500
+        
+@courses_bp.route("/<courseId>/settings", methods=["PUT"])
+@jwt_required()
+@role_required("Teacher")
+def update_course_settings(courseId):
+    with get_session() as session:
+        try:
+            data = request.json
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            course.settings = json.dumps(data)
+            session.commit()
+            return jsonify({'message': 'Course updated successfully'}), 200
         except:
             return jsonify({'message': 'Database connection error'}), 500
         
@@ -131,3 +148,20 @@ def unenroll_student(courseId, studentId):
             return jsonify({'message': 'Student unenrolled successfully'}), 200
     except:
         return jsonify({'message': 'Database connection error'}), 500
+    
+@courses_bp.route("/<courseId>/info", methods=["GET"])
+@jwt_required()
+@role_required("Student")
+def get_course_info(courseId):
+    with get_session() as session:
+        try:
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            return jsonify({
+                "courseId": course.courseId,
+                "courseName": course.name,
+                "exercises": [exercise.serialize() for exercise in course.exercises]
+            }), 200
+        except:
+            return jsonify({'message': 'Database connection error'}), 500

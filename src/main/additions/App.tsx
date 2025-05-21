@@ -12,6 +12,8 @@ import CoursePage from './Components/Teacher/CoursePage';
 import { ExerciseCreator, ExerciseEditor } from './Components/Teacher/ExerciseCreator';
 import BossCreator from './Components/Teacher/BossCreator';
 import SolutionCreator from './Components/Teacher/SolutionCreator';
+import StudentCourses from './Components/Student/StudentCourses';
+import CourseSettings from './Components/Teacher/CourseSettings';
 
 
 function App() {
@@ -71,6 +73,9 @@ function App() {
                             !loaded ? <Loading /> : (loggedIn ? <Navigate to="/" /> : <Login doLogin={doLogin} />)
                         } />
                         <Route path="/student" element={<Text>Student</Text>} />
+                        <Route path="/student/courses" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentCourses /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)
+                        } />
                         <Route path="/teacher" element={<Text>Teacher</Text>} />
                         <Route path="/teacher/users" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <UsersView />) : <Navigate to="/login" />)
@@ -92,6 +97,9 @@ function App() {
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/solutions" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <SolutionCreator />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/settings" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <CourseSettings />) : <Navigate to="/login" />)
                         } />
                     </Routes>
                 </AppShell.Main>

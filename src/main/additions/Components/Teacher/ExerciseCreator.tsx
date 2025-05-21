@@ -15,7 +15,7 @@ function ExerciseCreator() {
 
     useEffect(() => {
         if (courseId) {
-            let ex = new Exercise("", "", "", 1, 0, true, false)
+            let ex = new Exercise("", "", "", 1, 0, true, false, null, [])
             setExercise(ex)
         }
     }, [])

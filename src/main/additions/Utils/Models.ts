@@ -1,5 +1,6 @@
 import { UMLModel } from "../.."
 import { User } from "../Components/Login/UserContext"
+import { AvatarUnlockOptions } from "./AvatarUtils"
 import { ReferenceSolution } from "./UMLMatcherTypes"
 
 class Course {
@@ -7,8 +8,10 @@ class Course {
     courseName: string
     students: User[]
     exercises: Exercise[]
+    settings: AvatarUnlockOptions | null
 
-    constructor(courseId: string, courseName: string, students: User[], exercises: Exercise[]) {
+    constructor(courseId: string, courseName: string, students: User[], exercises: Exercise[], settings: any) {
+        this.settings = settings
         this.courseId = courseId
         this.courseName = courseName
         this.students = students

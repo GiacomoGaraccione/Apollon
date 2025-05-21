@@ -39,21 +39,27 @@ function Th({ children, reversed, sorted, onSort }: ThProps) {
     )
 }
 
-function filterData(data: RowData[], search: string) {
+function filterData(data: User[], search: string) {
     const query = search.toLowerCase().trim()
-    return data.filter((item) => keys(data[0]).some((key) => item[key].toLowerCase().includes(query)))
+    if (data.length === 0) return []
+    return data.filter((item) =>
+        (['username', 'userId', 'name', 'surname', 'role'] as (keyof RowData)[])
+            .some((key) => String(item[key]).toLowerCase().includes(query))
+    )
 }
 
-function sortData(data: RowData[], payload: { sortBy: keyof RowData | null, reversed: boolean, search: string }) {
+function sortData(data: User[], payload: { sortBy: keyof RowData | null, reversed: boolean, search: string }) {
     const { sortBy } = payload
     if (!sortBy) return filterData(data, payload.search)
 
     return filterData(
         [...data].sort((a, b) => {
+            const aValue = String(a[sortBy] ?? '')
+            const bValue = String(b[sortBy] ?? '')
             if (payload.reversed) {
-                return b[sortBy].localeCompare(a[sortBy])
+                return bValue.localeCompare(aValue)
             }
-            return a[sortBy].localeCompare(b[sortBy])
+            return aValue.localeCompare(bValue)
         }), payload.search
     )
 }

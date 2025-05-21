@@ -153,3 +153,19 @@ def add_solution(courseId, exerciseId):
         except Exception as e:
             print(e)
             return jsonify({"message": "Invalid JSON"}), 400
+        
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/solutions/<solutionId>", methods=["DELETE"])
+@jwt_required()
+@role_required("Teacher")
+def delete_solution(courseId, exerciseId, solutionId):
+    with get_session() as session:
+        try:
+            solution = session.query(Solution).filter_by(exerciseId=exerciseId, solutionId=solutionId).first()
+            if solution is None:
+                return jsonify({"message": "Solution not found"}), 404
+            session.delete(solution)
+            session.commit()
+            return jsonify({"message": "Solution deleted"}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Invalid JSON"}), 400

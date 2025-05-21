@@ -1,5 +1,6 @@
 import { UMLModel } from "../typings"
 import { User } from "./Components/Login/UserContext"
+import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
 import { Course, Exercise, Boss, Solution } from "./Utils/Models"
 import { ReferenceSolution } from "./Utils/UMLMatcherTypes"
 
@@ -39,7 +40,9 @@ async function getUserInfo() {
     })
     if (response.ok) {
         let user = await response.json()
-        return user
+        let u = new User(user.userId, user.username, user.name, user.surname, user.role)
+        u.courses = user.courses
+        return u
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -164,7 +167,15 @@ async function getAllCourses() {
                 })
                 return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
             })
-            return new Course(course.courseId, course.name, studentsList, exercisesList)
+            console.log(ret)
+            let settings
+            try {
+                settings = JSON.parse(course.settings) as AvatarUnlockOptions
+            } catch (error) {
+                settings = null
+                console.error("Error parsing settings:", error)
+            }
+            return new Course(course.courseId, course.name, studentsList, exercisesList, settings)
         })
         return coursesList
     } else {
@@ -190,7 +201,14 @@ async function getCourse(courseId: string) {
             })
             return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
         })
-        return new Course(ret.courseId, ret.name, studentsList, exercisesList)
+        let settings
+        try {
+            settings = JSON.parse(ret.settings) as AvatarUnlockOptions
+        } catch (error) {
+            settings = null
+            console.error("Error parsing settings:", error)
+        }
+        return new Course(ret.courseId, ret.name, studentsList, exercisesList, settings)
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -212,6 +230,26 @@ async function createCourse(courseId: string, courseName: string) {
     if (response.ok) {
         let course = await response.json()
         return course
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateCourseSettings(courseId: string, settings: AvatarUnlockOptions) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify(settings)
+    })
+    if (response.ok) {
+        return
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -294,6 +332,26 @@ async function unenrollStudent(courseId: string, userId: string) {
     })
     if (response.ok) {
         return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getCourseInfo(courseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/info", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -407,11 +465,30 @@ async function addSolution(courseId: string, exerciseId: string, reference: Refe
     }
 }
 
+async function deleteSolution(courseId: string, exerciseId: string, solutionId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/solutions/" + solutionId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
-    getAllCourses, getCourse, createCourse, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent,
-    addExercise, deleteExercise, updateExercise, createBoss, addSolution
+    getAllCourses, getCourse, createCourse, updateCourseSettings, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo,
+    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution
 }
 
 export default API

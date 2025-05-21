@@ -67,6 +67,12 @@ function Navbar(props: any) {
             case "/teacher/users":
                 setActive("Users")
                 break
+            case "/student":
+                setActive("Home")
+                break
+            case "/student/courses":
+                setActive("Courses")
+                break
             default:
                 setActive("")
         }
@@ -95,6 +101,16 @@ function Navbar(props: any) {
                         <NavbarLink icon={IconGauge} label="Grades" key={"Grades"} active={active === "Grades"} onClick={() => {
                             navigate("/teacher")
                             setActive("Grades")
+                        }} />
+                    </>}
+                    {user?.role === Roles.STUDENT && <>
+                        <NavbarLink icon={IconHome2} label="Home" key={"Home"} active={active === "Home"} onClick={() => {
+                            navigate("/student")
+                            setActive("Home")
+                        }} />
+                        <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} onClick={() => {
+                            navigate("/student/courses")
+                            setActive("Courses")
                         }} />
                     </>}
                 </Stack>

@@ -9,7 +9,7 @@ import { BrowserRouter, BrowserRouter as Router } from 'react-router-dom';
 import App from './additions/App';
 import "@mantine/core/styles.css"
 import '@mantine/notifications/styles.css';
-import '@mantine/notifications/styles.css';
+import '@mantine/carousel/styles.css';
 import { MantineProvider } from '@mantine/core';
 
 

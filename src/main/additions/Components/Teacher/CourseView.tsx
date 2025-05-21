@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { IconCheck, IconCloudUpload, IconDownload, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrashFilled, IconTrashXFilled, IconX } from '@tabler/icons-react';
-import { Alert, Badge, Button, Fieldset, Flex, Grid, Group, Modal, NativeSelect, Notification, ScrollArea, Stack, Table, Text, TextInput, Tooltip, } from '@mantine/core';
+import { IconCheck, IconCloudUpload, IconDownload, IconExclamationCircleFilled, IconSettingsFilled, IconSquareRoundedPlusFilled, IconTrashFilled, IconTrashXFilled, IconX } from '@tabler/icons-react';
+import { Alert, Badge, Button, Fieldset, Flex, Grid, Group, Modal, Notification, ScrollArea, Stack, Table, Text, TextInput, Tooltip, } from '@mantine/core';
 import { useForm, } from "@mantine/form"
 import cx from 'clsx';
 import API from '../../API';
-import { User, Roles } from '../Login/UserContext';
-import UserTable from './UserTable';
 import "./style.scss"
 import { Dropzone, MIME_TYPES } from '@mantine/dropzone';
 import { useDisclosure } from '@mantine/hooks';
 import { Course } from '../../Utils/Models';
 import { useNavigate } from 'react-router-dom';
-import { openModal } from '@mantine/modals';
 
 function CourseView() {
     const [courses, setCourses] = useState<Course[]>([])
@@ -144,6 +141,11 @@ function CourseView() {
                                                         setSelectedCourse(course)
                                                         openDelete()
                                                     }} ><IconTrashFilled size={"12"} /> </Badge>
+                                                </Tooltip>
+                                                <Tooltip label="Click to access course settings" position="right" withArrow>
+                                                    <Badge style={{ cursor: "pointer" }} color="yellow" variant="light" onClick={() => navigate("/teacher/courses/" + course.courseId + "/settings")} >
+                                                        <IconSettingsFilled size={"12"} />
+                                                    </Badge>
                                                 </Tooltip>
                                             </Table.Td>
                                             <Table.Td>{course.courseName}</Table.Td>
