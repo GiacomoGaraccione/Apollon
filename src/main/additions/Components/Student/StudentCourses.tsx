@@ -4,12 +4,15 @@ import API from "../../API";
 import { UserContext } from "../Login/UserContext";
 import { IconExclamationCircle } from "@tabler/icons-react";
 import { Course } from "../../Utils/Models";
+import { AvatarUnlockOptions } from "../../Utils/AvatarUtils";
+import { useNavigate } from "react-router-dom";
 
 function StudentCourses() {
     const user = useContext(UserContext)
     const [courses, setCourses] = useState<Course[]>([])
     const [currentCourse, setCurrentCourse] = useState<Course | null>(null)
     const [courseLoad, setCourseLoad] = useState(false)
+    const navigate = useNavigate()
 
     useEffect(() => {
         if (user) {
@@ -17,7 +20,14 @@ function StudentCourses() {
             Promise.all(user.courses.map((course: string) => API.getCourseInfo(course)))
                 .then(results => {
                     let cs = results.map((course: any) => {
-                        return new Course(course.courseId, course.courseName, [], course.exercises)
+                        let settings: AvatarUnlockOptions | null
+                        try {
+                            settings = JSON.parse(course.settings) as AvatarUnlockOptions
+                        } catch (error) {
+                            settings = null
+                            console.error("Error parsing settings:", error)
+                        }
+                        return new Course(course.courseId, course.courseName, [], course.exercises, settings)
                     })
                     setCourseLoad(false)
                     setCourses(cs)
@@ -35,8 +45,14 @@ function StudentCourses() {
                                 <Card key={index} shadow="sm" padding="lg" style={{
                                     width: "100%", margin: 'auto', cursor: "pointer",
                                     border: currentCourse === course ? '5px solid cyan' : undefined
-                                }} onClick={() => { setCurrentCourse(course) }}>
-                                    <Text w={500} size="lg">{course.courseId} - {course.courseName}</Text>
+                                }} onClick={() => {
+                                    navigate("/student/courses/" + course.courseId)
+                                }}>
+                                    <Stack >
+                                        <Text w={500} size="lg">{course.courseName}</Text>
+                                        <Text w={500} size="sm" color="dimmed">{course.courseId}</Text>
+                                        <Text w={500} size="sm">{course.exercises.filter((ex) => ex.visible).length} available exercises</Text>
+                                    </Stack>
                                 </Card>
                             ))}
                         </Flex>

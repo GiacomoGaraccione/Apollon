@@ -20,6 +20,7 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(String, nullable=False, default="Student")
     courses = relationship("Course", secondary=student_courses, back_populates="students", cascade="all, delete")
+    student_course_info = relationship("StudentCourseInfo", back_populates="user", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -45,6 +46,7 @@ class Course(Base):
 
     students = relationship("User", secondary=student_courses, back_populates="courses", cascade="all, delete")
     exercises = relationship("Exercise", back_populates="course", cascade="all, delete-orphan")
+    student_course_info = relationship("StudentCourseInfo", back_populates="course", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -109,4 +111,23 @@ class Boss(Base):
             "introDialogue": self.introDialogue,
             "victoryDialogue": self.victoryDialogue,
             "props": self.props
+        }
+
+class StudentCourseInfo(Base):
+    __tablename__ = "student_course_info"
+    username = Column(String, ForeignKey("users.username", ondelete="CASCADE"), primary_key=True)
+    courseId = Column(String, ForeignKey("courses.courseId", ondelete="CASCADE"), primary_key=True)
+    level = Column(Integer, nullable=False, default=1)
+    avatar = Column(String, nullable=True)
+    experience = Column(Integer, nullable=False, default=0)
+
+    user = relationship("User", back_populates="student_course_info")
+    course = relationship("Course", back_populates="student_course_info")
+    def serialize(self):
+        return {
+            "username": self.username,
+            "courseId": self.courseId,
+            "level": self.level,
+            "avatar": self.avatar,
+            "experience": self.experience
         }

@@ -1,6 +1,6 @@
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
-from app.models import User, Course
+from app.models import User, Course, StudentCourseInfo
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
 from sqlalchemy.orm import joinedload
@@ -161,7 +161,58 @@ def get_course_info(courseId):
             return jsonify({
                 "courseId": course.courseId,
                 "courseName": course.name,
-                "exercises": [exercise.serialize() for exercise in course.exercises]
+                "exercises": [exercise.serialize() for exercise in course.exercises],
+                "settings": course.settings,
             }), 200
         except:
+            return jsonify({'message': 'Database connection error'}), 500
+        
+@courses_bp.route("<courseId>/students/<studentId>", methods=["GET"])
+@jwt_required()
+@role_required("Student")
+def get_student_course_info(courseId, studentId):
+    with get_session() as session:
+        try:
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            student = session.query(User).filter_by(username=studentId, role="Student").first()
+            if student is None:
+                return jsonify({'message': 'Student not found'}), 404
+            if student not in course.students:
+                return jsonify({'message': 'Student not enrolled in this course'}), 400
+            info = session.query(StudentCourseInfo).filter_by(courseId=courseId, username=studentId).first()
+            return jsonify({"info": info.serialize() if info else None}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({'message': 'Database connection error'}), 500
+
+@courses_bp.route("/<courseId>/students/<studentId>", methods=["PUT"])
+@jwt_required()
+@role_required("Student")
+def update_student_course_info(courseId, studentId):
+    with get_session() as session:
+        try:
+            data = request.json
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            student = session.query(User).filter_by(username=studentId, role="Student").first()
+            if student is None:
+                return jsonify({'message': 'Student not found'}), 404
+            if student not in course.students:
+                return jsonify({'message': 'Student not enrolled in this course'}), 400
+            info = session.query(StudentCourseInfo).filter_by(courseId=courseId, username=studentId).first()
+            if info is None:
+                info = StudentCourseInfo(courseId=courseId, username=studentId)
+                info.avatar = json.dumps(data.get("avatar", {}))
+                session.add(info)
+            else:
+                info.avatar = json.dumps(data.get("avatar", {}))
+                info.level = data.get("level", info.level)
+                info.experience = data.get("experience", info.experience)
+            session.commit()
+            return jsonify({'message': 'Student course info updated successfully'}), 200
+        except Exception as e:
+            print(e)
             return jsonify({'message': 'Database connection error'}), 500

@@ -1,4 +1,5 @@
-import { Options } from "@dicebear/avataaars"
+import { Options as AvataaarsOptions } from "@dicebear/avataaars"
+import { Options as BotttsOptions } from "@dicebear/bottts"
 
 export enum BotBaseColors {
     Cyan = "00acc1",
@@ -388,7 +389,7 @@ function getRandomEnumValue<T extends object>(enumObj: T): T[keyof T] {
     return values[randomIndex]
 }
 
-export function generateRandomBot() {
+export function generateRandomBot(): BotttsOptions {
     return {
         eyes: [getRandomEnumValue(BotEyes)],
         face: [getRandomEnumValue(BotFaces)],
@@ -398,11 +399,15 @@ export function generateRandomBot() {
         top: [getRandomEnumValue(BotTops)],
         baseColor: [getRandomEnumValue(BotBaseColors)],
         backgroundColor: [getRandomEnumValue(BackgroundColors)],
-    }
+        mouthProbability: 100,
+        sidesProbability: 100,
+        textureProbability: 100,
+        topProbability: 100,
+    } as BotttsOptions
 }
 
 
-export function generateRandomAvatar(): Options {
+export function generateRandomAvatar(): AvataaarsOptions {
     return {
         backgroundColor: [getRandomEnumValue(BackgroundColors) as string],
         accessories: [getRandomEnumValue(AvatarAccessories) as string],
@@ -425,7 +430,38 @@ export function generateRandomAvatar(): Options {
         style: ["circle"],
         base: ["default"],
         nose: ["default"],
-    } as Options
+    } as AvataaarsOptions
+}
+
+export function getAvailableAvatarProps(options: AvatarUnlockOptions, level: number): any {
+
+    //avatarOpts.backgroundColor = [getRandomEnumValue(BackgroundColors) as string]
+    let availableAccessories = options.accessories.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableAccessoriesColor = options.accessoriesColor.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableClothing = options.clothing.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableClothesColor = options.clothesColor.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableClothingGraphic = options.clothingGraphic.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableFacialHair = options.facialHair.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableFacialHairColor = options.facialHairColor.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableHairColor = options.hairColor.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableHatsColor = options.hatsColor.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableSkinColor = options.skinColor.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    let availableTop = options.top.filter((ac) => ac.unlockConditions[0].type === "level" && ac.unlockConditions[0].minLevel <= level)
+    //avatarOpts.accessories = [options.accessories.filter((ac) => ac.unlockConditions[0])]
+    let avatarOpts = {
+        accessories: availableAccessories,
+        accessoriesColor: availableAccessoriesColor,
+        clothesColor: availableClothesColor,
+        clothing: availableClothing,
+        clothingGraphic: availableClothingGraphic,
+        facialHair: availableFacialHair,
+        facialHairColor: availableFacialHairColor,
+        hairColor: availableHairColor,
+        hatColor: availableHatsColor,
+        skinColor: availableSkinColor,
+        top: availableTop,
+    }
+    return avatarOpts
 }
 
 export class BotOptions {

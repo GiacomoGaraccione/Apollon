@@ -76,7 +76,7 @@ function Navbar(props: any) {
             default:
                 setActive("")
         }
-        if (window.location.pathname.includes("/teacher/courses/")) {
+        if (window.location.pathname.includes("/teacher/courses/") || window.location.pathname.includes("/student/courses/")) {
             setActive("Courses")
         }
     }, [])

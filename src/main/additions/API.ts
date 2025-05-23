@@ -20,6 +20,7 @@ async function login(username: string, password: string) {
     if (response.ok) {
         let user = await response.json()
         let u = new User(user.userId, user.username, user.name, user.surname, user.role)
+        u.courses = user.courses
         localStorage.setItem("csrf-token", user.csrf_token || "")
         return u
     } else {
@@ -167,7 +168,6 @@ async function getAllCourses() {
                 })
                 return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
             })
-            console.log(ret)
             let settings
             try {
                 settings = JSON.parse(course.settings) as AvatarUnlockOptions
@@ -351,7 +351,64 @@ async function getCourseInfo(courseId: string) {
     })
     if (response.ok) {
         let res = await response.json()
+        let c = new Course(res.courseId, res.courseName, [], [], res.settings)
+        let exercisesList: Exercise[] = res.exercises.map((exercise: any) => {
+            let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
+            let solutionsList: Solution[] = exercise.solutions.map((solution: any) => {
+                let sol = JSON.parse(solution.content)
+                return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
+            })
+            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
+        })
+        let settings
+        try {
+            settings = JSON.parse(res.settings) as AvatarUnlockOptions
+        } catch (error) {
+            settings = null
+            console.error("Error parsing settings:", error)
+        }
+        return new Course(res.courseId, res.courseName, [], exercisesList, settings)
+        return c
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getStudentCourseInfo(courseId: string, userId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/students/" + userId, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
         return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateStudentCourseInfo(courseId: string, userId: string, level: number, experience: number, avatar: any) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/students/" + userId, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ level, experience, avatar })
+    })
+    if (response.ok) {
+        return
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -487,7 +544,7 @@ async function deleteSolution(courseId: string, exerciseId: string, solutionId: 
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
-    getAllCourses, getCourse, createCourse, updateCourseSettings, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo,
+    getAllCourses, getCourse, createCourse, updateCourseSettings, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo,
     addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution
 }
 
