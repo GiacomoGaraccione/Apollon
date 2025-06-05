@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, ForeignKey, Float, Table, Boolean, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 Base = declarative_base()
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,6 +22,9 @@ class User(Base):
     role = Column(String, nullable=False, default="Student")
     courses = relationship("Course", secondary=student_courses, back_populates="students", cascade="all, delete")
     student_course_info = relationship("StudentCourseInfo", back_populates="user", cascade="all, delete-orphan")
+
+    exercises = relationship("StudentExerciseLog", back_populates="user", cascade="all, delete-orphan")
+    exercise_completions = relationship("StudentExerciseCompletion", back_populates="user", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -54,7 +58,7 @@ class Course(Base):
             "name": self.name,
             "students": [student.serialize() for student in self.students],
             "exercises": [exercise.serialize() for exercise in self.exercises],
-            "settings": self.settings
+            "settings": self.settings,
         }
   
 class Exercise(Base):
@@ -67,9 +71,13 @@ class Exercise(Base):
     visible = Column(Boolean, nullable=False, default=True)
     gamified = Column(Boolean, nullable=False, default=False)
     courseId = Column(String, ForeignKey("courses.courseId", ondelete="CASCADE"), nullable=False)
+
     course = relationship("Course", back_populates="exercises")
     solutions = relationship("Solution", back_populates="exercise", cascade="all, delete-orphan")
     boss = relationship("Boss", back_populates="exercise", uselist=False, cascade="all, delete-orphan")
+    student_exercises = relationship("StudentExerciseLog", back_populates="exercise", cascade="all, delete-orphan")
+    exercise_completions = relationship("StudentExerciseCompletion", back_populates="exercise", cascade="all, delete-orphan")
+
     def serialize(self):
         return{
             "exerciseId": self.exerciseId,
@@ -81,7 +89,9 @@ class Exercise(Base):
             "gamified": self.gamified,
             "courseId": self.courseId,
             "solutions": [solution.serialize() for solution in self.solutions],
-            "boss": self.boss.serialize() if self.boss else None
+            "boss": self.boss.serialize() if self.boss else None,
+            "records": [record.serialize() for record in self.student_exercises],
+            "completions": [completion.serialize() for completion in self.exercise_completions]
         }
     
 class Solution(Base):
@@ -130,4 +140,66 @@ class StudentCourseInfo(Base):
             "level": self.level,
             "avatar": self.avatar,
             "experience": self.experience
+        }
+    
+class StudentExerciseLog(Base):
+    __tablename__ = "student_exercise"
+    username = Column(String, ForeignKey("users.username", ondelete="CASCADE"), primary_key=True)
+    exerciseId = Column(String, ForeignKey("exercises.exerciseId", ondelete="CASCADE"), primary_key=True)
+    courseId = Column(String, ForeignKey("courses.courseId", ondelete="CASCADE"), primary_key=True)
+    experience = Column(Integer, nullable=False)
+    correctness = Column(Float, nullable=False)
+    checks = Column(Integer, nullable=False, default=1)
+    model = Column(String, nullable=True)
+    syntax_errors = Column(String, nullable=True)
+    semantic_errors = Column(String, nullable=True)
+    results = Column(String, nullable=True)
+    timestamp = Column(String, nullable=False, default=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+
+    user = relationship("User", back_populates="exercises")
+    exercise = relationship("Exercise", back_populates="student_exercises")
+
+    def serialize(self):
+        return {
+            "username": self.username,
+            "exerciseId": self.exerciseId,
+            "courseId": self.courseId,
+            "experience": self.experience,
+            "correctness": self.correctness,
+            "checks": self.checks,
+            "model": self.model,
+            "syntax_errors": self.syntax_errors,
+            "semantic_errors": self.semantic_errors,
+            "results": self.results,
+            "timestamp": self.timestamp
+        }
+    
+class StudentExerciseCompletion(Base):
+    __tablename__ = "exercise_completion"
+    username = Column(String, ForeignKey("users.username", ondelete="CASCADE"), primary_key=True)
+    exerciseId = Column(String, ForeignKey("exercises.exerciseId", ondelete="CASCADE"), primary_key=True)
+    courseId = Column(String, ForeignKey("courses.courseId", ondelete="CASCADE"), primary_key=True)
+    timestamp = Column(String, nullable=False, default=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+    experience = Column(Integer, nullable=False)
+    correctness = Column(Float, nullable=False)
+    checks = Column(Integer, nullable=False, default=1)
+    model = Column(String, nullable=True)
+    syntax_errors = Column(String, nullable=True)
+    semantic_errors = Column(String, nullable=True)
+
+    user = relationship("User", back_populates="exercise_completions")
+    exercise = relationship("Exercise", back_populates="exercise_completions")
+
+    def serialize(self):
+        return {
+            "username": self.username,
+            "exerciseId": self.exerciseId,
+            "courseId": self.courseId,
+            "timestamp": self.timestamp,
+            "experience": self.experience,
+            "correctness": self.correctness,
+            "checks": self.checks,
+            "model": self.model,
+            "syntax_errors": self.syntax_errors,
+            "semantic_errors": self.semantic_errors
         }

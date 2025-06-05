@@ -1,10 +1,11 @@
 import json
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
-from app.models import User, Course, Exercise, Boss, Solution
+from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
 from sqlalchemy.orm import joinedload
+import app.evaluator.eval as evaluator
 
 exercises_bp = Blueprint("exercises", __name__)
         
@@ -166,6 +167,88 @@ def delete_solution(courseId, exerciseId, solutionId):
             session.delete(solution)
             session.commit()
             return jsonify({"message": "Solution deleted"}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Invalid JSON"}), 400
+        
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/students/<studentId>", methods=["GET"])
+@jwt_required()
+@role_required("Student")
+def get_student_exercise(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            student = session.query(User).filter_by(username=studentId).first()
+            if student is None:
+                return jsonify({"message": "Student not found"}), 404
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            record = session.query(StudentExerciseLog).filter_by(exerciseId=exerciseId, username=studentId).first()
+            if record is None:
+                return jsonify({"message": "Student exercise record not found"}), 404
+            return jsonify(record.serialize()), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Invalid JSON"}), 400
+        
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/students/<studentId>", methods=["PUT"])
+@jwt_required()
+@role_required("Student")
+def update_student_exercise(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            data = request.json
+            student = session.query(User).filter_by(username=studentId).first()
+            if student is None:
+                return jsonify({"message": "Student not found"}), 404
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            record = session.query(StudentExerciseLog).filter_by(exerciseId=exerciseId, username=studentId).first()
+            solutions = session.query(Solution).filter_by(exerciseId=exerciseId).all()
+            solutions = [sol.serialize() for sol in solutions]
+            model = data.get("model", None)
+            results = evaluator.evaluate_student_diagram(solutions=solutions, model=model)
+            if record is None:
+                experience = data.get("experience", 0)
+                correctness = data.get("progress", 0)
+                checks = data.get("checks", 0)
+                if data.get("evaluation", False):
+                    checks = checks + 1
+                syntax_errors = data.get("syntaxErrors", None)
+                semantic_errors = data.get("semanticErrors", None)
+                record = StudentExerciseLog(
+                    exerciseId=exerciseId,
+                    username=studentId,
+                    courseId=courseId,
+                    experience=experience,
+                    correctness=correctness,
+                    checks=checks,
+                    model=json.dumps(model) if model else None,
+                    syntax_errors=json.dumps(syntax_errors) if syntax_errors else None,
+                    semantic_errors=json.dumps(semantic_errors) if semantic_errors else None,
+                    results=json.dumps(results) if results else None
+                )
+                session.add(record)
+                session.commit()
+                return jsonify({"record": record.serialize(), "results": results}), 201
+            else:
+                if data.get("evaluation", False):
+                    experience = data.get("experience", record.experience)
+                    correctness = data.get("progress", record.correctness)
+                    checks = data.get("checks", record.checks)
+                    checks = checks + 1
+                    syntax_errors = data.get("syntaxErrors", None)
+                    semantic_errors = data.get("semanticErrors", None)
+                    record.experience = experience
+                    record.correctness = results.get("completeness", record.correctness)
+                    record.checks = checks
+                    record.syntax_errors = json.dumps(syntax_errors) if syntax_errors else record.syntax_errors
+                    record.semantic_errors = json.dumps(results.get("semantic_errors", record.semantic_errors))
+                    record.results = json.dumps(results) if results else record.results
+                record.model = json.dumps(model) if model else record.model
+                session.commit()
+                return jsonify({"record": record.serialize(), "results": results}), 201
         except Exception as e:
             print(e)
             return jsonify({"message": "Invalid JSON"}), 400

@@ -164,7 +164,8 @@ def get_course_info(courseId):
                 "exercises": [exercise.serialize() for exercise in course.exercises],
                 "settings": course.settings,
             }), 200
-        except:
+        except Exception as e:
+            print(e)
             return jsonify({'message': 'Database connection error'}), 500
         
 @courses_bp.route("<courseId>/students/<studentId>", methods=["GET"])

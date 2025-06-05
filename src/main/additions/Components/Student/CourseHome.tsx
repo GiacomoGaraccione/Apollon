@@ -661,7 +661,7 @@ function CourseHome() {
                                                 {course.exercises.filter((ex) => ex.visible).map((exercise) => {
                                                     return (
                                                         <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder style={{ width: '100%', margin: 'auto', cursor: 'pointer' }} onClick={() => {
-                                                            navigate(`/student/courses/${courseId}/exercise/${exercise.exerciseId}`)
+                                                            navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`)
                                                         }}>
                                                             <Text color="green">{exercise.title}</Text>
                                                             <Flex align="center" gap="xs">

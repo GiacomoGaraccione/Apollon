@@ -368,7 +368,6 @@ async function getCourseInfo(courseId: string) {
             console.error("Error parsing settings:", error)
         }
         return new Course(res.courseId, res.courseName, [], exercisesList, settings)
-        return c
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -541,11 +540,52 @@ async function deleteSolution(courseId: string, exerciseId: string, solutionId: 
     }
 }
 
+async function getStudentExerciseRecord(courseId: string, exerciseId: string, userId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/students/" + userId, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    }
+    else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function saveExerciseRecord(courseId: string, exerciseId: string, userId: string, model: any, evaluation: boolean) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/students/" + userId, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }, body: JSON.stringify({ model, evaluation })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo,
-    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution
+    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord
 }
 
 export default API

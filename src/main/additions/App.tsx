@@ -15,6 +15,7 @@ import SolutionCreator from './Components/Teacher/SolutionCreator';
 import StudentCourses from './Components/Student/StudentCourses';
 import CourseSettings from './Components/Teacher/CourseSettings';
 import CourseHome from './Components/Student/CourseHome';
+import ExercisePage from './Components/Student/ExercisePage';
 
 
 function App() {
@@ -55,18 +56,18 @@ function App() {
     }
 
     return (
-        <AppShell disabled={!loggedIn} header={{ height: "5%" }} padding={"md"} navbar={{ width: 200, breakpoint: "sm", collapsed: { desktop: !open } }} >
+        <AppShell disabled={!loggedIn} header={{ height: "5%" }} navbar={{ width: 200, breakpoint: "md", collapsed: { desktop: !open } }} >
             <UserContext.Provider value={user}>
                 {loggedIn && <AppShell.Header>
                     <Group h="100%" px="md">
                         <Burger opened={open} onClick={toggleOpen} size="md" />
-                        <Text size="xl" color={"blue"}>App</Text>
+                        <Text size="xl" color={"blue"}>UMLegend</Text>
                     </Group>
                 </AppShell.Header>}
-                {loggedIn && <AppShell.Navbar p="md">
+                {loggedIn && <AppShell.Navbar >
                     <Navbar logout={doLogout} />
                 </AppShell.Navbar>}
-                <AppShell.Main>
+                <AppShell.Main style={{ paddingTop: "2vh" }}>
                     <Routes>
                         <Route path="/"
                             element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)} />
@@ -79,6 +80,9 @@ function App() {
                         } />
                         <Route path="/student/courses/:courseId" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <CourseHome /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/student/courses/:courseId/exercises/:exerciseId" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ExercisePage /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher" element={<Text>Teacher</Text>} />
                         <Route path="/teacher/users" element={

@@ -82,7 +82,7 @@ function Navbar(props: any) {
     }, [])
 
     return (
-        <nav style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'space-between' }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', height: '90vh', justifyContent: 'space-between' }}>
             <div style={{ alignItems: "center" }}>
                 <Stack justify='center' gap={10} style={{ alignItems: "center" }} >
                     {user?.role === Roles.TEACHER && <>
