@@ -88,6 +88,8 @@ function ExercisePage() {
             r.newXP = res.experience
             r.oldProgress = res.correctness
             r.newProgress = res.correctness
+            r.oldSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
+            r.newSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
             r.oldSemanticErrors = JSON.parse(res.semantic_errors || "[]")
             r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
             r.results = JSON.parse(res.results || "{}")
@@ -100,24 +102,31 @@ function ExercisePage() {
                 element.textColor = "#000000"
                 element.fillColor = "#FFFFFF"
             })
-            r.results.matchingClasses.forEach((match: any) => {
-                let id = match.diagramClass.elementId
-                let element = model.elements[id]
-                element.strokeColor = "var(--mantine-color-green-5)";
-                element.textColor = "var(--mantine-color-green-5)";
-                match.matchingAttributes.forEach((attr: any) => {
-                    let attrId = attr.diagramAttribute.elementId
-                    let attrElement = model.elements[attrId]
-                    attrElement.fillColor = "var(--mantine-color-green-1)"
+            r.newSyntaxErrors.filter((error: any) => error.type === "missingClassName").forEach((error: any) => {
+                let element = model.elements[error.element.elementId]
+                element.textColor = "var(--mantine-color-orange-7)"
+                element.strokeColor = "var(--mantine-color-orange-7)"
+            })
+            r.newSyntaxErrors.filter((error: any) => error.type === "duplicateClassName" || error.type === "unconnectedClass").forEach((error: any) => {
+                let element = model.elements[error.element.elementId]
+                element.fillColor = "var(--mantine-color-orange-1)"
+            })
+            r.newSyntaxErrors.filter((error: any) => error.type === "missingAttributeName" ||
+                error.type === "duplicateAttributeName" ||
+                error.type === "missingAttributeType" ||
+                error.type === "foreignKeyReference" ||
+                error.type === "invalidAttributeType").forEach((error: any) => {
+                    let element = model.elements[error.attribute.elementId]
+                    element.fillColor = "var(--mantine-color-orange-1)"
                 })
-            })
-            r.results.matchingAssociations.forEach((match: any) => {
-                console.log(match)
-                let id = match.diagramAssociation.id
-                let element = model.relationships[id]
-                element.strokeColor = "var(--mantine-color-green-5)";
-                element.textColor = "var(--mantine-color-green-5)";
-            })
+            r.newSyntaxErrors.filter((error: any) => error.type === "missingAssociationName" ||
+                error.type === "missingAssociationMultiplicity" ||
+                error.type === "invalidAssociationMultiplicity" ||
+                error.type === "missingRecursiveAssociationRole").forEach((error: any) => {
+                    let element = model.relationships[error.association.elementId]
+                    element.strokeColor = "var(--mantine-color-orange-7)"
+                    element.textColor = "var(--mantine-color-orange-7)"
+                })
             r.newSemanticErrors.filter((error: any) => error.type === "attributeType").forEach((error: any) => {
                 let element = model.elements[error.id]
                 element.textColor = "var(--mantine-color-red-5)"
@@ -131,6 +140,23 @@ function ExercisePage() {
                 let element = model.elements[error.id]
                 element.textColor = "var(--mantine-color-red-5)"
                 element.strokeColor = "var(--mantine-color-red-5)"
+            })
+            r.results.matchingClasses.forEach((match: any) => {
+                let id = match.diagramClass.elementId
+                let element = model.elements[id]
+                element.strokeColor = "var(--mantine-color-green-5)";
+                element.textColor = "var(--mantine-color-green-5)";
+                match.matchingAttributes.forEach((attr: any) => {
+                    let attrId = attr.diagramAttribute.elementId
+                    let attrElement = model.elements[attrId]
+                    attrElement.fillColor = "var(--mantine-color-green-1)"
+                })
+            })
+            r.results.matchingAssociations.forEach((match: any) => {
+                let id = match.diagramAssociation.id
+                let element = model.relationships[id]
+                element.strokeColor = "var(--mantine-color-green-5)";
+                element.textColor = "var(--mantine-color-green-5)";
             })
             let cont = document.getElementById("apollon");
             if (cont) {
@@ -219,13 +245,243 @@ function ExercisePage() {
                             <Grid my="md" grow justify="center" align="center">
                                 <Grid.Col span={4}>
                                     <Center>
-                                        <Popover width={300} position="bottom" withArrow shadow="md">
+                                        <Popover width={500} position="left" withArrow shadow="md">
                                             <Popover.Target>
                                                 <Button variant={results.newSyntaxErrors.length > 0 ? "light" : "default"} color="orange" leftSection={results.newSyntaxErrors.length > 0 && <IconExclamationCircleFilled size={14} />} >Syntax Errors</Button>
                                             </Popover.Target>
                                             <Popover.Dropdown>
                                                 {results.newSyntaxErrors.length === 0 ? <Text>There are no syntax errors in your diagram, very good!</Text> : <>
-
+                                                    <List style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "missingClassName").length > 0 && <>
+                                                            <List.Item icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                <Highlight
+                                                                    highlight={["missing a name"]}
+                                                                    highlightStyles={{
+                                                                        backgroundColor: "var(--mantine-color-orange-5)",
+                                                                        fontWeight: 700,
+                                                                        WebkitBackgroundClip: 'text',
+                                                                        WebkitTextFillColor: 'transparent'
+                                                                    }}>
+                                                                    {`At least one class in the diagram is missing a name.`}
+                                                                </Highlight>
+                                                            </List.Item>
+                                                            <Divider my="xs" />
+                                                        </>}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "duplicateClassName").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.element.name]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`There are two or more classes in the diagram with the same name: ${error.element.name}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {Object.entries(
+                                                            results.newSyntaxErrors
+                                                                .filter((error: any) => error.type === "missingAttributeName")
+                                                                .reduce((acc: Record<string, number>, error: any) => {
+                                                                    acc[error.class] = (acc[error.class] || 0) + 1;
+                                                                    return acc;
+                                                                }, {})
+                                                        ).map(([className, count]) => (
+                                                            <>
+                                                                <List.Item key={`missing-attribute-name-${className}`} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                    <Highlight
+                                                                        highlight={[className]}
+                                                                        highlightStyles={{
+                                                                            backgroundColor: "var(--mantine-color-orange-5)",
+                                                                            fontWeight: 700,
+                                                                            WebkitBackgroundClip: 'text',
+                                                                            WebkitTextFillColor: 'transparent'
+                                                                        }}>
+                                                                        {`The class ${className} is missing a name for at least one attribute.`}
+                                                                    </Highlight>
+                                                                </List.Item>
+                                                                <Divider my="xs" />
+                                                            </>
+                                                        ))}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "duplicateAttributeName").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.class, error.attribute.name]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The class ${error.class} has two or more attributes with the same name: ${error.attribute.name}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "missingAttributeType").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.class, error.attribute.name]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The attribute ${error.attribute.name} in the class ${error.class} is missing a type.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "missingAssociationName").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.association.source.referenceClass.name, error.association.target.referenceClass.name]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The association between the classes ${error.association.source.referenceClass.name} and ${error.association.target.referenceClass.name} is missing a name.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "missingAssociationMultiplicity").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.association.source.referenceClass.name, error.association.target.referenceClass.name, error.class]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }} >
+                                                                            {`The association between the classes ${error.association.source.referenceClass.name} and ${error.association.target.referenceClass.name} is missing a multiplicity on the side of class ${error.class}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "invalidAssociationMultiplicity").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.association.source.referenceClass.name, error.association.target.referenceClass.name, error.class]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The association between the classes ${error.association.source.referenceClass.name} and ${error.association.target.referenceClass.name} has an invalid multiplicity on the side of class ${error.class}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "missingRecursiveAssociationRole").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.class, "at least one side", "both sides"]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`Class ${error.class} has a recursive association but is missing a role name ${error.count === 1 ? "on at least one side" : `on both sides`}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "unconnectedClass").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.element.name]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The class ${error.element.name} is not connected to any other class in the diagram.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "foreignKeyReference").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.attribute.name, error.containedClass, error.class]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The attribute ${error.attribute.name} in the class ${error.class} may be a foreign key reference to the class ${error.containedClass}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                        {results.newSyntaxErrors.filter((error: any) => error.type === "invalidAttributeType").map((error: any) => {
+                                                            return (
+                                                                <>
+                                                                    <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                                        <Highlight
+                                                                            highlight={[error.attribute.name, error.class, error.attribute.types[0]]}
+                                                                            highlightStyles={{
+                                                                                backgroundColor: "var(--mantine-color-orange-5)",
+                                                                                fontWeight: 700,
+                                                                                WebkitBackgroundClip: 'text',
+                                                                                WebkitTextFillColor: 'transparent'
+                                                                            }}>
+                                                                            {`The attribute ${error.attribute.name} in the class ${error.class} has an invalid type: ${error.attribute.types[0]}.`}
+                                                                        </Highlight>
+                                                                    </List.Item>
+                                                                    <Divider my="xs" />
+                                                                </>
+                                                            )
+                                                        })}
+                                                    </List>
                                                 </>}
                                             </Popover.Dropdown>
                                         </Popover>
@@ -341,7 +597,7 @@ function ExercisePage() {
                                                                                 WebkitBackgroundClip: 'text',
                                                                                 WebkitTextFillColor: 'transparent'
                                                                             }}>
-                                                                            {`The attribute ${error.name} in the class that represents the concept ${error.class} should not be present in the diagram.`}
+                                                                            {`The attribute ${error.name} in the class that represents the concept ${error.class} should not be associated to that class.`}
                                                                         </Highlight>
                                                                     </List.Item>
                                                                     <Divider my="xs" />

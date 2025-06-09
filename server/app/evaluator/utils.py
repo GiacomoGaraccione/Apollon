@@ -1,3 +1,5 @@
+from enum import Enum
+
 def convert_apollon_model_to_reference(model):
     reference = {
         "classes": [],
@@ -61,3 +63,31 @@ def convert_apollon_model_to_reference(model):
         reference["associations"].append(newAssoc)
             
     return reference
+
+class Multiplicity(Enum):
+    ZERO = "ZERO"
+    ONE = "ONE"
+    NUMERIC = "NUMERIC"
+    ZERO_TO_ONE = "ZERO_TO_ONE"
+    ZERO_TO_MANY = "ZERO_TO_MANY"
+    ONE_TO_ONE = "ONE_TO_ONE"
+    ONE_TO_MANY = "ONE_TO_MANY"
+    ZERO_TO_NUMERIC = "ZERO_TO_NUMERIC"
+    ONE_TO_NUMERIC = "ONE_TO_NUMERIC"
+    NUMERIC_TO_NUMERIC = "NUMERIC_TO_NUMERIC"
+    NUMERIC_TO_MANY = "NUMERIC_TO_MANY"
+
+
+class AttributeType(Enum): 
+    FLOAT = "float"
+    INT = "int"
+    STRING = "string"
+    BOOLEAN = "boolean"
+    DATE = "date"
+    CURRENCY = "currency"
+    TIME = "time"
+    DATETIME = "datetime"
+    INTEGER = "integer"
+    DOUBLE = "double"
+    NUMBER = "number"
+    LATLONG = "latlong"

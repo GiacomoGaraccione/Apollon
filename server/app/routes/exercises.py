@@ -243,7 +243,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                     record.experience = experience
                     record.correctness = results.get("completeness", record.correctness)
                     record.checks = checks
-                    record.syntax_errors = json.dumps(syntax_errors) if syntax_errors else record.syntax_errors
+                    record.syntax_errors = json.dumps(results.get("syntax_errors", record.syntax_errors))
                     record.semantic_errors = json.dumps(results.get("semantic_errors", record.semantic_errors))
                     record.results = json.dumps(results) if results else record.results
                 record.model = json.dumps(model) if model else record.model

@@ -2,6 +2,7 @@ import json
 import Levenshtein
 import app.evaluator.utils as utils
 import sys, os
+import re
 
 def find_closest_strings(dict1, dict2):
     """
@@ -19,7 +20,7 @@ def find_closest_strings(dict1, dict2):
 
     for s1 in strings1:
         for s2 in strings2:
-            dist = 1 - Levenshtein.distance(s1.lower(), s2.lower()) / max(len(s1), len(s2))
+            dist = 1 - Levenshtein.distance(s1.lower(), s2.lower()) / max(len(s1), len(s2), 1)
             if (max_distance is None) or (dist > max_distance):
                 max_distance = dist
                 closest_pair = (s1, s2)
@@ -118,7 +119,6 @@ def evaluate_student_diagram(solutions, model):
                         source = assoc2.get("source", {}).get("referenceClass", {}).get("name")
                         target = assoc2.get("target", {}).get("referenceClass", {}).get("name")
                         if (source_match.get("diagramClass", {}).get("name") == source or source_match.get("diagramClass", {}).get("name") == target) and (target_match.get("diagramClass", {}).get("name") == target or target_match.get("diagramClass", {}).get("name") == source):
-                            print("found matching association")
                             matching_association = assoc2
                             if source_match.get("diagramClass", {}).get("name") == source:
                                 source_pair = {
@@ -181,13 +181,192 @@ def evaluate_student_diagram(solutions, model):
                 best = report
                 best_reference = reference
         semantic_errors = get_semantic_errors_from_report(best, best_reference)
+        syntax_errors = get_syntax_errors_from_model(utils.convert_apollon_model_to_reference(model))
+        best["syntax_errors"] = syntax_errors
         best["semantic_errors"] = semantic_errors
         return best
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
+
+def get_syntax_errors_from_model(model):
+    errors = []
+    try:
+        names_seen = {}
+        for cl in model.get("classes", []):
+            name = cl.get("name", "").strip().lower()
+            if not name:
+                errors.append({
+                    "type": "missingClassName",
+                    "message": "Class name is missing",
+                    "element": cl
+                })
+            elif name in names_seen:
+                errors.append({
+                    "type": "duplicateClassName",
+                    "message": f"Duplicate class name '{cl.get('name')}' found",
+                    "element": cl
+                })
+            else:
+                names_seen[name] = cl
+            attrs_seen = {}
+            for attr in cl.get("attributes", []):
+                attr_name = attr.get("name", "").strip().lower()
+                if not attr_name:
+                    errors.append({
+                        "type": "missingAttributeName",
+                        "message": "Attribute name is missing",
+                        "attribute": attr,
+                        "class": cl.get("name")
+                    })
+                elif attr_name in attrs_seen:
+                    errors.append({
+                        "type": "duplicateAttributeName",
+                        "message": f"Duplicate attribute name '{attr.get('name')}' found in class '{cl.get('name')}'",
+                        "attribute": attr,
+                        "class": cl.get("name")
+                    })
+                else:
+                    attrs_seen[attr_name] = attr
+                attr_types = attr.get("types", [""])
+                if len(attr_types) == 0 or attr_types[0] == "":
+                    errors.append({
+                        "type": "missingAttributeType",
+                        "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has no type defined",
+                        "attribute": attr,
+                        "class": cl.get("name")
+                    })  
+                else:
+                    if attr_types[0].lower() not in [t.value.lower() for t in utils.AttributeType]:
+                        errors.append({
+                            "type": "invalidAttributeType",
+                            "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has an invalid type '{attr_types[0]}'",
+                            "attribute": attr,
+                            "class": cl.get("name")
+                        })
+                for other_cl in model.get("classes", []):
+                    other_name = other_cl.get("name", "").strip().lower()
+                    if other_name and other_name in attr_name and other_name != name:
+                        errors.append({
+                            "type": "foreignKeyReference",
+                            "message": f"Attribute name '{attr.get('name')}' in class '{cl.get('name')}' may be a foreign key reference to another class '{other_cl.get('name')}'",
+                            "attribute": attr,
+                            "class": cl.get("name"),
+                            "containedClass": other_cl.get("name")
+                        })
+                
+            class_used_in_association = any(
+                (assoc.get("source", {}).get("referenceClass", {}).get("name") == cl.get("name") or
+                 assoc.get("target", {}).get("referenceClass", {}).get("name") == cl.get("name"))
+                for assoc in model.get("associations", [])
+            )
+            if not class_used_in_association:
+                errors.append({
+                    "type": "unconnectedClass",
+                    "message": f"Class '{cl.get('name')}' is not connected to any other class",
+                    "element": cl
+                })
+        for assoc in model.get("associations", []):
+            if assoc.get("type") == "Default":
+                source = assoc.get("source", {})
+                target = assoc.get("target", {})
+                if source.get("multiplicities", [""]) == [""]:
+                    errors.append({
+                        "type": "missingAssociationMultiplicity",
+                        "message": f"Association '{assoc.get('name')}' has no source multiplicity defined",
+                        "association": assoc,
+                        "class": source.get("referenceClass", {}).get("name")
+                    })
+                elif not get_multiplicity(source.get("multiplicities", [""])[0]):
+                    errors.append({
+                        "type": "invalidAssociationMultiplicity",
+                        "message": f"Association '{assoc.get('name')}' has an invalid source multiplicity '{source.get('multiplicities', [''])[0]}'",
+                        "association": assoc,
+                        "class": source.get("referenceClass", {}).get("name")
+                    })
+                if target.get("multiplicities", [""]) == [""]:
+                    errors.append({
+                        "type": "missingAssociationMultiplicity",
+                        "message": f"Association '{assoc.get('name')}' has no target multiplicity defined",
+                        "association": assoc,
+                        "class": target.get("referenceClass", {}).get("name")
+                    })
+                elif not get_multiplicity(target.get("multiplicities", [""])[0]):
+                    errors.append({
+                        "type": "invalidAssociationMultiplicity",
+                        "message": f"Association '{assoc.get('name')}' has an invalid target multiplicity '{target.get('multiplicities', [''])[0]}'",
+                        "association": assoc,
+                        "class": target.get("referenceClass", {}).get("name")
+                    })
+                if not assoc.get("name", "").strip():
+                    errors.append({
+                        "type": "missingAssociationName",
+                        "message": f"Association has no name defined",
+                        "association": assoc
+                    })
+                if source.get("referenceClass", {}).get("name", "") == target.get("referenceClass", {}).get("name", ""):
+                    source_no_role = False
+                    target_no_role = False
+                    if source.get("role", "").strip() == "":
+                        source_no_role = True
+                    if target.get("role", "").strip() == "":
+                        target_no_role = True
+                    if source_no_role and target_no_role:
+                        errors.append({
+                            "type": "missingRecursiveAssociationRole",
+                            "message": f"Class '{source.get('referenceClass', {}).get('name')}' has a recursive association '{assoc.get('name')}' but no role defined",
+                            "association": assoc,
+                            "count": 2,
+                            "class": source.get("referenceClass", {}).get("name")
+                        })
+                    elif source_no_role:
+                        errors.append({
+                            "type": "missingRecursiveAssociationRole",
+                            "message": f"Class '{source.get('referenceClass', {}).get('name')}' has a recursive association '{assoc.get('name')}' but no source role defined",
+                            "association": assoc,
+                            "count": 1,
+                            "class": source.get("referenceClass", {}).get("name")
+                        })
+                    elif target_no_role:
+                        errors.append({
+                            "type": "missingRecursiveAssociationRole",
+                            "message": f"Class '{target.get('referenceClass', {}).get('name')}' has a recursive association '{assoc.get('name')}' but no target role defined",
+                            "association": assoc,
+                            "count": 1,
+                            "class": target.get("referenceClass", {}).get("name")
+                        })
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print(f"Error in get_syntax_errors_from_model: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        raise(e)
+    return errors
+
+def get_multiplicity(multiplicity):
+    if re.fullmatch(f"0", multiplicity):
+        return utils.Multiplicity.ZERO
+    elif re.fullmatch(f"1", multiplicity) or re.fullmatch(r"1.*1", multiplicity):
+        return utils.Multiplicity.ONE
+    elif re.fullmatch(r"\*", multiplicity) or re.fullmatch(r"0.*\*", multiplicity):
+        return utils.Multiplicity.ZERO_TO_MANY
+    elif re.fullmatch(r"\d+", multiplicity):
+        return utils.Multiplicity.NUMERIC
+    elif re.fullmatch(r"0.*1", multiplicity):
+        return utils.Multiplicity.ZERO_TO_ONE
+    elif re.fullmatch(r"1.*\*", multiplicity):
+        return utils.Multiplicity.ONE_TO_MANY
+    elif re.fullmatch(r"1.*\d+", multiplicity):
+        return utils.Multiplicity.ONE_TO_NUMERIC
+    elif re.fullmatch(r"0.*\d+", multiplicity):
+        return utils.Multiplicity.ZERO_TO_NUMERIC
+    elif re.fullmatch(r"\d+.*\d+", multiplicity):
+        return utils.Multiplicity.NUMERIC_TO_NUMERIC
+    elif re.fullmatch(r"\d+.*\*", multiplicity):
+        return utils.Multiplicity.NUMERIC_TO_MANY
     
+    return None
+    
+
 def get_semantic_errors_from_report(report, reference):
     errors = []
     try:
