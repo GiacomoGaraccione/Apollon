@@ -4,6 +4,7 @@ from flask import jsonify, Blueprint, request
 from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
+from app.utils.game_utils import update_experience_points
 from sqlalchemy.orm import joinedload
 import app.evaluator.eval as evaluator
 
@@ -234,12 +235,10 @@ def update_student_exercise(courseId, exerciseId, studentId):
                 return jsonify({"record": record.serialize(), "results": results}), 201
             else:
                 if data.get("evaluation", False):
-                    experience = data.get("experience", record.experience)
+                    experience = update_experience_points(exercise, results, record)
                     correctness = data.get("progress", record.correctness)
                     checks = data.get("checks", record.checks)
                     checks = checks + 1
-                    syntax_errors = data.get("syntaxErrors", None)
-                    semantic_errors = data.get("semanticErrors", None)
                     record.experience = experience
                     record.correctness = results.get("completeness", record.correctness)
                     record.checks = checks

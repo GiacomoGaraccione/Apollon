@@ -47,7 +47,6 @@ function ExercisePage() {
             API.getCourseInfo(courseId).then((course) => {
                 let ex = course.exercises.find((ex) => ex.exerciseId === exerciseId)
                 if (ex) {
-                    console.log(ex)
                     setExercise(ex)
                     setGamified(ex.gamified)
                     let opts = JSON.parse(ex.boss?.bossOptions)
@@ -69,7 +68,7 @@ function ExercisePage() {
                             console.error("Error creating Apollon editor:", error);
                         }
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                            handleFeedback(res)
+                            handleFeedback(res, false)
                         }).catch((err) => {
                             console.error(err)
                             setResults({ ...results, oldXP: ex.experience, newXP: ex.experience, oldProgress: 0, newProgress: 0 });
@@ -80,20 +79,31 @@ function ExercisePage() {
         }
     }, [])
 
-    const handleFeedback = (res: any) => {
+    const handleFeedback = (res: any, afterCheck: boolean) => {
         try {
-            console.log(res)
             let r = new EvaluationResults()
-            r.oldXP = res.experience
-            r.newXP = res.experience
-            r.oldProgress = res.correctness
-            r.newProgress = res.correctness
-            r.oldSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
-            r.newSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
-            r.oldSemanticErrors = JSON.parse(res.semantic_errors || "[]")
-            r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
-            r.results = JSON.parse(res.results || "{}")
-            console.log(r)
+            if (afterCheck) {
+                console.log(res)
+                r.oldXP = results.newXP
+                r.newXP = res.experience
+                r.oldProgress = results.newProgress
+                r.newProgress = res.correctness
+                r.oldSyntaxErrors = results.newSyntaxErrors
+                r.newSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
+                r.oldSemanticErrors = results.newSemanticErrors
+                r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
+                r.results = JSON.parse(res.results || "{}")
+            } else {
+                r.oldXP = res.experience
+                r.newXP = res.experience
+                r.oldProgress = res.correctness
+                r.newProgress = res.correctness
+                r.oldSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
+                r.newSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
+                r.oldSemanticErrors = JSON.parse(res.semantic_errors || "[]")
+                r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
+                r.results = JSON.parse(res.results || "{}")
+            }
             setResults(r)
             let model = JSON.parse(res.model)
             Object.keys(model.elements).forEach((key) => {
@@ -101,6 +111,11 @@ function ExercisePage() {
                 element.strokeColor = "#000000"
                 element.textColor = "#000000"
                 element.fillColor = "#FFFFFF"
+            })
+            Object.keys(model.relationships).forEach((key) => {
+                let element = model.relationships[key]
+                element.strokeColor = "#000000"
+                element.textColor = "#000000"
             })
             r.newSyntaxErrors.filter((error: any) => error.type === "missingClassName").forEach((error: any) => {
                 let element = model.elements[error.element.elementId]
@@ -173,24 +188,9 @@ function ExercisePage() {
             setChecking(true)
             setTimeout(() => {
                 setChecking(false)
-                setResults(prev => ({
-                    ...prev,
-                    oldProgress: prev.newProgress,
-                    oldXP: prev.newXP,
-                    newProgress: Number((Math.random() * 100).toFixed(2)),
-                    newXP: Math.floor(Math.random() * 100),
-                }))
                 if (courseId && exerciseId && user && editor) {
-                    console.log(editor.model)
                     API.saveExerciseRecord(courseId, exerciseId, user.username, editor.model, true).then((res: any) => {
-                        console.log(res)
-                        setResults(prev => ({
-                            ...prev,
-                            oldProgress: prev.newProgress,
-                            newProgress: res.record.correctness,
-                            oldSemanticErrors: prev.newSemanticErrors,
-                            newSemanticErrors: JSON.parse(res.record.semanticErrors || "[]"),
-                        }))
+                        handleFeedback(res.record, true)
                     }).catch((err) => {
                         console.error(err)
                     })
@@ -736,7 +736,6 @@ function ExercisePage() {
                                                             )
                                                         })}
                                                         {results.results.matchingAssociations.map((match: any, id: number) => {
-                                                            console.log(match)
                                                             return (
                                                                 <>
                                                                     <List.Item key={id} icon={<IconCheck size={16} color="green" />} >
@@ -825,16 +824,60 @@ function ExercisePage() {
                     </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="red">
                         <IconExclamationCircle size={24} />
-                    </ThemeIcon>}> <Text>New syntax errors: <Mark color="red">2</Mark></Text></List.Item>
+                    </ThemeIcon>}>
+                        {results.newSyntaxErrors.filter(
+                            (newErr: any) =>
+                                !results.oldSyntaxErrors.some(
+                                    (oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr)
+                                )
+                        ).length > 0 ? <Highlight highlight={[results.newSyntaxErrors.filter((newErr: any) => !results.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
+                            backgroundImage: 'linear-gradient(45deg, var(--mantine-color-orange-5), var(--mantine-color-red-5))',
+                            fontWeight: 700,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                            {`There are ${results.newSyntaxErrors.filter((newErr: any) => !results.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length} new syntax errors compared to the previous evaluation.`}
+                        </Highlight> : <Text>There are no new syntax errors compared to the previous evaluation.</Text>}
+                    </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="red">
                         <IconExclamationCircle size={24} />
-                    </ThemeIcon>}> <Text>New semantic errors: <Mark color="red">1</Mark></Text></List.Item>
+                    </ThemeIcon>}>
+                        {results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length > 0 ?
+                            <Highlight highlight={[results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
+                                backgroundImage: 'linear-gradient(45deg, var(--mantine-color-orange-5), var(--mantine-color-red-5))',
+                                fontWeight: 700,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}>
+                                {`There are ${results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length} new semantic errors compared to the previous evaluation.`}
+                            </Highlight> : <Text>There are no new semantic errors compared to the previous evaluation.</Text>}
+                    </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="lime">
                         <IconCheck size={24} />
-                    </ThemeIcon>}> <Text>Fixed syntax errors: <Mark color="green">4</Mark></Text></List.Item>
+                    </ThemeIcon>}>
+                        {results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
+                            <Highlight highlight={[results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
+                                backgroundImage: 'linear-gradient(45deg, var(--mantine-color-lime-5), var(--mantine-color-green-5))',
+                                fontWeight: 700,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}>
+                                {`You fixed ${results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length} syntax error(s) that were found in the previous evaluation.`}
+                            </Highlight> : <Text>You did not fix any syntax error that was found in the previous evaluation.</Text>}
+                    </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="lime">
                         <IconCheck size={24} />
-                    </ThemeIcon>}> <Text>Fixed semantic errors: <Mark color="green">1</Mark></Text></List.Item>
+                    </ThemeIcon>}>
+                        {results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
+                            <Highlight highlight={[results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
+                                backgroundImage: 'linear-gradient(45deg, var(--mantine-color-lime-5), var(--mantine-color-green-5))',
+                                fontWeight: 700,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}>
+                                {`You fixed ${results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length} semantic error(s) that were found in the previous evaluation.`}
+                            </Highlight> : <Text>You did not fix any semantic error that was found in the previous evaluation.</Text>}
+                    </List.Item>
                 </List>
             </Modal>
 

@@ -198,13 +198,13 @@ def get_syntax_errors_from_model(model):
             name = cl.get("name", "").strip().lower()
             if not name:
                 errors.append({
-                    "type": "missingClassName",
+                    "type": utils.SyntaxErrorType.MISSING_CLASS_NAME._value_,
                     "message": "Class name is missing",
                     "element": cl
                 })
             elif name in names_seen:
                 errors.append({
-                    "type": "duplicateClassName",
+                    "type": utils.SyntaxErrorType.DUPLICATE_CLASS_NAME._value_,
                     "message": f"Duplicate class name '{cl.get('name')}' found",
                     "element": cl
                 })
@@ -215,14 +215,14 @@ def get_syntax_errors_from_model(model):
                 attr_name = attr.get("name", "").strip().lower()
                 if not attr_name:
                     errors.append({
-                        "type": "missingAttributeName",
+                        "type": utils.SyntaxErrorType.MISSING_ATTRIBUTE_NAME._value_,
                         "message": "Attribute name is missing",
                         "attribute": attr,
                         "class": cl.get("name")
                     })
                 elif attr_name in attrs_seen:
                     errors.append({
-                        "type": "duplicateAttributeName",
+                        "type": utils.SyntaxErrorType.DUPLICATE_ATTRIBUTE_NAME._value_,
                         "message": f"Duplicate attribute name '{attr.get('name')}' found in class '{cl.get('name')}'",
                         "attribute": attr,
                         "class": cl.get("name")
@@ -232,7 +232,7 @@ def get_syntax_errors_from_model(model):
                 attr_types = attr.get("types", [""])
                 if len(attr_types) == 0 or attr_types[0] == "":
                     errors.append({
-                        "type": "missingAttributeType",
+                        "type": utils.SyntaxErrorType.MISSING_ATTRIBUTE_TYPE._value_,
                         "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has no type defined",
                         "attribute": attr,
                         "class": cl.get("name")
@@ -240,7 +240,7 @@ def get_syntax_errors_from_model(model):
                 else:
                     if attr_types[0].lower() not in [t.value.lower() for t in utils.AttributeType]:
                         errors.append({
-                            "type": "invalidAttributeType",
+                            "type": utils.SyntaxErrorType.INVALID_ATTRIBUTE_TYPE._value_,
                             "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has an invalid type '{attr_types[0]}'",
                             "attribute": attr,
                             "class": cl.get("name")
@@ -249,7 +249,7 @@ def get_syntax_errors_from_model(model):
                     other_name = other_cl.get("name", "").strip().lower()
                     if other_name and other_name in attr_name and other_name != name:
                         errors.append({
-                            "type": "foreignKeyReference",
+                            "type": utils.SyntaxErrorType.FOREIGN_KEY_REFERENCE._value_,
                             "message": f"Attribute name '{attr.get('name')}' in class '{cl.get('name')}' may be a foreign key reference to another class '{other_cl.get('name')}'",
                             "attribute": attr,
                             "class": cl.get("name"),
@@ -263,7 +263,7 @@ def get_syntax_errors_from_model(model):
             )
             if not class_used_in_association:
                 errors.append({
-                    "type": "unconnectedClass",
+                    "type": utils.SyntaxErrorType.UNCONNECTED_CLASS._value_,
                     "message": f"Class '{cl.get('name')}' is not connected to any other class",
                     "element": cl
                 })
@@ -273,35 +273,35 @@ def get_syntax_errors_from_model(model):
                 target = assoc.get("target", {})
                 if source.get("multiplicities", [""]) == [""]:
                     errors.append({
-                        "type": "missingAssociationMultiplicity",
+                        "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_MULTIPLICITY._value_,
                         "message": f"Association '{assoc.get('name')}' has no source multiplicity defined",
                         "association": assoc,
                         "class": source.get("referenceClass", {}).get("name")
                     })
                 elif not get_multiplicity(source.get("multiplicities", [""])[0]):
                     errors.append({
-                        "type": "invalidAssociationMultiplicity",
+                        "type": utils.SyntaxErrorType.INVALID_ASSOCIATION_MULTIPLICITY._value_,
                         "message": f"Association '{assoc.get('name')}' has an invalid source multiplicity '{source.get('multiplicities', [''])[0]}'",
                         "association": assoc,
                         "class": source.get("referenceClass", {}).get("name")
                     })
                 if target.get("multiplicities", [""]) == [""]:
                     errors.append({
-                        "type": "missingAssociationMultiplicity",
+                        "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_MULTIPLICITY._value_,
                         "message": f"Association '{assoc.get('name')}' has no target multiplicity defined",
                         "association": assoc,
                         "class": target.get("referenceClass", {}).get("name")
                     })
                 elif not get_multiplicity(target.get("multiplicities", [""])[0]):
                     errors.append({
-                        "type": "invalidAssociationMultiplicity",
+                        "type": utils.SyntaxErrorType.INVALID_ASSOCIATION_MULTIPLICITY._value_,
                         "message": f"Association '{assoc.get('name')}' has an invalid target multiplicity '{target.get('multiplicities', [''])[0]}'",
                         "association": assoc,
                         "class": target.get("referenceClass", {}).get("name")
                     })
                 if not assoc.get("name", "").strip():
                     errors.append({
-                        "type": "missingAssociationName",
+                        "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_NAME._value_,
                         "message": f"Association has no name defined",
                         "association": assoc
                     })
@@ -314,7 +314,7 @@ def get_syntax_errors_from_model(model):
                         target_no_role = True
                     if source_no_role and target_no_role:
                         errors.append({
-                            "type": "missingRecursiveAssociationRole",
+                            "type": utils.SyntaxErrorType.MISSING_RECURSIVE_ASSOCIATION_ROLE._value_,
                             "message": f"Class '{source.get('referenceClass', {}).get('name')}' has a recursive association '{assoc.get('name')}' but no role defined",
                             "association": assoc,
                             "count": 2,
@@ -322,7 +322,7 @@ def get_syntax_errors_from_model(model):
                         })
                     elif source_no_role:
                         errors.append({
-                            "type": "missingRecursiveAssociationRole",
+                            "type": utils.SyntaxErrorType.MISSING_RECURSIVE_ASSOCIATION_ROLE._value_,
                             "message": f"Class '{source.get('referenceClass', {}).get('name')}' has a recursive association '{assoc.get('name')}' but no source role defined",
                             "association": assoc,
                             "count": 1,
@@ -330,7 +330,7 @@ def get_syntax_errors_from_model(model):
                         })
                     elif target_no_role:
                         errors.append({
-                            "type": "missingRecursiveAssociationRole",
+                            "type": utils.SyntaxErrorType.MISSING_RECURSIVE_ASSOCIATION_ROLE._value_,
                             "message": f"Class '{target.get('referenceClass', {}).get('name')}' has a recursive association '{assoc.get('name')}' but no target role defined",
                             "association": assoc,
                             "count": 1,
@@ -378,7 +378,7 @@ def get_semantic_errors_from_report(report, reference):
                     break
             if not found:
                 errors.append({
-                    "type": "missingClass",
+                    "type": utils.SemanticErrorType.MISSING_CLASS._value_,
                     "name": cl.get("name"),
                     "message": "Class not found in the diagram"
                 })
@@ -391,7 +391,7 @@ def get_semantic_errors_from_report(report, reference):
                             break
                     if not attr_found:
                         errors.append({
-                            "type": "missingAttribute",
+                            "type": utils.SemanticErrorType.MISSING_ATTRIBUTE._value_,
                             "class": cl.get("name"),
                             "name": attr.get("name"),
                             "message": "Attribute not found in the diagram"
@@ -399,7 +399,7 @@ def get_semantic_errors_from_report(report, reference):
                     else :
                         if not ma.get("typesMatch"):
                             errors.append({
-                                "type": "attributeType",
+                                "type": utils.SemanticErrorType.ATTRIBUTE_TYPE._value_,
                                 "class": cl.get("name"),
                                 "name": attr.get("name"),
                                 "message": "Attribute type does not match",
@@ -407,7 +407,7 @@ def get_semantic_errors_from_report(report, reference):
                             })
         for cl in report.get("forbiddenClasses", []):
             errors.append({
-                "type": "forbiddenClass",
+                "type": utils.SemanticErrorType.FORBIDDEN_CLASS._value_,
                 "name": cl.get("diagramClass", {}).get("name"),
                 "message": "Forbidden class found in the diagram",
                 "id": cl.get("diagramClass", {}).get("elementId")
@@ -415,7 +415,7 @@ def get_semantic_errors_from_report(report, reference):
         for cl in report.get("matchingClasses", []):
             for fa in cl.get("forbiddenAttributes", []):
                 errors.append({
-                    "type": "forbiddenAttribute",
+                    "type": utils.SemanticErrorType.FORBIDDEN_ATTRIBUTE._value_,
                     "class": cl.get("referenceClass"),
                     "name": fa.get("name"),
                     "message": "Forbidden attribute found in the diagram",
@@ -429,7 +429,7 @@ def get_semantic_errors_from_report(report, reference):
                     break
             if not found:
                 errors.append({
-                    "type": "missingAssociation",
+                    "type": utils.SemanticErrorType.MISSING_ASSOCIATION._value_,
                     "source": assoc.get("source", {}).get("referenceClass", {}).get("name"),
                     "target": assoc.get("target", {}).get("referenceClass", {}).get("name"),
                     "message": "Association not found in the diagram"
@@ -440,7 +440,7 @@ def get_semantic_errors_from_report(report, reference):
                 ref_name, diagram_name, sim = find_closest_strings(ref_assoc, assoc.get("diagramAssociation", {}))
                 if sim < 0.7:
                     errors.append({
-                        "type": "associationName",
+                        "type": utils.SemanticErrorType.ASSOCIATION_NAME._value_,
                         "message": "Association name does not match",
                         "referenceSource": ref_assoc.get("source"),
                         "referenceTarget": ref_assoc.get("target"),
@@ -449,7 +449,7 @@ def get_semantic_errors_from_report(report, reference):
                     })
             if assoc.get("source_pair", {}).get("diagramInfo", {}).get("multiplicity", "") not in assoc.get("source_pair", {}).get("referenceInfo", {}).get("multiplicities", []):
                 errors.append({
-                    "type": "associationMultiplicity",
+                    "type": utils.SemanticErrorType.ASSOCIATION_MULTIPLICITY._value_,
                     "message": "Association source multiplicity does not match",
                     "referenceSource": assoc.get("referenceAssociation").get("source"),
                     "referenceTarget": assoc.get("referenceAssociation").get("target"),
@@ -457,7 +457,7 @@ def get_semantic_errors_from_report(report, reference):
                 })
             if assoc.get("target_pair", {}).get("diagramInfo", {}).get("multiplicity", "") not in assoc.get("target_pair", {}).get("referenceInfo", {}).get("multiplicities", []):
                 errors.append({
-                    "type": "associationMultiplicity",
+                    "type": utils.SemanticErrorType.ASSOCIATION_MULTIPLICITY._value_,
                     "message": "Association target multiplicity does not match",
                     "referenceSource": assoc.get("referenceAssociation").get("source"),
                     "referenceTarget": assoc.get("referenceAssociation").get("target"),
@@ -468,7 +468,7 @@ def get_semantic_errors_from_report(report, reference):
             correct = reference_type == "Default" and (diagram_type == "ClassBidirectional" or diagram_type == "ClassUnidirectional")
             if not correct:
                 errors.append({
-                    "type": "associationType",
+                    "type": utils.SemanticErrorType.ASSOCIATION_TYPE._value_,
                     "message": "Association type does not match",
                     "referenceType": reference_type,
                     "diagramType": diagram_type,

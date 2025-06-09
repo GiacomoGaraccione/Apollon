@@ -91,3 +91,28 @@ class AttributeType(Enum):
     DOUBLE = "double"
     NUMBER = "number"
     LATLONG = "latlong"
+
+class SyntaxErrorType(Enum):
+    MISSING_CLASS_NAME = "missingClassName"
+    DUPLICATE_CLASS_NAME = "duplicateClassName"
+    MISSING_ATTRIBUTE_NAME = "missingAttributeName"
+    DUPLICATE_ATTRIBUTE_NAME = "duplicateAttributeName"
+    MISSING_ATTRIBUTE_TYPE = "missingAttributeType"
+    INVALID_ATTRIBUTE_TYPE = "invalidAttributeType"
+    FOREIGN_KEY_REFERENCE = "foreignKeyReference"
+    UNCONNECTED_CLASS = "unconnectedClass"
+    MISSING_ASSOCIATION_MULTIPLICITY = "missingAssociationMultiplicity"
+    INVALID_ASSOCIATION_MULTIPLICITY = "invalidAssociationMultiplicity"
+    MISSING_ASSOCIATION_NAME = "missingAssociationName"
+    MISSING_RECURSIVE_ASSOCIATION_ROLE = "missingRecursiveAssociationRole"
+
+class SemanticErrorType(Enum):
+    MISSING_CLASS = "missingClass"
+    MISSING_ATTRIBUTE = "missingAttribute"
+    ATTRIBUTE_TYPE = "attributeType"
+    FORBIDDEN_CLASS = "forbiddenClass"
+    FORBIDDEN_ATTRIBUTE = "forbiddenAttribute"
+    MISSING_ASSOCIATION = "missingAssociation"
+    ASSOCIATION_NAME = "associationName"
+    ASSOCIATION_MULTIPLICITY = "associationMultiplicity"
+    ASSOCIATION_TYPE = "associationType"
