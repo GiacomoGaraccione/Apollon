@@ -62,6 +62,7 @@
     "@mantine/notifications": "8.0.1",
     "@tabler/icons-react": "3.31.0",
     "clsx": "2.1.1",
+    "csshake": "1.7.0",
     "embla-carousel": "8.6.0",
     "embla-carousel-react": "8.6.0",
     "fast-json-patch": "3.1.1",

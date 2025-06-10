@@ -12,7 +12,7 @@ import { ApollonMode } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
 import { EvaluationResults } from "../../Utils/EvaluationTypes";
-import { Preview } from "../../../components/create-pane/preview-element-component";
+import "csshake/dist/csshake.css"
 
 const options = {
     colorEnabled: false,
@@ -41,6 +41,8 @@ function ExercisePage() {
     const [exercise, setExercise] = useState<Exercise | null>(null)
     const [checking, setChecking] = useState<boolean>(false)
     const [results, setResults] = useState<EvaluationResults>(new EvaluationResults())
+    const [mood, setMood] = useState<string>("Neutral")
+    const [shaker, setShaker] = useState<string>("")
 
     useEffect(() => {
         if (user && courseId && exerciseId) {
@@ -56,7 +58,7 @@ function ExercisePage() {
                     API.getStudentCourseInfo(courseId, user.username).then(async (studentCourse) => {
                         let avatarOpts = JSON.parse(studentCourse.info.avatar)
                         setAvatarOptions(avatarOpts)
-                        let svg = createAvatar(avataaars, { ...avatarOpts, style: ["default"] }).toString()
+                        let svg = createAvatar(avataaars, { ...avatarOpts, style: ["default"], mouth: ["serious"], eyes: ["side"] }).toString()
                         setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                         try {
                             let cont = document.getElementById("apollon");
@@ -83,7 +85,6 @@ function ExercisePage() {
         try {
             let r = new EvaluationResults()
             if (afterCheck) {
-                console.log(res)
                 r.oldXP = results.newXP
                 r.newXP = res.experience
                 r.oldProgress = results.newProgress
@@ -93,6 +94,7 @@ function ExercisePage() {
                 r.oldSemanticErrors = results.newSemanticErrors
                 r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
                 r.results = JSON.parse(res.results || "{}")
+                handleMoodChange(r)
             } else {
                 r.oldXP = res.experience
                 r.newXP = res.experience
@@ -183,20 +185,78 @@ function ExercisePage() {
         }
     }
 
+    const handleMoodChange = (res: EvaluationResults) => {
+        console.log(res)
+        if (exercise) {
+            let progDiff = res.newProgress - res.oldProgress
+            let xpDiff = res.newXP - res.oldXP
+            let fixedErrors = res.oldSyntaxErrors.filter(
+                (oldErr: any) => !res.newSyntaxErrors.some(
+                    (newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length +
+                res.oldSemanticErrors.filter(
+                    (oldErr: any) => !res.newSemanticErrors.some(
+                        (newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length
+            let newErrors = res.newSyntaxErrors.filter(
+                (newErr: any) => !res.oldSyntaxErrors.some(
+                    (oldErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length +
+                res.newSemanticErrors.filter(
+                    (newErr: any) => !res.oldSemanticErrors.some(
+                        (oldErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length
+
+            let newMood = (xpDiff >= 0.5 * exercise.experience || //Mood tier S: high progress / XP increase or fixing many errors with 0 new errors
+                progDiff >= 50 ||
+                newErrors === 0 && fixedErrors >= 10) ? "Ecstatic" :
+                ((xpDiff >= 0.25 * exercise.experience && xpDiff < 0.5 * exercise.experience) ||  //Mood tier A: moderate progress / XP increase or fixing some errors and not having many new errors
+                    (progDiff >= 25 && progDiff < 50) ||
+                    newErrors <= 10 && fixedErrors >= 5) ? "Happy" :
+                    ((xpDiff > 0 && xpDiff < 0.25 * exercise.experience) || //Mood tier B: low progress / XP increase or fixing some errors and not having many new errors
+                        (progDiff > 0 && progDiff < 25) ||
+                        (newErrors > 0 && newErrors <= 5 && fixedErrors >= 2)) ? "Content" :
+                        ((xpDiff < 0 && xpDiff >= -0.25 * exercise.experience) || //Mood tier C: low progress / XP decrease or having many new errors and fixing some
+                            (progDiff < 0 && progDiff >= -25) ||
+                            (newErrors > 5 && newErrors <= 10 && fixedErrors <= 2)) ? "Worried" :
+                            ((xpDiff < -0.25 * exercise.experience && xpDiff >= -0.5 * exercise.experience) || //Mood tier D: moderate progress / XP decrease or having many new errors and not fixing any
+                                (progDiff < -25 && progDiff >= -50) ||
+                                (newErrors > 10 && newErrors <= 15 && fixedErrors === 0)) ? "Upset" :
+                                ((xpDiff < -0.5 * exercise.experience) || //Mood tier E: high progress / XP decrease or having many new errors and not fixing any
+                                    (progDiff < -50) ||
+                                    (newErrors > 15 && fixedErrors === 0)) ? "Defeated" : "Neutral"
+            let newMouth = newMood === "Ecstatic" ? ["tongue"] :
+                newMood === "Happy" ? ["smile"] :
+                    newMood === "Content" ? ["twinkle"] :
+                        newMood === "Neutral" ? ["serious"] :
+                            newMood === "Worried" ? ["concerned"] :
+                                newMood === "Upset" ? ["screamOpen"] :
+                                    ["vomit"]
+            let newEyes = newMood === "Ecstatic" ? ["hearts"] :
+                newMood === "Happy" ? ["winkWacky"] :
+                    newMood === "Content" ? ["happy"] :
+                        newMood === "Neutral" ? ["side"] :
+                            newMood === "Worried" ? ["surprised"] :
+                                newMood === "Upset" ? ["cry"] :
+                                    ["xDizzy"]
+            let svg = createAvatar(avataaars, { ...avatarOptions, style: ["default"], mouth: newMouth, eyes: newEyes }).toString()
+            setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
+            setMood(newMood || "Neutral")
+            setShaker(newMood === "Worried" ? "shake-little shake-constant" : newMood === "Upset" ? "shake-hard shake-constant" : newMood === "Defeated" ? "shake-crazy shake-constant" : "")
+            setTimeout(() => {
+                setShaker("")
+            }, 3000)
+        }
+    }
+
     const evaluate = () => {
         try {
             setChecking(true)
-            setTimeout(() => {
-                setChecking(false)
-                if (courseId && exerciseId && user && editor) {
-                    API.saveExerciseRecord(courseId, exerciseId, user.username, editor.model, true).then((res: any) => {
-                        handleFeedback(res.record, true)
-                    }).catch((err) => {
-                        console.error(err)
-                    })
-                }
-                openResults()
-            }, 50)
+            if (courseId && exerciseId && user && editor) {
+                API.saveExerciseRecord(courseId, exerciseId, user.username, editor.model, true).then((res: any) => {
+                    setChecking(false)
+                    handleFeedback(res.record, true)
+                    openResults()
+                }).catch((err) => {
+                    console.error(err)
+                })
+            }
         } catch (error) {
             console.error("Error evaluating exercise:", error);
         }
@@ -211,7 +271,19 @@ function ExercisePage() {
                             <Grid my="md" grow justify="center" align="center">
                                 <Grid.Col span={6}>
                                     <Center>
-                                        <Avatar src={avatarString} size={100} radius="md" />
+                                        <Stack align="center">
+                                            <Avatar src={avatarString} size={100} radius="md" className={shaker} />
+                                            <Highlight
+                                                highlight={[mood]}
+                                                highlightStyles={{
+                                                    backgroundColor: (mood === "Happy" || mood === "Ecstatic" || mood === "Content") ? "var(--mantine-color-green-5)" : (mood === "Worried" || mood === "Upset" || mood === "Defeated") ? "var(--mantine-color-red-5)" : "var(--mantine-color-cyan-5)",
+                                                    fontWeight: 700,
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent'
+                                                }}>
+                                                {`Current mood: ${mood}`}
+                                            </Highlight>
+                                        </Stack>
                                     </Center>
                                 </Grid.Col>
                                 <Grid.Col span={6}>
@@ -802,24 +874,28 @@ function ExercisePage() {
                         <IconCircleDashedCheck size={24} />
                     </ThemeIcon>}>
                         <Highlight highlight={["changed", "increased", "reduced", results.newProgress.toString(), results.oldProgress.toString()]} highlightStyles={{
-                            backgroundImage: results.newProgress < results.oldProgress ? 'linear-gradient(45deg, var(--mantine-color-orange-5), var(--mantine-color-red-5))' : 'linear-gradient(45deg, var(--mantine-color-lime-5), var(--mantine-color-green-5))',
+                            backgroundColor: results.newProgress < results.oldProgress ? "var(--mantine-color-red-5)" : "var(--mantine-color-green-5)",
                             fontWeight: 700,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                         }}  >
-                            {`Exercise correctness ${results.newProgress > results.oldProgress ? "increased" : "reduced"} from ${results.oldProgress.toString()} to ${results.newProgress.toString()}`}
+                            {results.newProgress !== results.oldProgress ?
+                                `Exercise correctness ${results.newProgress > results.oldProgress ? "increased" : "reduced"} from ${results.oldProgress.toString()} to ${results.newProgress.toString()}`
+                                : "There are no changes in the correctness of your diagram since the last evaluation."}
                         </Highlight>
                     </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="blue">
                         <IconUserUp size={24} />
                     </ThemeIcon>} >
                         <Highlight highlight={["changed", "increased", "reduced", results.newXP.toString(), results.oldXP.toString()]} highlightStyles={{
-                            backgroundImage: results.newXP < results.oldXP ? 'linear-gradient(45deg, var(--mantine-color-orange-5), var(--mantine-color-red-5))' : 'linear-gradient(45deg, var(--mantine-color-lime-5), var(--mantine-color-green-5))',
+                            backgroundColor: results.newXP < results.oldXP ? "var(--mantine-color-red-5)" : "var(--mantine-color-green-5)",
                             fontWeight: 700,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                         }} >
-                            {`Available experience ${results.newXP > results.oldXP ? "increased" : "reduced"} from ${results.oldXP.toString()} to ${results.newXP.toString()}`}
+                            {results.newXP !== results.oldXP ?
+                                `Available experience ${results.newXP > results.oldXP ? "increased" : "reduced"} from ${results.oldXP.toString()} to ${results.newXP.toString()}`
+                                : "There are no changes in the available experience since the last evaluation."}
                         </Highlight>
                     </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="red">
@@ -831,7 +907,8 @@ function ExercisePage() {
                                     (oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr)
                                 )
                         ).length > 0 ? <Highlight highlight={[results.newSyntaxErrors.filter((newErr: any) => !results.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
-                            backgroundImage: 'linear-gradient(45deg, var(--mantine-color-orange-5), var(--mantine-color-red-5))',
+                            backgroundColor: "var(--mantine-color-red-5)",
+
                             fontWeight: 700,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
@@ -844,7 +921,8 @@ function ExercisePage() {
                     </ThemeIcon>}>
                         {results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length > 0 ?
                             <Highlight highlight={[results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
-                                backgroundImage: 'linear-gradient(45deg, var(--mantine-color-orange-5), var(--mantine-color-red-5))',
+                                backgroundColor: "var(--mantine-color-red-5)",
+
                                 fontWeight: 700,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
@@ -857,7 +935,7 @@ function ExercisePage() {
                     </ThemeIcon>}>
                         {results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
                             <Highlight highlight={[results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
-                                backgroundImage: 'linear-gradient(45deg, var(--mantine-color-lime-5), var(--mantine-color-green-5))',
+                                backgroundColor: "var(--mantine-color-green-5)",
                                 fontWeight: 700,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
@@ -870,7 +948,7 @@ function ExercisePage() {
                     </ThemeIcon>}>
                         {results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
                             <Highlight highlight={[results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
-                                backgroundImage: 'linear-gradient(45deg, var(--mantine-color-lime-5), var(--mantine-color-green-5))',
+                                backgroundColor: "var(--mantine-color-orange-5)",
                                 fontWeight: 700,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
@@ -879,6 +957,34 @@ function ExercisePage() {
                             </Highlight> : <Text>You did not fix any semantic error that was found in the previous evaluation.</Text>}
                     </List.Item>
                 </List>
+                <Divider my="md" />
+                {mood === "Neutral" && <Highlight highlight={["neutral"]}
+                    highlightStyles={{
+                        backgroundColor: "var(--mantine-color-cyan-5)",
+                        fontWeight: 700,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                    }}>
+                    {`There have been no significant changes since the last evaluation, your mood is Neutral.`}
+                </Highlight>}
+                {(mood === "Happy" || mood === "Ecstatic" || mood === "Content") && <Highlight highlight={[mood]}
+                    highlightStyles={{
+                        backgroundColor: "var(--mantine-color-green-5)",
+                        fontWeight: 700,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                    }}>
+                    {`The changes you made since the last evaluation ${mood === "Content" ? "slightly" : mood === "Ecstatic" ? "vastly" : ""} improved the quality of your diagram, your mood is now ${mood}.`}
+                </Highlight>}
+                {(mood === "Worried" || mood === "Upset" || mood === "Defeated") && <Highlight highlight={[mood]}
+                    highlightStyles={{
+                        backgroundColor: "var(--mantine-color-red-5)",
+                        fontWeight: 700,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                    }}>
+                    {`The changes you made since the last evaluation ${mood === "Worried" ? "slightly" : mood === "Defeated" ? "vastly" : ""} lowered the quality of your diagram, your mood is now ${mood}.`}
+                </Highlight>}
             </Modal>
 
             {checking && <Notification color="yellow" mt="md" className='notif' loading={true} >
