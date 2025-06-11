@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Notification, Stack, TextInput, NativeSelect, Textarea, Group, Loader, Avatar, RingProgress, Popover, UnstyledButton, Drawer, List, ThemeIcon, Mark, Highlight, Divider } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
-import { IconCheck, IconCircleDashedCheck, IconExclamationCircle, IconExclamationCircleFilled, IconUserUp } from "@tabler/icons-react";
+import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconHelp, IconJson, IconMedal, IconMenu4, IconPdf, IconReload, IconSquareXFilled, IconSvg, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
 import { Course, Exercise } from "../../Utils/Models";
 import { AvatarUnlockOptions } from "../../Utils/AvatarUtils";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,6 +13,11 @@ import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
 import { EvaluationResults } from "../../Utils/EvaluationTypes";
 import "csshake/dist/csshake.css"
+import { Dropzone } from "@mantine/dropzone";
+import 'svg2pdf.js'
+import jsPDF from "jspdf";
+import { svg2pdf } from "svg2pdf.js";
+import { Canvg } from "canvg";
 
 const options = {
     colorEnabled: false,
@@ -31,18 +36,22 @@ function ExercisePage() {
     const [courseInfo, setCourseInfo] = useState<any>(null)
     const [avatarOptions, setAvatarOptions] = useState<any>(null)
     const [avatarString, setAvatarString] = useState<string>("")
-    const [currentXP, setCurrentXP] = useState<number>(0)
-    const [xpIncreased, setXpIncreased] = useState<boolean>(false)
-    const [currentProgress, setCurrentProgress] = useState<number>(0)
-    const [progressIncreased, setProgressIncreased] = useState<boolean>(false)
     const [editor, setEditor] = useState<ApollonEditor>()
     const [menuOpened, { open: openMenu, close: closeMenu }] = useDisclosure(false)
     const [resultsOpened, { open: openResults, close: closeResults }] = useDisclosure(false)
+    const [exitOpened, { open: openExit, close: closeExit }] = useDisclosure(false)
+    const [clearOpened, { open: openClear, close: closeClear }] = useDisclosure(false)
+    const [resetOpened, { open: openReset, close: closeReset }] = useDisclosure(false)
     const [exercise, setExercise] = useState<Exercise | null>(null)
     const [checking, setChecking] = useState<boolean>(false)
     const [results, setResults] = useState<EvaluationResults>(new EvaluationResults())
     const [mood, setMood] = useState<string>("Neutral")
     const [shaker, setShaker] = useState<string>("")
+    const [filename, setFilename] = useState<string>("")
+    const openRef = useRef<() => void>(null)
+    const [uploaded, setUploaded] = useState<boolean>(false)
+    const [saving, setSaving] = useState<boolean>(false)
+    const navigate = useNavigate()
 
     useEffect(() => {
         if (user && courseId && exerciseId) {
@@ -186,7 +195,6 @@ function ExercisePage() {
     }
 
     const handleMoodChange = (res: EvaluationResults) => {
-        console.log(res)
         if (exercise) {
             let progDiff = res.newProgress - res.oldProgress
             let xpDiff = res.newXP - res.oldXP
@@ -259,6 +267,147 @@ function ExercisePage() {
             }
         } catch (error) {
             console.error("Error evaluating exercise:", error);
+        }
+    }
+
+    const exportJSON = () => {
+        if (editor && exercise) {
+            let model = { ...editor.model }
+            Object.keys(model.elements).forEach((key) => {
+                let element = model.elements[key]
+                element.strokeColor = "#000000"
+                element.textColor = "#000000"
+                element.fillColor = "#FFFFFF"
+            })
+            Object.keys(model.relationships).forEach((key) => {
+                let element = model.relationships[key]
+                element.strokeColor = "#000000"
+                element.textColor = "#000000"
+            })
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(model));
+            const link = document.createElement('a');
+            link.href = dataStr
+            let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`
+            link.download = `${fn}.json`;
+            link.click();
+            link.remove()
+        }
+    }
+
+    const exportSVG = () => {
+        if (editor && exercise) {
+            const download = async () => {
+                let model = { ...editor.model }
+                Object.keys(model.elements).forEach((key) => {
+                    let element = model.elements[key]
+                    element.strokeColor = "#000000"
+                    element.textColor = "#000000"
+                    element.fillColor = "#FFFFFF"
+                })
+                Object.keys(model.relationships).forEach((key) => {
+                    let element = model.relationships[key]
+                    element.strokeColor = "#000000"
+                    element.textColor = "#000000"
+                })
+                let newDiv = document.createElement("div");
+                let ed = new ApollonEditor(newDiv, { ...options, type: "ClassDiagram", model: model })
+                await ed.nextRender
+                const { svg } = await ed.exportAsSVG({ keepOriginalSize: true, margin: 20 });
+                const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+                const svgBlobURL = URL.createObjectURL(svgBlob);
+
+                const link = document.createElement('a');
+                link.href = svgBlobURL
+                let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`
+                link.download = `${fn}.svg`;
+                link.click();
+                link.remove()
+                newDiv.remove()
+                ed.destroy()
+            }
+            download()
+        }
+    }
+
+    const exportPDF = () => {
+        if (editor && exercise) {
+            const download = async () => {
+                let model = { ...editor.model }
+                Object.keys(model.elements).forEach((key) => {
+                    let element = model.elements[key]
+                    element.strokeColor = "#000000"
+                    element.textColor = "#000000"
+                    element.fillColor = "#FFFFFF"
+                })
+                Object.keys(model.relationships).forEach((key) => {
+                    let element = model.relationships[key]
+                    element.strokeColor = "#000000"
+                    element.textColor = "#000000"
+                })
+                let newDiv = document.createElement("div");
+                let ed = new ApollonEditor(newDiv, { ...options, type: "ClassDiagram", model: model })
+                await ed.nextRender
+                const { svg } = await ed.exportAsSVG({ keepOriginalSize: true, margin: 20 });
+                let canvas = document.createElement('canvas')
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = svg;
+                const svgElement = tempDiv.querySelector('svg');
+                if (!svgElement) {
+                    console.error("SVG element not found for PDF export.");
+                    newDiv.remove();
+                    ed.destroy();
+                    return;
+                }
+                canvas.width = parseFloat(svgElement?.getAttribute("width") ?? "800")
+                canvas.height = parseFloat(svgElement?.getAttribute("height") ?? "600")
+                let ctx = canvas.getContext('2d')
+                if (!ctx) {
+                    console.error("Failed to get 2D context for canvas.");
+                    newDiv.remove();
+                    ed.destroy();
+                    return;
+                }
+                let v = await Canvg.fromString(ctx, svg)
+                await v.render()
+                let pngDataUrl = canvas.toDataURL('image/png')
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'pt',
+                    format: [canvas.width, canvas.height],
+                })
+                doc.addImage(pngDataUrl, 'PNG', 0, 0, canvas.width, canvas.height);
+                let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`;
+                doc.save(`${fn}.pdf`);
+
+                newDiv.remove()
+                ed.destroy()
+                canvas.remove()
+            }
+            download()
+        }
+    }
+
+    const handleDrop = (files: File[]) => {
+        if (files.length !== 1) {
+            return
+        } else {
+            const fileReader = new FileReader()
+            fileReader.onload = (e) => {
+                try {
+                    let cont = document.getElementById("apollon");
+                    if (cont) {
+                        let ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram", model: JSON.parse(e.target?.result as string) });
+                        setEditor(ed)
+                        setUploaded(true)
+                        setTimeout(() => {
+                            setUploaded(false)
+                        }, 3000)
+                    }
+                } catch (error) {
+                    console.error("Error reading file:", error)
+                }
+            }
+            fileReader.readAsText(files[0])
         }
     }
 
@@ -841,21 +990,27 @@ function ExercisePage() {
                 <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <Grid.Col span={4}>
                         <Center>
-                            <Button variant="light" color="grape" onClick={openMenu}>Menu</Button>
+                            <Button variant="light" color="indigo" onClick={openMenu} leftSection={<IconMenu4 size={14} />} >Menu</Button>
                         </Center>
                     </Grid.Col>
                     <Grid.Col span={4}>
                         <Center>
-                            <Button variant="light" color="grape">Save</Button>
-                            <Button variant="light" color="green" onClick={evaluate}>Check</Button>
-                            <Button variant="light" color="red">Exit</Button>
+                            <Button variant="light" color="cyan" leftSection={<IconUpload size={14} />} onClick={() => {
+                                setSaving(true)
+                                if (courseId && exerciseId && user && editor) {
+                                    API.saveExerciseRecord(courseId, exerciseId, user?.username, editor?.model, false).then((res) => {
+                                        setSaving(false)
+                                    })
+                                }
+                            }} >Save</Button>
+                            <Button variant="light" color="green" onClick={evaluate} leftSection={<IconCircleDashedCheck size={14} />} >Check</Button>
+                            <Button variant="light" color="red" onClick={openExit} leftSection={<IconSquareXFilled size={14} />}>Exit</Button>
                         </Center>
                     </Grid.Col>
                     <Grid.Col span={4}>
                         <Center>
-                            <Button variant="light" color="grape">Settings</Button>
-                            <Button variant="light" color="grape">Restore last</Button>
-                            <Button variant="light" color="grape">Erase all</Button>
+                            <Button variant="light" color="yellow" onClick={openReset} leftSection={<IconReload size={14} />}>Restore last</Button>
+                            <Button variant="light" color="red" onClick={openClear} leftSection={<IconSquareXFilled size={14} />} >Erase all</Button>
                         </Center>
                     </Grid.Col>
                 </Grid>
@@ -864,7 +1019,54 @@ function ExercisePage() {
 
             <Drawer opened={menuOpened} onClose={closeMenu} size={"lg"} offset={10} radius={"md"} position="right" >
                 {exercise && (
-                    <Text>{exercise.description}</Text>
+                    <Tabs defaultValue={"Description"}>
+                        <Tabs.List >
+                            <Tabs.Tab value="Description" leftSection={<IconFileDescriptionFilled size={15} />} >Description</Tabs.Tab>
+                            <Tabs.Tab value="Leaderboard" leftSection={<IconMedal size={15} />}  >Leaderboard</Tabs.Tab>
+                            <Tabs.Tab value="Hints" leftSection={<IconHelp size={15} />} >Hints</Tabs.Tab>
+                        </Tabs.List>
+                        <Tabs.Panel value="Description" pt="xs">
+                            <Text fw={700} fs="italic" td="underline" >{exercise.title}</Text>
+                            <Divider my="xs" />
+                            <Text style={{ maxHeight: "70vh", overflowY: "auto" }}>{exercise.description}</Text>
+                            <Divider my="xs" />
+                            <Fieldset legend="Download">
+                                <TextInput placeholder="Filename" value={filename} onChange={(e) => setFilename(e.currentTarget.value)} />
+                                <Stack align="center" justify="center">
+                                    <Button variant="light" color="yellow" onClick={exportJSON} leftSection={<IconDownload size={14} />} >Download JSON source file</Button>
+                                    <Button variant="light" color="cyan" onClick={exportSVG} leftSection={<IconDownload size={14} />}>Download diagram as SVG image</Button>
+                                    <Button variant="light" color="pink" onClick={exportPDF} leftSection={<IconDownload size={14} />}>Download diagram as PDF file</Button>
+                                </Stack>
+                            </Fieldset>
+
+                            <Divider my="xs" />
+                            <Dropzone onDrop={(files) => handleDrop(files)} accept={["application/json"]} className="dropzone" radius="md" maxSize={30 * 1024 ** 2}>
+                                <div style={{ pointerEvents: "none" }}>
+                                    <Fieldset legend="Import JSON file" style={{ pointerEvents: "none" }}>
+                                        <Group justify='center' align='center'>
+                                            <Dropzone.Accept>
+                                                <IconDownload size={50} color="blue" stroke={1.5} />
+                                            </Dropzone.Accept>
+                                            <Dropzone.Reject>
+                                                <IconX size={50} color="red" stroke={1.5} />
+                                            </Dropzone.Reject>
+                                            <Dropzone.Idle>
+                                                <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                            </Dropzone.Idle>
+                                        </Group>
+                                        <Text ta="center" fw={700} fz="lg" mt="xl">
+                                            <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                            <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                            <Dropzone.Idle>Upload source file</Dropzone.Idle>
+                                        </Text>
+                                        <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                            Drag&apos;n&apos;drop a JSON file here to load a diagram into the editor.
+                                        </Text>
+                                    </Fieldset>
+                                </div>
+                            </Dropzone>
+                        </Tabs.Panel>
+                    </Tabs>
                 )}
             </Drawer>
 
@@ -987,9 +1189,76 @@ function ExercisePage() {
                 </Highlight>}
             </Modal>
 
+            <Modal opened={exitOpened} onClose={closeExit} size="md" radius="md" title="Exit Exercise">
+                <Text>Are you sure you want to exit the exercise and return to the course page?</Text>
+                <Text>Unsaved changes will be lost!</Text>
+                <Group justify="flex-end" mt="md">
+                    <Button variant="light" color="cyan" onClick={closeExit}>Continue</Button>
+                    <Button variant="light" color="red" leftSection={<IconSquareXFilled size={14} />} onClick={() => navigate("/student/courses/" + courseId)} >Exit</Button>
+                </Group>
+            </Modal>
+
+            <Modal opened={resetOpened} onClose={closeReset} size="md" radius="md" title="Reset Diagram">
+                <Text>Are you sure you want to restore the last saved version of your diagram?</Text>
+                <Text>All changes made since that version will be lost!</Text>
+                <Text>Errors and found elements will be reset to what they were for that version.</Text>
+                <Group justify="flex-end" mt="md">
+                    <Button variant="light" color="cyan" onClick={closeReset}>Continue</Button>
+                    <Button variant="light" color="yellow" leftSection={<IconReload size={14} />} onClick={() => {
+                        if (courseId && exerciseId && user) {
+                            API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
+                                handleFeedback(res, false)
+                                closeReset()
+                            })
+                        }
+                    }} >Restore last version</Button>
+                </Group>
+            </Modal>
+
+            <Modal opened={clearOpened} onClose={closeClear} size="md" radius="md" title="Clear Diagram">
+                <Text>Are you sure you want to clear the current diagram?</Text>
+                <Text>All changes will be lost!</Text>
+                <Text>The saved diagram will not be affected by this action and errors will be reset</Text>
+                <Group justify="flex-end" mt="md">
+                    <Button variant="light" color="cyan" onClick={closeClear}>Continue</Button>
+                    <Button variant="light" color="red" leftSection={<IconSquareXFilled size={14} />} onClick={() => {
+                        if (editor && exercise) {
+                            let model = { ...editor.model }
+                            model.elements = {}
+                            model.relationships = {}
+                            editor.model = model
+                            let r = { ...results }
+                            r.oldProgress = r.newProgress
+                            r.oldXP = r.newXP
+                            r.oldSyntaxErrors = r.newSyntaxErrors
+                            r.oldSemanticErrors = r.newSemanticErrors
+                            r.newProgress = 0
+                            r.newXP = exercise.experience
+                            r.newSyntaxErrors = []
+                            r.newSemanticErrors = []
+                            r.results = { matchingClasses: [] }
+                            setResults(r)
+                            closeClear()
+                        }
+                    }} >Clear</Button>
+                </Group>
+            </Modal>
+
             {checking && <Notification color="yellow" mt="md" className='notif' loading={true} >
                 <Alert variant="light" color="yellow" icon={<IconExclamationCircle size={16} />} title="Warning!" >
                     Exercise evaluation is in progress. Please wait...
+                </Alert>
+            </Notification>}
+
+            {saving && <Notification color="blue" mt="md" className='notif' loading={true} >
+                <Alert variant="light" color="blue" icon={<IconCircleDashedCheck size={16} />} title="Saving..." >
+                    Your diagram is being saved. Please wait...
+                </Alert>
+            </Notification>}
+
+            {uploaded && <Notification color="green" mt="md" className='notif' >
+                <Alert variant="light" color="green" icon={<IconCheck size={16} />} title="Success!" >
+                    Diagram updated successfully.
                 </Alert>
             </Notification>}
         </>
