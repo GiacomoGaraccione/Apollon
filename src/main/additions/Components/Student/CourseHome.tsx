@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Notification, Textarea, Group, Loader, Badge, Avatar, Tooltip } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Notification, Textarea, Group, Loader, Badge, Avatar, Tooltip, Radio } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
 import { IconCheck, IconExclamationCircle, IconInfoCircle, IconLockFilled, IconSquareRoundedPlusFilled } from "@tabler/icons-react";
@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import "./style.scss"
 import { createAvatar } from "@dicebear/core"
 import { avataaars } from '@dicebear/collection';
+import Leaderboard from "./Leaderboard";
 
 function CourseHome() {
     const user = useContext(UserContext)
@@ -23,6 +24,8 @@ function CourseHome() {
     const [experience, setExperience] = useState<number>(0)
     const [loading, setLoading] = useState<boolean>(false)
     const [saved, setSaved] = useState<boolean>(false)
+    const [rankingType, setRankingType] = useState<string>("level")
+    const [currentExercise, setCurrentExercise] = useState<string | null>(null)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -80,7 +83,7 @@ function CourseHome() {
                         <Tabs.List>
                             <Tabs.Tab value="avatar">Avatar</Tabs.Tab>
                             <Tabs.Tab value="exercises">Exercises</Tabs.Tab>
-                            <Tabs.Tab value="settings">Leaderboard</Tabs.Tab>
+                            <Tabs.Tab value="leaderboards">Leaderboards</Tabs.Tab>
                         </Tabs.List>
 
                         <Tabs.Panel value="avatar">
@@ -681,8 +684,89 @@ function CourseHome() {
                             </Grid>
                         </Tabs.Panel>
 
-                        <Tabs.Panel value="settings">
-                            <Text>Settings</Text>
+                        <Tabs.Panel value="leaderboards">
+                            <Grid justify="center" align="center">
+                                <Grid.Col span={3}>
+                                    <Fieldset legend="Available rankings">
+                                        <Radio.Group label="Choose a ranking type" style={{ width: "100%" }} value={rankingType} >
+                                            <Stack pt="md" gap="xs">
+                                                <Radio.Card style={{
+                                                    position: "relative",
+                                                    padding: "var(--mantine-spacing-md)",
+                                                    transition: "border-color 150ms ease",
+                                                }} radius={"md"} value="level" key="level" onClick={() => {
+                                                    setRankingType("level")
+                                                    setCurrentExercise(null)
+                                                }}>
+                                                    <Group wrap="nowrap" align="flex-start">
+                                                        <Radio.Indicator />
+                                                        <div>
+                                                            <Text style={{
+                                                                fontFamily: "var(--mantine-font-family-monospace)",
+                                                                fontWeight: "bold",
+                                                                fontSize: "var(--mantine-font-size-md)",
+                                                                lineHeight: 1.3,
+                                                                color: "var(--mantine-color-cyan-7)"
+                                                            }}>Level and XP</Text>
+                                                        </div>
+                                                    </Group>
+                                                </Radio.Card>
+                                                <Radio.Card style={{
+                                                    position: "relative",
+                                                    padding: "var(--mantine-spacing-md)",
+                                                    transition: "border-color 150ms ease",
+
+                                                }} radius={"md"} value="completedExs" key="completedExs" onClick={() => {
+                                                    setRankingType("completedExs")
+                                                    setCurrentExercise(null)
+                                                }}>
+                                                    <Group wrap="nowrap" align="flex-start">
+                                                        <Radio.Indicator />
+                                                        <div>
+                                                            <Text style={{
+                                                                fontFamily: "var(--mantine-font-family-monospace)",
+                                                                fontWeight: "bold",
+                                                                fontSize: "var(--mantine-font-size-md)",
+                                                                lineHeight: 1.3,
+                                                                color: "var(--mantine-color-cyan-7)"
+                                                            }}>Completed Exercises</Text>
+                                                        </div>
+                                                    </Group>
+                                                </Radio.Card>
+                                                {course?.exercises.filter((ex) => ex.visible && ex.gamified).map((exercise) => (
+                                                    <Radio.Card style={{
+                                                        position: "relative",
+                                                        padding: "var(--mantine-spacing-md)",
+                                                        transition: "border-color 150ms ease",
+
+                                                    }} radius={"md"} value="exercise" key={exercise.exerciseId} onClick={() => {
+                                                        setRankingType("exercise")
+                                                        setCurrentExercise(exercise.exerciseId)
+                                                    }}>
+                                                        <Group wrap="nowrap" align="flex-start">
+                                                            <Radio.Indicator />
+                                                            <div>
+                                                                <Text style={{
+                                                                    fontFamily: "var(--mantine-font-family-monospace)",
+                                                                    fontWeight: "bold",
+                                                                    fontSize: "var(--mantine-font-size-md)",
+                                                                    lineHeight: 1.3,
+                                                                    color: "var(--mantine-color-cyan-7)"
+                                                                }}>Completeness in exercise: {exercise.title}</Text>
+                                                            </div>
+                                                        </Group>
+                                                    </Radio.Card>
+                                                ))}
+                                            </Stack>
+                                        </Radio.Group>
+                                    </Fieldset>
+                                </Grid.Col>
+                                <Grid.Col span={9}>
+                                    <Fieldset legend="Leaderboard" style={{ width: "100%" }}>
+                                        <Leaderboard ranking={rankingType} exerciseId={currentExercise ?? undefined} />
+                                    </Fieldset>
+                                </Grid.Col>
+                            </Grid>
                         </Tabs.Panel>
                     </Tabs>
                 </Grid.Col>

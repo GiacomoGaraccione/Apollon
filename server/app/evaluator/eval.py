@@ -180,6 +180,10 @@ def evaluate_student_diagram(solutions, model):
                 best_completeness = completeness
                 best = report
                 best_reference = reference
+            else:
+                best_completeness = 0
+                best_reference = reference
+                best = report
         semantic_errors = get_semantic_errors_from_report(best, best_reference)
         syntax_errors = get_syntax_errors_from_model(utils.convert_apollon_model_to_reference(model))
         best["syntax_errors"] = syntax_errors

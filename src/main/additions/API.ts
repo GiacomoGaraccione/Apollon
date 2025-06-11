@@ -581,11 +581,74 @@ async function saveExerciseRecord(courseId: string, exerciseId: string, userId: 
     }
 }
 
+// ----------------- Ranking APIs -----------------
+
+async function getRankingByExerciseCompleteness(courseId: string, exerciseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/rankings/exercises/" + exerciseId, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getRankingByLevel(courseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/rankings/level", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getRankingByCompletedExercises(courseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/rankings/bosses", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo,
-    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord
+    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord,
+    getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises
 }
 
 export default API

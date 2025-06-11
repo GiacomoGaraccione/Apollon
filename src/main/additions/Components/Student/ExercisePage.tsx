@@ -18,6 +18,7 @@ import 'svg2pdf.js'
 import jsPDF from "jspdf";
 import { svg2pdf } from "svg2pdf.js";
 import { Canvg } from "canvg";
+import Leaderboard from "./Leaderboard";
 
 const options = {
     colorEnabled: false,
@@ -1023,12 +1024,13 @@ function ExercisePage() {
                         <Tabs.List >
                             <Tabs.Tab value="Description" leftSection={<IconFileDescriptionFilled size={15} />} >Description</Tabs.Tab>
                             <Tabs.Tab value="Leaderboard" leftSection={<IconMedal size={15} />}  >Leaderboard</Tabs.Tab>
-                            <Tabs.Tab value="Hints" leftSection={<IconHelp size={15} />} >Hints</Tabs.Tab>
                         </Tabs.List>
                         <Tabs.Panel value="Description" pt="xs">
                             <Text fw={700} fs="italic" td="underline" >{exercise.title}</Text>
                             <Divider my="xs" />
-                            <Text style={{ maxHeight: "70vh", overflowY: "auto" }}>{exercise.description}</Text>
+                            <Fieldset legend="Exercise Description">
+                                <Text style={{ maxHeight: "70vh", overflowY: "auto" }}>{exercise.description}</Text>
+                            </Fieldset>
                             <Divider my="xs" />
                             <Fieldset legend="Download">
                                 <TextInput placeholder="Filename" value={filename} onChange={(e) => setFilename(e.currentTarget.value)} />
@@ -1065,6 +1067,12 @@ function ExercisePage() {
                                     </Fieldset>
                                 </div>
                             </Dropzone>
+                        </Tabs.Panel>
+                        <Tabs.Panel value="Leaderboard" pt="xs">
+                            <Fieldset legend="Ranking by Exercise Completeness">
+                                <Leaderboard ranking={"exercise"} />
+
+                            </Fieldset>
                         </Tabs.Panel>
                     </Tabs>
                 )}

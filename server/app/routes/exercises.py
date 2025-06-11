@@ -211,37 +211,32 @@ def update_student_exercise(courseId, exerciseId, studentId):
             model = data.get("model", None)
             results = evaluator.evaluate_student_diagram(solutions=solutions, model=model)
             if record is None:
-                experience = data.get("experience", 0)
-                correctness = data.get("progress", 0)
-                checks = data.get("checks", 0)
-                if data.get("evaluation", False):
-                    checks = checks + 1
-                syntax_errors = data.get("syntaxErrors", None)
-                semantic_errors = data.get("semanticErrors", None)
                 record = StudentExerciseLog(
                     exerciseId=exerciseId,
                     username=studentId,
                     courseId=courseId,
-                    experience=experience,
-                    correctness=correctness,
-                    checks=checks,
+                    experience=exercise.experience,
+                    correctness=0,
+                    checks=0,
                     model=json.dumps(model) if model else None,
-                    syntax_errors=json.dumps(syntax_errors) if syntax_errors else None,
-                    semantic_errors=json.dumps(semantic_errors) if semantic_errors else None,
+                    syntax_errors=json.dumps([]),
+                    semantic_errors=json.dumps([]),
                     results=json.dumps(results) if results else None
                 )
+                if data.get("evaluation", False):
+                    record.correctness = results.get("completeness", 0)
+                    record.checks = 1
+                    record.experience = update_experience_points(exercise, results, record)
+                    record.syntax_errors = json.dumps(results.get("syntax_errors", []))
+                    record.semantic_errors = json.dumps(results.get("semantic_errors", []))
                 session.add(record)
                 session.commit()
                 return jsonify({"record": record.serialize(), "results": results}), 201
             else:
                 if data.get("evaluation", False):
-                    experience = update_experience_points(exercise, results, record)
-                    correctness = data.get("progress", record.correctness)
-                    checks = data.get("checks", record.checks)
-                    checks = checks + 1
-                    record.experience = experience
+                    record.experience = update_experience_points(exercise, results, record)
                     record.correctness = results.get("completeness", record.correctness)
-                    record.checks = checks
+                    record.checks = record.checks + 1
                     record.syntax_errors = json.dumps(results.get("syntax_errors", record.syntax_errors))
                     record.semantic_errors = json.dumps(results.get("semantic_errors", record.semantic_errors))
                     record.results = json.dumps(results) if results else record.results

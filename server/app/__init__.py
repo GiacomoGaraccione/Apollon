@@ -10,6 +10,7 @@ from app.routes.auth import auth_bp
 from app.routes.users import users_bp
 from app.routes.courses import courses_bp
 from app.routes.exercises import exercises_bp
+from app.routes.rankings import rankings_bp
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -28,6 +29,7 @@ def create_app(env_name='development'):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(courses_bp, url_prefix='/courses')
     app.register_blueprint(exercises_bp, url_prefix='/courses')
+    app.register_blueprint(rankings_bp, url_prefix='/courses')
 
     # Swagger
     SWAGGER_URL = app.config['SWAGGER_URL']
