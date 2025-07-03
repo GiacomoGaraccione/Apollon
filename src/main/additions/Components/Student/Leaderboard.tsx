@@ -67,7 +67,7 @@ function Leaderboard(props: { ranking: string, exerciseId?: string }) {
                 })
             }
         }
-    }, [props.ranking])
+    }, [props.ranking, props.exerciseId, courseId, exerciseId])
 
     return (
         <>

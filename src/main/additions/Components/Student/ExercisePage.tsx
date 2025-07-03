@@ -116,6 +116,7 @@ function ExercisePage() {
                 r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
                 r.results = JSON.parse(res.results || "{}")
             }
+            console.log(r)
             setResults(r)
             let model = JSON.parse(res.model)
             Object.keys(model.elements).forEach((key) => {

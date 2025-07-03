@@ -34,6 +34,7 @@ def evaluate_student_diagram(solutions, model):
         for sol in solutions:
             reference = json.loads(sol.get("content")).get("reference")
             diagram = utils.convert_apollon_model_to_reference(model)
+            print(diagram)
             report = {
                 "matchingClasses": [],
                 "matchingAssociations": [],

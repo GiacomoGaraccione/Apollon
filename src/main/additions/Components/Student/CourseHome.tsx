@@ -742,7 +742,7 @@ function CourseHome() {
                                                     }} radius={"md"} value="exercise" key={exercise.exerciseId} onClick={() => {
                                                         setRankingType("exercise")
                                                         setCurrentExercise(exercise.exerciseId)
-                                                    }}>
+                                                    }} checked={currentExercise === exercise.exerciseId}>
                                                         <Group wrap="nowrap" align="flex-start">
                                                             <Radio.Indicator />
                                                             <div>
