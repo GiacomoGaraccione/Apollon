@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Notification, Textarea, Group, Loader, Badge, Avatar, Tooltip, Radio } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Notification, Textarea, Group, Loader, Badge, Avatar, Tooltip, Radio, Progress, Divider, Skeleton } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
 import { IconCheck, IconExclamationCircle, IconInfoCircle, IconLockFilled, IconSquareRoundedPlusFilled } from "@tabler/icons-react";
@@ -26,6 +26,9 @@ function CourseHome() {
     const [saved, setSaved] = useState<boolean>(false)
     const [rankingType, setRankingType] = useState<string>("level")
     const [currentExercise, setCurrentExercise] = useState<string | null>(null)
+    const [levelInfo, setLevelInfo] = useState<any>(null)
+    const [load, setLoad] = useState<boolean>(true)
+    const [completedExercises, setCompletedExercises] = useState<any[]>([])
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -45,6 +48,8 @@ function CourseHome() {
                         let svg = createAvatar(avataaars, avatarOpts).toString()
                         setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                         setLevel(1)
+                        let levelInfo = c.gameOptions!.levels[0]
+                        setLevelInfo(levelInfo)
                         setTimeout(() => {
                             setNotif(false)
                         }, 5000)
@@ -55,7 +60,13 @@ function CourseHome() {
                         setAvatarOptions(avatarOpts)
                         let svg = createAvatar(avataaars, avatarOpts).toString()
                         setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
+                        let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
+                        setLevelInfo(levelInfo)
                     }
+                    API.getStudentCompletedExercises(courseId, user.username).then((ce) => {
+                        setCompletedExercises(ce)
+                    })
+                    setLoad(false)
                 })
             })
         }
@@ -90,22 +101,45 @@ function CourseHome() {
                             <Grid justify="center" align="center">
                                 <Grid.Col span={3}>
                                     <Fieldset legend="Your Current Avatar" style={{ width: "100%" }}>
+                                        <Skeleton visible={load}>
+                                            <><Stack align="center">
+                                                <Avatar src={avatarString} size={200} radius="xl" />
+                                                <Text fw={700} size="lg">Level: {level}</Text>
+                                            </Stack>
+                                                <Divider my="sm" variant="dashed" />
+                                                {levelInfo && <><Text size="sm" color="dimmed" mb={4}>XP needed to reach the next level:</Text>
+                                                    <Group justify="space-between" mb={4}>
+                                                        <Text size="xs" color="dimmed">
+                                                            {levelInfo.min} XP
+                                                        </Text>
+                                                        <Text size="xs" color="dimmed">
+                                                            {levelInfo.max} XP
+                                                        </Text>
+                                                    </Group>
+                                                    <Progress.Root size="xl">
+                                                        <Progress.Section value={((experience - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100} color="green" striped animated>
+                                                            <Progress.Label>
+                                                                {experience} XP
+                                                            </Progress.Label>
+                                                        </Progress.Section>
+                                                    </Progress.Root>
+                                                    <Divider my="sm" variant="dashed" />
+                                                </>}
+                                                {!levelInfo && <> <Text size="sm" color="dimmed" mb={4}>You are at the maximum level, no more XP can be gained.</Text>
+                                                    <Divider my="sm" variant="dashed" /></>}
 
-                                        <Stack align="center">
-                                            <Avatar src={avatarString} size={200} radius="xl" />
-                                            <Text fw={700} size="lg">Level: {level}</Text>
-                                            <Text fw={300} size="md">Experience: {experience}XP</Text>
-                                        </Stack>
-                                        <Text size="sm" w={"auto"} color="gray">You can change your avatar's appearance using the menu on the right.</Text>
-                                        {!courseInfo && <>
-                                            <Text size="sm" w={"auto"} color="gray">Please note that this avatar was generated with random available props.</Text>
-                                            <Text size="sm" w={"auto"} color="gray">It is not possible to start exercises unless you save your avatar first.</Text>
-                                        </>}
-                                        <Center>
-                                            <Button onClick={handleSave} variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm">
-                                                Save Avatar
-                                            </Button>
-                                        </Center>
+                                                <Text size="sm" w={"auto"} color="gray">You can change your avatar's appearance using the menu on the right.</Text>
+                                                {!courseInfo && <>
+                                                    <Text size="sm" w={"auto"} color="gray">Please note that this avatar was generated with random available props.</Text>
+                                                    <Text size="sm" w={"auto"} color="gray">It is not possible to start exercises unless you save your avatar first.</Text>
+                                                </>}
+                                                <Center>
+                                                    <Button onClick={handleSave} variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm">
+                                                        Save Avatar
+                                                    </Button>
+                                                </Center>
+                                            </>
+                                        </Skeleton>
                                     </Fieldset>
                                 </Grid.Col>
                                 <Grid.Col span={9}>
@@ -663,15 +697,28 @@ function CourseHome() {
                                             <Flex direction="column" gap={10} style={{ width: "100%" }}>
                                                 {course.exercises.filter((ex) => ex.visible).map((exercise) => {
                                                     return (
-                                                        <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder style={{ width: '100%', margin: 'auto', cursor: 'pointer' }} onClick={() => {
+                                                        <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder style={{ width: '100%', margin: 'auto', cursor: 'pointer', position: 'relative' }} onClick={() => {
                                                             navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`)
                                                         }}>
-                                                            <Text color="green">{exercise.title}</Text>
-                                                            <Flex align="center" gap="xs">
-                                                                {exercise.gamified && <>
-                                                                    <Text size="sm">Level: {exercise.level}</Text>
-                                                                    <Text size="sm" >Reward: {exercise.experience} XP</Text>
-                                                                </>}
+                                                            <Flex align="center" justify="space-between">
+                                                                <div>
+                                                                    <Text color="green">{exercise.title}</Text>
+                                                                    <Flex align="center" gap="xs">
+                                                                        {exercise.gamified && <>
+                                                                            <Text size="sm">Level: {exercise.level}</Text>
+                                                                            <Text size="sm" >Reward: {exercise.experience} XP</Text>
+                                                                        </>}
+                                                                    </Flex>
+                                                                </div>
+                                                                {completedExercises.some((ex) => ex.exerciseId === exercise.exerciseId) && (
+                                                                    <Tooltip label="Completed">
+                                                                        <span style={{ marginLeft: 8, display: "flex", alignItems: "center" }}>
+                                                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFD700" xmlns="http://www.w3.org/2000/svg">
+                                                                                <path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 7.1-1.01z" />
+                                                                            </svg>
+                                                                        </span>
+                                                                    </Tooltip>
+                                                                )}
                                                             </Flex>
                                                         </Card>
                                                     )

@@ -435,6 +435,26 @@ async function updateStudentCourseInfo(courseId: string, userId: string, level: 
     }
 }
 
+async function getStudentCompletedExercises(courseId: string, studentId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/students/" + studentId + "/completed", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res.completed_exercises
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 // ----------------- Exercise APIs -----------------
 
 async function addExercise(courseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean) {
@@ -706,7 +726,7 @@ async function getRankingByCompletedExercises(courseId: string) {
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
-    getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo,
+    getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo, getStudentCompletedExercises,
     addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise,
     getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises
 }

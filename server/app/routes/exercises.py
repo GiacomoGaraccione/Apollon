@@ -210,6 +210,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
             solutions = [sol.serialize() for sol in solutions]
             model = data.get("model", None)
             results = evaluator.evaluate_student_diagram(solutions=solutions, model=model)
+            completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
             if record is None:
                 record = StudentExerciseLog(
                     exerciseId=exerciseId,
@@ -226,7 +227,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                 if data.get("evaluation", False):
                     record.correctness = results.get("completeness", 0)
                     record.checks = 1
-                    record.experience = update_experience_points(exercise, results, record)
+                    record.experience = update_experience_points(exercise, results, record) if completed is None else completed.experience
                     record.syntax_errors = json.dumps(results.get("syntax_errors", []))
                     record.semantic_errors = json.dumps(results.get("semantic_errors", []))
                 session.add(record)
@@ -234,7 +235,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                 return jsonify({"record": record.serialize(), "results": results}), 201
             else:
                 if data.get("evaluation", False):
-                    record.experience = update_experience_points(exercise, results, record)
+                    record.experience = update_experience_points(exercise, results, record) if completed is None else completed.experience
                     record.correctness = results.get("completeness", record.correctness)
                     record.checks = record.checks + 1
                     record.syntax_errors = json.dumps(results.get("syntax_errors", record.syntax_errors))

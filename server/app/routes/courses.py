@@ -1,6 +1,6 @@
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
-from app.models import User, Course, StudentCourseInfo
+from app.models import User, Course, StudentCourseInfo, StudentExerciseCompletion
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
 from sqlalchemy.orm import joinedload
@@ -230,6 +230,26 @@ def update_student_course_info(courseId, studentId):
                 info.experience = data.get("experience", info.experience)
             session.commit()
             return jsonify({'message': 'Student course info updated successfully'}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({'message': 'Database connection error'}), 500
+
+@courses_bp.route("/<courseId>/students/<studentId>/completed", methods=["GET"])
+@jwt_required()
+@role_required("Student")
+def get_student_completed_exercises(courseId, studentId):
+    with get_session() as session:
+        try:
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            student = session.query(User).filter_by(username=studentId, role="Student").first()
+            if student is None:
+                return jsonify({'message': 'Student not found'}), 404
+            if student not in course.students:
+                return jsonify({'message': 'Student not enrolled in this course'}), 400
+            completed_exercises = session.query(StudentExerciseCompletion).filter_by(courseId=courseId, username=studentId).all()
+            return jsonify({"completed_exercises": [completion.serialize() for completion in completed_exercises]}), 200
         except Exception as e:
             print(e)
             return jsonify({'message': 'Database connection error'}), 500

@@ -9,9 +9,9 @@ class Course {
     students: User[]
     exercises: Exercise[]
     settings: AvatarUnlockOptions | null
-    gameOptions: string | null
+    gameOptions: any | null
 
-    constructor(courseId: string, courseName: string, students: User[], exercises: Exercise[], settings: any, gameOptions: string | null = null) {
+    constructor(courseId: string, courseName: string, students: User[], exercises: Exercise[], settings: any, gameOptions: any | null = null) {
         this.settings = settings
         this.courseId = courseId
         this.courseName = courseName
