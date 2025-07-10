@@ -65,6 +65,21 @@ def update_course_settings(courseId):
         except:
             return jsonify({'message': 'Database connection error'}), 500
         
+@courses_bp.route("/<courseId>/game-settings", methods=["PUT"])
+@jwt_required()
+@role_required("Teacher")
+def update_course_game_settings(courseId):
+    with get_session() as session:
+        try:
+            data = request.json
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            course.gameOptions = json.dumps(data)
+            session.commit()
+            return jsonify({'message': 'Course game settings updated successfully'}), 200
+        except:
+            return jsonify({'message': 'Database connection error'}), 500
 
 @courses_bp.route("/<courseId>", methods=["DELETE"])
 @jwt_required()
@@ -163,6 +178,7 @@ def get_course_info(courseId):
                 "courseName": course.name,
                 "exercises": [exercise.serialize() for exercise in course.exercises],
                 "settings": course.settings,
+                "gameOptions": course.gameOptions,
             }), 200
         except Exception as e:
             print(e)

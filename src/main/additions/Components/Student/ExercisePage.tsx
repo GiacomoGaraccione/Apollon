@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Notification, Stack, TextInput, NativeSelect, Textarea, Group, Loader, Avatar, RingProgress, Popover, UnstyledButton, Drawer, List, ThemeIcon, Mark, Highlight, Divider } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Notification, Stack, TextInput, NativeSelect, Textarea, Group, Loader, Avatar, RingProgress, Popover, UnstyledButton, Drawer, List, ThemeIcon, Mark, Highlight, Divider, Progress } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
-import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconHelp, IconJson, IconMedal, IconMenu4, IconPdf, IconReload, IconSquareXFilled, IconSvg, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
+import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconHelp, IconJson, IconMedal, IconMenu4, IconPdf, IconReload, IconSquareXFilled, IconSvg, IconTrophyFilled, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
 import { Course, Exercise } from "../../Utils/Models";
 import { AvatarUnlockOptions } from "../../Utils/AvatarUtils";
 import { useNavigate, useParams } from "react-router-dom";
@@ -32,9 +32,10 @@ function ExercisePage() {
     const user = useContext(UserContext)
     const { courseId, exerciseId } = useParams()
     const [gamified, setGamified] = useState(false)
+    const [studentInfo, setStudentInfo] = useState<any>(null)
     const [bossSettings, setBossSettings] = useState<any>(null)
     const [bossString, setBossString] = useState("")
-    const [courseInfo, setCourseInfo] = useState<any>(null)
+    const [courseInfo, setCourseInfo] = useState<any | null>(null)
     const [avatarOptions, setAvatarOptions] = useState<any>(null)
     const [avatarString, setAvatarString] = useState<string>("")
     const [editor, setEditor] = useState<ApollonEditor>()
@@ -43,6 +44,7 @@ function ExercisePage() {
     const [exitOpened, { open: openExit, close: closeExit }] = useDisclosure(false)
     const [clearOpened, { open: openClear, close: closeClear }] = useDisclosure(false)
     const [resetOpened, { open: openReset, close: closeReset }] = useDisclosure(false)
+    const [completeOpened, { open: openComplete, close: closeComplete }] = useDisclosure(false)
     const [exercise, setExercise] = useState<Exercise | null>(null)
     const [checking, setChecking] = useState<boolean>(false)
     const [results, setResults] = useState<EvaluationResults>(new EvaluationResults())
@@ -52,11 +54,14 @@ function ExercisePage() {
     const openRef = useRef<() => void>(null)
     const [uploaded, setUploaded] = useState<boolean>(false)
     const [saving, setSaving] = useState<boolean>(false)
+    const [completed, setCompleted] = useState<boolean>(false)
+    const [completeResults, setCompleteResults] = useState<any>(null)
     const navigate = useNavigate()
 
     useEffect(() => {
         if (user && courseId && exerciseId) {
             API.getCourseInfo(courseId).then((course) => {
+                setCourseInfo(course)
                 let ex = course.exercises.find((ex) => ex.exerciseId === exerciseId)
                 if (ex) {
                     setExercise(ex)
@@ -66,6 +71,7 @@ function ExercisePage() {
                     let bossStr = createAvatar(bottts, opts).toString()
                     setBossString(`data:image/svg+xml;utf8,${encodeURIComponent(bossStr)}`)
                     API.getStudentCourseInfo(courseId, user.username).then(async (studentCourse) => {
+                        setStudentInfo(studentCourse.info)
                         let avatarOpts = JSON.parse(studentCourse.info.avatar)
                         setAvatarOptions(avatarOpts)
                         let svg = createAvatar(avataaars, { ...avatarOpts, style: ["default"], mouth: ["serious"], eyes: ["side"] }).toString()
@@ -105,6 +111,7 @@ function ExercisePage() {
                 r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
                 r.results = JSON.parse(res.results || "{}")
                 handleMoodChange(r)
+                setCompleted(res.correctness >= 75)
             } else {
                 r.oldXP = res.experience
                 r.newXP = res.experience
@@ -269,6 +276,82 @@ function ExercisePage() {
             }
         } catch (error) {
             console.error("Error evaluating exercise:", error);
+        }
+    }
+
+    const checkCompleted = () => {
+        try {
+            if (!completed) return
+            if (courseId && exerciseId && user && exercise) {
+                API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((res: any) => {
+                    if (!res.completed) {
+                        console.log(courseInfo)
+                        console.log(results)
+                        API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((record: any) => {
+                            console.log(record)
+                            let checkMult = 1
+                            let progressMult = 1
+                            let levelDiffMult = 1
+                            let diff = exercise.level - studentInfo.level > 0 ? exercise.level - studentInfo.level : 0
+                            if (courseInfo && courseInfo.gameOptions) {
+                                let found = courseInfo.gameOptions.checks.settings.find(
+                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && record.checks >= setting.range[0] && record.checks <= setting.range[1]
+                                )
+                                if (found && typeof found.multiplier !== "undefined") {
+                                    checkMult = found.multiplier
+                                }
+                                found = courseInfo.gameOptions.progress.settings.find(
+                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && results.newProgress >= setting.range[0] && results.newProgress <= setting.range[1]
+                                )
+                                if (found && typeof found.multiplier !== "undefined") {
+                                    progressMult = found.multiplier
+                                }
+                                if (results.newProgress === 75) progressMult = 1
+                                found = courseInfo.gameOptions.difference.settings.find(
+                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && diff >= setting.range[0] && diff <= setting.range[1]
+                                )
+                                if (found && typeof found.multiplier !== "undefined") {
+                                    levelDiffMult = found.multiplier
+                                }
+                                if (diff === 0) levelDiffMult = 1
+                            }
+                            let reward = Math.round(results.newXP * checkMult * progressMult * levelDiffMult)
+                            let userXp = studentInfo.experience + reward
+                            let found = courseInfo.gameOptions.levels.find(
+                                (level: any) => level.min <= userXp && userXp <= level.max
+                            )
+                            let completeRes = {
+                                checkMult: checkMult,
+                                checks: record.checks,
+                                progressMult: progressMult,
+                                progress: results.newProgress,
+                                levelDiffMult: levelDiffMult,
+                                difference: diff,
+                                reward: reward,
+                                newLevel: studentInfo.level,
+                                newXp: userXp,
+                                levelUp: false,
+                                levelInfo: null
+                            }
+                            if (found) {
+                                completeRes.newLevel = found.level
+                                completeRes.levelInfo = found
+                                if (found.level > studentInfo.level) completeRes.levelUp = true
+                            }
+                            setCompleteResults(completeRes)
+                            API.completeStudentExercise(courseId, exerciseId, user.username, reward).then((res: any) => {
+                                API.updateStudentCourseInfo(courseId, user.username, completeRes.newLevel, userXp, JSON.parse(studentInfo.avatar))
+                            })
+                            openComplete()
+                        })
+                        /*API.completeStudentExercise(courseId, exerciseId, user.username).then((res: any) => {
+                            console.log(res)
+                        })*/
+                    }
+                })
+            }
+        } catch (error) {
+            console.error("Error checking completion:", error);
         }
     }
 
@@ -1079,7 +1162,10 @@ function ExercisePage() {
                 )}
             </Drawer>
 
-            <Modal opened={resultsOpened} onClose={closeResults} size={"lg"} radius={"md"} title="Exercise Results">
+            <Modal opened={resultsOpened} onClose={() => {
+                closeResults()
+                checkCompleted()
+            }} size={"lg"} radius={"md"} title="Exercise Results">
                 <List spacing={"md"} size="lg" center>
                     <List.Item icon={<ThemeIcon size="lg" color="green">
                         <IconCircleDashedCheck size={24} />
@@ -1252,6 +1338,107 @@ function ExercisePage() {
                     }} >Clear</Button>
                 </Group>
             </Modal>
+
+            {completeResults && <Modal opened={completeOpened} onClose={closeComplete} size="60%" radius="md" centered withCloseButton={false} >
+                <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
+                    <Grid.Col span={8}>
+                        <Text>Congratulations! You successfully completed this exercise!</Text>
+                        <Divider my="sm" variant="dashed" />
+                        <List spacing="md" size="md" center icon={<IconTrophyFilled color="gold" size={24} radius="xl" />} >
+                            <List.Item>
+                                <Highlight highlight={[completeResults.progress.toString(), completeResults.progressMult.toString(), "%"]}
+                                    highlightStyles={{
+                                        backgroundColor: "var(--mantine-color-green-5)",
+                                        fontWeight: 700,
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                    }}>{`Your completeness score was: ${completeResults.progress.toString()}% - XP multiplier bonus: ${completeResults.progressMult.toString()}`}</Highlight>
+                            </List.Item>
+                            <List.Item>
+                                <Highlight highlight={[completeResults.checks.toString(), completeResults.checkMult.toString()]}
+                                    highlightStyles={{
+                                        backgroundColor: "var(--mantine-color-green-5)",
+                                        fontWeight: 700,
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                    }}
+                                >{`You made ${completeResults.checks.toString()} checks before completing the exercise - XP multiplier bonus: ${completeResults.checkMult.toString()}`}</Highlight>
+                            </List.Item>
+                            <List.Item>
+                                <Highlight highlight={[completeResults.difference.toString(), completeResults.levelDiffMult.toString()]}
+                                    highlightStyles={{
+                                        backgroundColor: "var(--mantine-color-green-5)",
+                                        fontWeight: 700,
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                    }}
+                                >{`The difference between the exercise level and your level was: ${completeResults.difference.toString()} - XP multiplier bonus: ${completeResults.levelDiffMult.toString()}`}</Highlight>
+                            </List.Item>
+                        </List>
+                        <Divider my="sm" variant="dashed" />
+                        <Highlight highlight={[`${completeResults.reward.toString()} XP`]}
+                            highlightStyles={{
+                                backgroundColor: "var(--mantine-color-green-5)",
+                                fontWeight: 700,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}
+                        >{`Your total XP gained for this exercise is: ${completeResults.reward.toString()} XP`}</Highlight>
+                        <Divider my="sm" variant="dashed" />
+                        {completeResults.levelUp && <>
+                            <Highlight highlight={[completeResults.newLevel.toString()]}
+                                highlightStyles={{
+                                    backgroundColor: "var(--mantine-color-green-5)",
+                                    fontWeight: 700,
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                }}
+                            >{`You leveled up! Your new level is: ${completeResults.newLevel.toString()}`}</Highlight>
+                            <Divider my="sm" variant="dashed" />
+                        </>}
+                        {completeResults.levelInfo && <>
+                            <Text size="sm" color="dimmed" mb={4}>XP needed to reach the next level:</Text>
+                            <Group justify="space-between" mb={4}>
+                                <Text size="xs" color="dimmed">
+                                    {completeResults.levelInfo.min} XP
+                                </Text>
+                                <Text size="xs" color="dimmed">
+                                    {completeResults.levelInfo.max} XP
+                                </Text>
+                            </Group>
+                            <Progress.Root size="xl">
+                                <Progress.Section value={((completeResults.newXp - completeResults.levelInfo.min) / (completeResults.levelInfo.max - completeResults.levelInfo.min)) * 100} color="green" striped animated>
+                                    <Progress.Label>
+                                        {completeResults.newXp} XP
+                                    </Progress.Label>
+                                </Progress.Section>
+                            </Progress.Root>
+                            <Divider my="sm" variant="dashed" />
+                        </>}
+                        {!completeResults.levelInfo && <Text size="sm" color="dimmed" mb={4}>You are at the maximum level, no more XP can be gained.</Text>}
+                    </Grid.Col>
+                    <Grid.Col span={4} >
+                        <Center >
+                            <Stack align="center">
+                                <Avatar
+                                    src={`data:image/svg+xml;utf8,${encodeURIComponent(
+                                        createAvatar(avataaars, {
+                                            ...avatarOptions,
+                                            style: ["default"],
+                                            mouth: ["tongue"],
+                                            eyes: ["hearts"],
+                                            radius: 50,
+                                        }).toString()
+                                    )}`}
+                                    size={250}
+                                    radius="md"
+                                />
+                            </Stack>
+                        </Center>
+                    </Grid.Col>
+                </Grid>
+            </Modal>}
+
 
             {checking && <Notification color="yellow" mt="md" className='notif' loading={true} >
                 <Alert variant="light" color="yellow" icon={<IconExclamationCircle size={16} />} title="Warning!" >

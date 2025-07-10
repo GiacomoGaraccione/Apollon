@@ -9,13 +9,15 @@ class Course {
     students: User[]
     exercises: Exercise[]
     settings: AvatarUnlockOptions | null
+    gameOptions: string | null
 
-    constructor(courseId: string, courseName: string, students: User[], exercises: Exercise[], settings: any) {
+    constructor(courseId: string, courseName: string, students: User[], exercises: Exercise[], settings: any, gameOptions: string | null = null) {
         this.settings = settings
         this.courseId = courseId
         this.courseName = courseName
         this.students = students
         this.exercises = exercises
+        this.gameOptions = gameOptions
     }
 }
 

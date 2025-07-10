@@ -47,6 +47,7 @@ class Course(Base):
     courseId = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     settings = Column(String, nullable=True)
+    gameOptions = Column(String, nullable=True)
 
     students = relationship("User", secondary=student_courses, back_populates="courses", cascade="all, delete")
     exercises = relationship("Exercise", back_populates="course", cascade="all, delete-orphan")
@@ -59,6 +60,7 @@ class Course(Base):
             "students": [student.serialize() for student in self.students],
             "exercises": [exercise.serialize() for exercise in self.exercises],
             "settings": self.settings,
+            "gameOptions": self.gameOptions,
         }
   
 class Exercise(Base):

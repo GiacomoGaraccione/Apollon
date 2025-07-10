@@ -1,7 +1,7 @@
 import json
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
-from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog
+from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog, StudentExerciseCompletion
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
 from app.utils.game_utils import update_experience_points
@@ -246,3 +246,63 @@ def update_student_exercise(courseId, exerciseId, studentId):
         except Exception as e:
             print(e)
             return jsonify({"message": "Invalid JSON"}), 400
+        
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/students/<studentId>/complete", methods=["GET"])
+@jwt_required()
+@role_required("Student")
+def get_student_completion(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            student = session.query(User).filter_by(username=studentId).first()
+            if student is None:
+                return jsonify({"message": "Student not found"}), 404
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            record = session.query(StudentExerciseLog).filter_by(exerciseId=exerciseId, username=studentId).first()
+            if record is None:
+                return jsonify({"message": "Student exercise record not found"}), 404
+            completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
+            if completed is None:
+                return jsonify({"completed": False}), 200
+            return jsonify({"completed": True, "log": completed.serialize()}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Invalid JSON"}), 400
+        
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/students/<studentId>/complete", methods=["POST"])
+@jwt_required()
+@role_required("Student")
+def complete_student_exercise(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            data = request.json
+            student = session.query(User).filter_by(username=studentId).first()
+            if student is None:
+                return jsonify({"message": "Student not found"}), 404
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            record = session.query(StudentExerciseLog).filter_by(exerciseId=exerciseId, username=studentId).first()
+            if record is None:
+                return jsonify({"message": "Student exercise record not found"}), 404
+            completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
+            if completed is not None:
+                return jsonify({"message": "Exercise already completed"}), 400
+            completed = StudentExerciseCompletion(
+                exerciseId=exerciseId,
+                username=studentId,
+                courseId=courseId,
+                experience=data.get("newXp", record.experience),
+                correctness=record.correctness,
+                checks=record.checks,
+                model=record.model,
+                syntax_errors=record.syntax_errors,
+                semantic_errors=record.semantic_errors
+            )
+            session.add(completed)
+            session.commit()
+            return jsonify({"log": completed.serialize()}), 201
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Student not found"}), 404

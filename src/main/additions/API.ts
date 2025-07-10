@@ -175,7 +175,7 @@ async function getAllCourses() {
                 settings = null
                 console.error("Error parsing settings:", error)
             }
-            return new Course(course.courseId, course.name, studentsList, exercisesList, settings)
+            return new Course(course.courseId, course.name, studentsList, exercisesList, settings, course.gameOptions)
         })
         return coursesList
     } else {
@@ -208,7 +208,7 @@ async function getCourse(courseId: string) {
             settings = null
             console.error("Error parsing settings:", error)
         }
-        return new Course(ret.courseId, ret.name, studentsList, exercisesList, settings)
+        return new Course(ret.courseId, ret.name, studentsList, exercisesList, settings, ret.gameOptions)
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -247,6 +247,26 @@ async function updateCourseSettings(courseId: string, settings: AvatarUnlockOpti
             "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
         body: JSON.stringify(settings)
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateCourseGameOptions(courseId: string, gameOptions: any) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/game-settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify(gameOptions)
     })
     if (response.ok) {
         return
@@ -351,7 +371,6 @@ async function getCourseInfo(courseId: string) {
     })
     if (response.ok) {
         let res = await response.json()
-        let c = new Course(res.courseId, res.courseName, [], [], res.settings)
         let exercisesList: Exercise[] = res.exercises.map((exercise: any) => {
             let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
             let solutionsList: Solution[] = exercise.solutions.map((solution: any) => {
@@ -367,7 +386,7 @@ async function getCourseInfo(courseId: string) {
             settings = null
             console.error("Error parsing settings:", error)
         }
-        return new Course(res.courseId, res.courseName, [], exercisesList, settings)
+        return new Course(res.courseId, res.courseName, [], exercisesList, settings, JSON.parse(res.gameOptions))
     } else {
         let errDetail = await response.json()
         if (errDetail.error) throw new Error(errDetail.error)
@@ -581,6 +600,47 @@ async function saveExerciseRecord(courseId: string, exerciseId: string, userId: 
     }
 }
 
+async function getStudentExerciseCompletion(courseId: string, exerciseId: string, studentId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/students/" + studentId + "/complete", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function completeStudentExercise(courseId: string, exerciseId: string, studentId: string, newXp: number) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/students/" + studentId + "/complete", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ newXp })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 // ----------------- Ranking APIs -----------------
 
 async function getRankingByExerciseCompleteness(courseId: string, exerciseId: string) {
@@ -646,8 +706,8 @@ async function getRankingByCompletedExercises(courseId: string) {
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
-    getAllCourses, getCourse, createCourse, updateCourseSettings, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo,
-    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord,
+    getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo,
+    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise,
     getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises
 }
 
