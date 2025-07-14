@@ -661,6 +661,26 @@ async function completeStudentExercise(courseId: string, exerciseId: string, stu
     }
 }
 
+async function getStudentDiagrams(courseId: string, exerciseId: string) {
+    let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/diagrams", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 // ----------------- Ranking APIs -----------------
 
 async function getRankingByExerciseCompleteness(courseId: string, exerciseId: string) {
@@ -727,7 +747,7 @@ const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo, getStudentCompletedExercises,
-    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise,
+    addExercise, deleteExercise, updateExercise, createBoss, addSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise, getStudentDiagrams,
     getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises
 }
 

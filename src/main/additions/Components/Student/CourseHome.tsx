@@ -33,42 +33,46 @@ function CourseHome() {
 
     useEffect(() => {
         if (courseId && user) {
-            API.getCourseInfo(courseId).then((c) => {
-                console.log(c)
-                setCourse(c)
-                API.getStudentCourseInfo(courseId, user.username).then((studentCourse) => {
-                    setCourseInfo(studentCourse.info)
-                    let settings = c.settings as AvatarUnlockOptions
-                    setAvatarSettings(settings)
-                    if (!studentCourse.info) {
-                        setNotif(true)
-                        let avatarOpts = generateRandomAvatar()
-                        avatarOpts.accessoriesProbability = 0
-                        setAvatarOptions(avatarOpts)
-                        let svg = createAvatar(avataaars, avatarOpts).toString()
-                        setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
-                        setLevel(1)
-                        let levelInfo = c.gameOptions!.levels[0]
-                        setLevelInfo(levelInfo)
-                        setTimeout(() => {
-                            setNotif(false)
-                        }, 5000)
-                    } else {
-                        setLevel(studentCourse.info.level)
-                        setExperience(studentCourse.info.experience)
-                        let avatarOpts = JSON.parse(studentCourse.info.avatar)
-                        setAvatarOptions(avatarOpts)
-                        let svg = createAvatar(avataaars, avatarOpts).toString()
-                        setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
-                        let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
-                        setLevelInfo(levelInfo)
-                    }
-                    API.getStudentCompletedExercises(courseId, user.username).then((ce) => {
-                        setCompletedExercises(ce)
+            try {
+                API.getCourseInfo(courseId).then((c) => {
+                    console.log(c)
+                    setCourse(c)
+                    API.getStudentCourseInfo(courseId, user.username).then((studentCourse) => {
+                        setCourseInfo(studentCourse.info)
+                        let settings = c.settings as AvatarUnlockOptions
+                        setAvatarSettings(settings)
+                        if (!studentCourse.info) {
+                            setNotif(true)
+                            let avatarOpts = generateRandomAvatar()
+                            avatarOpts.accessoriesProbability = 0
+                            setAvatarOptions(avatarOpts)
+                            let svg = createAvatar(avataaars, avatarOpts).toString()
+                            setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
+                            setLevel(1)
+                            let levelInfo = c.gameOptions!.levels[0]
+                            setLevelInfo(levelInfo)
+                            setTimeout(() => {
+                                setNotif(false)
+                            }, 5000)
+                        } else {
+                            setLevel(studentCourse.info.level)
+                            setExperience(studentCourse.info.experience)
+                            let avatarOpts = JSON.parse(studentCourse.info.avatar)
+                            setAvatarOptions(avatarOpts)
+                            let svg = createAvatar(avataaars, avatarOpts).toString()
+                            setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
+                            let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
+                            setLevelInfo(levelInfo)
+                        }
+                        API.getStudentCompletedExercises(courseId, user.username).then((ce) => {
+                            setCompletedExercises(ce)
+                        })
+                        setLoad(false)
                     })
-                    setLoad(false)
                 })
-            })
+            } catch (error) {
+                console.error("Error fetching course info:", error);
+            }
         }
     }, [])
 

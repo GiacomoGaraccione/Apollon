@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Textarea, Group, Loader } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, Notification, TextInput, NativeSelect, Textarea, Group, Loader } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
 import { IconExclamationCircle } from "@tabler/icons-react";
@@ -12,6 +12,8 @@ function StudentCourses() {
     const [courses, setCourses] = useState<Course[]>([])
     const [currentCourse, setCurrentCourse] = useState<Course | null>(null)
     const [courseLoad, setCourseLoad] = useState(false)
+    const [warning, setWarning] = useState<boolean>(false)
+    const [clicked, setClicked] = useState<string | null>(null)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -19,18 +21,9 @@ function StudentCourses() {
             setCourseLoad(true)
             Promise.all(user.courses.map((course: string) => API.getCourseInfo(course)))
                 .then(results => {
-                    let cs = results.map((course: any) => {
-                        let settings: AvatarUnlockOptions | null
-                        try {
-                            settings = JSON.parse(course.settings) as AvatarUnlockOptions
-                        } catch (error) {
-                            settings = null
-                            console.error("Error parsing settings:", error)
-                        }
-                        return new Course(course.courseId, course.courseName, [], course.exercises, settings)
-                    })
+                    console.log(results)
                     setCourseLoad(false)
-                    setCourses(cs)
+                    setCourses(results)
                 })
         }
     }, [])
@@ -42,40 +35,34 @@ function StudentCourses() {
                     {courses.length > 0 ? (<>
                         <Flex direction="column" gap={10} style={{ width: "100%" }}>
                             {courses.map((course, index) => (
-                                <Card key={index} shadow="sm" padding="lg" style={{
-                                    width: "100%", margin: 'auto', cursor: "pointer",
-                                    border: currentCourse === course ? '5px solid cyan' : undefined
-                                }} onClick={() => {
-                                    navigate("/student/courses/" + course.courseId)
-                                }}>
-                                    <Stack >
-                                        <Text w={500} size="lg">{course.courseName}</Text>
-                                        <Text w={500} size="sm" color="dimmed">{course.courseId}</Text>
-                                        <Text w={500} size="sm">{course.exercises.filter((ex) => ex.visible).length} available exercises</Text>
-                                    </Stack>
+                                <Card key={index} shadow="sm" padding="lg" style={{ width: "100%", margin: 'auto', cursor: course.settings ? "pointer" : "not-allowed", }}
+                                    onClick={() => {
+                                        setClicked(course.courseId)
+                                        if (course.settings) {
+                                            navigate("/student/courses/" + course.courseId)
+                                        } else {
+                                            setWarning(true)
+                                            setTimeout(() => {
+                                                setWarning(false)
+                                            }, 5000)
+                                        }
+                                    }}
+                                >
+                                    <Flex align="flex-start" gap={16}>
+                                        <Stack style={{ flex: 1, minWidth: 0 }}>
+                                            <Text w={500} size="lg">{course.courseName}</Text>
+                                            <Text w={500} size="sm" color="dimmed">{course.courseId}</Text>
+                                            <Text w={500} size="sm">{course.exercises.filter((ex) => ex.visible).length} available exercises</Text>
+                                        </Stack>
+                                        {warning && clicked === course.courseId && (
+                                            <div style={{ flex: 1 }}>
+                                                <Alert variant="light" color="yellow" icon={<IconExclamationCircle size={16} />} title="Warning!" style={{ width: "100%" }} >  This course has not been configured yet. Please notify your teacher to set it up.
+                                                </Alert>
+                                            </div>
+                                        )}
+                                    </Flex>
                                 </Card>
                             ))}
-                        </Flex>
-                        <Flex wrap="wrap" justify="center" gap="md">
-                            {currentCourse && <>
-                                <Fieldset legend="Exercises" style={{ width: "100%" }}>
-                                    <Flex direction="column" gap={10} style={{ width: "100%" }}>
-                                        {currentCourse.exercises.filter((ex) => ex.visible).length > 0 ? (<>
-                                            {currentCourse.exercises.filter((ex) => ex.visible).map((exercise, index) => (
-                                                <Card key={index} shadow="sm" padding="lg" style={{
-                                                    width: "100%", margin: 'auto', cursor: "pointer",
-                                                }} >
-                                                    <Text w={500} size="lg">{exercise.title}</Text>
-                                                </Card>
-                                            ))}
-                                        </>) : (<>
-                                            <Alert variant="light" color="cyan" icon={<IconExclamationCircle size={16} />} title="No exercises found!" >
-                                                This course has no exercises yet.
-                                            </Alert>
-                                        </>)}
-                                    </Flex>
-                                </Fieldset>
-                            </>}
                         </Flex>
                     </>) : (<>
                         {!courseLoad && <Alert variant="light" color="cyan" icon={<IconExclamationCircle size={16} />} title="No courses found!" >
@@ -88,6 +75,8 @@ function StudentCourses() {
                     </>}
                 </Flex>
             </Fieldset>
+
+
         </>
     )
 }

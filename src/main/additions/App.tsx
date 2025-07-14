@@ -16,6 +16,7 @@ import StudentCourses from './Components/Student/StudentCourses';
 import CourseSettings from './Components/Teacher/CourseSettings';
 import CourseHome from './Components/Student/CourseHome';
 import ExercisePage from './Components/Student/ExercisePage';
+import DiagramView from './Components/Teacher/DiagramView';
 
 
 function App() {
@@ -56,16 +57,11 @@ function App() {
     }
 
     return (
-        <AppShell disabled={!loggedIn} header={{ height: "5%" }} navbar={{ width: 200, breakpoint: "md", collapsed: { desktop: !open } }} >
+        <AppShell disabled={!loggedIn} navbar={{ width: 200, breakpoint: "md", collapsed: { desktop: !open } }} >
             <UserContext.Provider value={user}>
-                {loggedIn && <AppShell.Header>
-                    <Group h="100%" px="md">
-                        <Burger opened={open} onClick={toggleOpen} size="md" />
-                        <Text size="xl" color={"blue"}>UMLegend</Text>
-                    </Group>
-                </AppShell.Header>}
+
                 {loggedIn && <AppShell.Navbar >
-                    <Navbar logout={doLogout} />
+                    <Navbar logout={doLogout} open={open} toggleOpen={toggleOpen} />
                 </AppShell.Navbar>}
                 <AppShell.Main style={{ paddingTop: "2vh" }}>
                     <Routes>
@@ -108,6 +104,9 @@ function App() {
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/solutions" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <SolutionCreator />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exercises/:exerciseId/diagrams" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <DiagramView />) : <Navigate to="/login" />)
                         } />
                     </Routes>
                 </AppShell.Main>

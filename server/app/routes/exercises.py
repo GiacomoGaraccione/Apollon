@@ -7,6 +7,7 @@ from app.utils.auth_utils import role_required
 from app.utils.game_utils import update_experience_points
 from sqlalchemy.orm import joinedload
 import app.evaluator.eval as evaluator
+from datetime import datetime
 
 exercises_bp = Blueprint("exercises", __name__)
         
@@ -242,6 +243,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                     record.semantic_errors = json.dumps(results.get("semantic_errors", record.semantic_errors))
                     record.results = json.dumps(results) if results else record.results
                 record.model = json.dumps(model) if model else record.model
+                record.timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
                 session.commit()
                 return jsonify({"record": record.serialize(), "results": results}), 201
         except Exception as e:
@@ -307,3 +309,21 @@ def complete_student_exercise(courseId, exerciseId, studentId):
         except Exception as e:
             print(e)
             return jsonify({"message": "Student not found"}), 404
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/diagrams", methods=["GET"])
+@jwt_required()
+@role_required("Teacher")
+def get_student_diagrams(courseId, exerciseId):
+    with get_session() as session:
+        try:
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            logs = session.query(StudentExerciseLog).filter_by(exerciseId=exerciseId).all()
+            diagrams = []
+            for log in logs:
+                diagrams.append(log.serialize())
+            return jsonify(diagrams), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Invalid JSON"}), 400

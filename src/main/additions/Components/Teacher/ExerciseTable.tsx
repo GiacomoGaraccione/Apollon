@@ -83,6 +83,7 @@ function ExerciseTable() {
                                                         <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/edit")} >Edit exercise information</Menu.Item>
                                                         <Menu.Item leftSection={<IconBulb size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/solutions")} >View exercise solutions</Menu.Item>
                                                         <Menu.Item leftSection={<IconRobot size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/boss")} >Edit exercise boss</Menu.Item>
+                                                        <Menu.Item leftSection={<IconCheck size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/diagrams")} >View student diagrams</Menu.Item>
                                                         <Menu.Item color='red' leftSection={<IconTrash size={14} />} onClick={() => {
                                                             setCurrentExercise(row)
                                                             setShowDelete(true)
