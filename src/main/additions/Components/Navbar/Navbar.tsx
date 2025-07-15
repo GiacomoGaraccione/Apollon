@@ -1,10 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react'
-import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconDeviceDesktopAnalytics, IconFingerprint, IconGauge, IconHome2, IconLogout, IconSettings, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
-import { ActionIcon, Center, Stack, Tooltip, UnstyledButton } from '@mantine/core';
+import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconDeviceDesktopAnalytics, IconFingerprint, IconGauge, IconHome2, IconLighter, IconLogout, IconMoon, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
+import { ActionIcon, Center, Stack, Tooltip, UnstyledButton, Text, Group } from '@mantine/core';
 import { Roles, UserContext } from '../Login/UserContext';
 import "./style.css"
 import { useNavigate } from 'react-router-dom';
 import API from '../../API';
+import { useMantineColorScheme, useComputedColorScheme } from '@mantine/core';
 
 interface NavbarLinkProps {
     icon: typeof IconHome2,
@@ -23,35 +24,18 @@ function NavbarLink({ icon: Icon, label, active, onClick }: NavbarLinkProps) {
     )
 }
 
-const studentLink = [
-    { icon: IconHome2, label: 'Home' },
-    { icon: IconCalendarStats, label: 'Courses' },
-    { icon: IconDeviceDesktopAnalytics, label: 'Grades' },
-    { icon: IconFingerprint, label: 'Profile' }
-]
-
-const teacherLink = [
-    { icon: IconHome2, label: 'Home' },
-    { icon: IconCalendarStats, label: 'Courses' },
-    { icon: IconGauge, label: 'Grades' },
-    { icon: IconUser, label: 'Students' },
-    { icon: IconSettings, label: 'Settings' }
-]
 
 function Navbar(props: any) {
     const [active, setActive] = useState("")
     const user = useContext(UserContext)
     const navigate = useNavigate()
+    const { colorScheme, setColorScheme } = useMantineColorScheme()
+    const computedColorScheme = useComputedColorScheme()
 
-    const links = user?.role === Roles.STUDENT ? studentLink : teacherLink
-    const linkComponents = links.map((link, index) => (
-        <NavbarLink
-            {...link}
-            key={link.label}
-            active={link.label === active}
-            onClick={() => setActive(link.label)}
-        />
-    ))
+    const toggleColorScheme = () => {
+        setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark');
+    }
+
 
     useEffect(() => {
         switch (window.location.pathname) {
@@ -68,8 +52,6 @@ function Navbar(props: any) {
                 setActive("Users")
                 break
             case "/student":
-                setActive("Home")
-                break
             case "/student/courses":
                 setActive("Courses")
                 break
@@ -83,45 +65,42 @@ function Navbar(props: any) {
 
     return (
         <div style={{ position: 'relative', height: '100%' }}>
-            <nav style={{ display: 'flex', flexDirection: 'column', height: '90vh', justifyContent: 'space-between' }}>
-                <div style={{ alignItems: "center" }}>
-                    <Stack justify='center' gap={10} style={{ alignItems: "center" }} >
-                        {user?.role === Roles.TEACHER && <>
-                            <NavbarLink icon={IconHome2} label="Home" key={"Home"} active={active === "Home"} onClick={() => {
-                                navigate("/teacher")
-                                setActive("Home")
-                            }} />
-                            <NavbarLink icon={IconUser} label="Users" key={"Users"} active={active === "Users"} onClick={() => {
-                                setActive("Users")
-                                navigate("/teacher/users")
-                            }} />
-                            <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} onClick={() => {
-                                navigate("/teacher/courses")
-                                setActive("Courses")
-                            }} />
-                            <NavbarLink icon={IconGauge} label="Grades" key={"Grades"} active={active === "Grades"} onClick={() => {
-                                navigate("/teacher")
-                                setActive("Grades")
-                            }} />
-                        </>}
-                        {user?.role === Roles.STUDENT && <>
-                            <NavbarLink icon={IconHome2} label="Home" key={"Home"} active={active === "Home"} onClick={() => {
-                                navigate("/student")
-                                setActive("Home")
-                            }} />
-                            <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} onClick={() => {
-                                navigate("/student/courses")
-                                setActive("Courses")
-                            }} />
-                        </>}
+            <nav style={{ display: 'flex', flexDirection: 'column', height: '90vh', padding: "var(--mantine-spacing-md)", borderRight: "1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))" }}>
+                <div style={{ flex: 1 }}>
+                    <Group style={{ paddingBottom: "var(--mantine-spacing-md)", marginBottom: "calc(var(--mantine-spacing-md)*1.5)", borderBottom: "1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))" }} justify='space-between' >
+                        {user ? <Text>{user.username}</Text> : <></>}
+                    </Group>
+                    <div style={{ alignItems: "center" }}>
+                        <Stack justify='center' gap={10} style={{ alignItems: "center" }} >
+                            {user?.role === Roles.TEACHER && <>
+                                <NavbarLink icon={IconUser} label="Users" key={"Users"} active={active === "Users"} onClick={() => {
+                                    setActive("Users")
+                                    navigate("/teacher/users")
+                                }} />
+                                <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} onClick={() => {
+                                    navigate("/teacher/courses")
+                                    setActive("Courses")
+                                }} />
+                            </>}
+                            {user?.role === Roles.STUDENT && <>
+                                <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} onClick={() => {
+                                    navigate("/student/courses")
+                                    setActive("Courses")
+                                }} />
+                            </>}
+                        </Stack>
+                    </div>
+
+                </div>
+                <div style={{ paddingTop: "calc(var(--mantine-spacing-md)*1.5)", marginTop: "calc(var(--mantine-spacing-md)*1.5)", borderTop: "1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))" }}>
+                    <Stack justify='flex-end' gap={0} align='center'>
+                        <NavbarLink icon={computedColorScheme === "dark" ? IconSun : IconMoon} label="Theme" onClick={toggleColorScheme} />
+                        <NavbarLink icon={IconLogout} label='Logout' onClick={() => {
+                            props.logout()
+                        }} />
                     </Stack>
                 </div>
 
-                <Stack justify='flex-end' gap={0} align='center'>
-                    <NavbarLink icon={IconLogout} label='Logout' onClick={() => {
-                        props.logout()
-                    }} />
-                </Stack>
             </nav>
             <ActionIcon onClick={props.toggleOpen} size="md" radius="xl" variant="filled" color="blue" style={{ position: "absolute", top: "50%", right: -12, transform: "translateY(-50%)", zIndex: 1000, boxShadow: "0 2px 8èx rgba(0, 0, 0, 0.2)" }}>
                 {props.open ? <IconChevronLeft size={20} /> : <IconChevronRight size={20} />}

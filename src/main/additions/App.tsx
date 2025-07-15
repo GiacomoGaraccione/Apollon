@@ -66,47 +66,45 @@ function App() {
                 <AppShell.Main style={{ paddingTop: "2vh" }}>
                     <Routes>
                         <Route path="/"
-                            element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)} />
+                            element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)} />
                         <Route path="/login" element={
                             !loaded ? <Loading /> : (loggedIn ? <Navigate to="/" /> : <Login doLogin={doLogin} />)
                         } />
-                        <Route path="/student" element={<Text>Student</Text>} />
                         <Route path="/student/courses" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentCourses /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentCourses /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
                         } />
                         <Route path="/student/courses/:courseId" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <CourseHome /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <CourseHome /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
                         } />
                         <Route path="/student/courses/:courseId/exercises/:exerciseId" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ExercisePage /> : <Navigate to="/teacher" />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ExercisePage /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
                         } />
-                        <Route path="/teacher" element={<Text>Teacher</Text>} />
                         <Route path="/teacher/users" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <UsersView />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <UsersView />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <CourseView />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <CourseView />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <CoursePage />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <CoursePage />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId/settings" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <CourseSettings />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <CourseSettings />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/new" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <ExerciseCreator />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExerciseCreator />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/edit" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <ExerciseEditor />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExerciseEditor />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/boss" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <BossCreator />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <BossCreator />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/solutions" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <SolutionCreator />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <SolutionCreator />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/diagrams" element={
-                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student" /> : <DiagramView />) : <Navigate to="/login" />)
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <DiagramView />) : <Navigate to="/login" />)
                         } />
                     </Routes>
                 </AppShell.Main>

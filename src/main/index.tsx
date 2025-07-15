@@ -99,7 +99,7 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <BrowserRouter>
-    <MantineProvider>
+    <MantineProvider defaultColorScheme='auto' >
       <App />
     </MantineProvider>
   </BrowserRouter>

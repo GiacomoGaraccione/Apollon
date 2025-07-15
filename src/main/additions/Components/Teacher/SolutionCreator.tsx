@@ -29,12 +29,13 @@ const options = {
 function SolutionCreator() {
     const { courseId, exerciseId } = useParams()
     const [exercise, setExercise] = useState<Exercise | undefined>(undefined)
-    const [activeTab, setActiveTab] = useState<string | null>("reference")
-    const [editor, setEditor] = useState<ApollonEditor>()
+    const [activeTab, setActiveTab] = useState<string | null>("")
+    const [editor, setEditor] = useState<ApollonEditor | undefined>()
     const [openDelete, setOpenDelete] = useState(false)
     const [currentSolution, setCurrentSolution] = useState<Solution | undefined>(undefined)
     const [currentReference, setCurrentReference] = useState<ReferenceSolution | undefined>(undefined)
     const [opened, { open, close }] = useDisclosure(false)
+    const apollonRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (courseId && exerciseId) {
@@ -45,29 +46,44 @@ function SolutionCreator() {
                 }
             })
         }
-    }, [])
 
+    }, [])
     useEffect(() => {
-        let isMounted = true;
-        const setupEditor = async () => {
-            if (activeTab === "modeler") {
-                let cont = document.getElementById("apollon");
-                if (cont) {
-                    let ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram" });
-                    await ed.nextRender;
-                    if (!isMounted) return;
-                    if (currentSolution) {
-                        ed.model = currentSolution.model;
-                    }
-                    setEditor(ed);
-                }
+        return () => {
+            if (editor) {
+                editor.destroy?.();
             }
         };
-        setupEditor();
-        return () => {
-            isMounted = false;
-        };
-    }, [activeTab]);
+    }, []);
+
+
+    useEffect(() => {
+        console.log(activeTab, currentSolution, editor)
+        if (activeTab === "modeler") {
+            const timer = setTimeout(async () => {
+                if (editor) {
+                    console.log("Destroying editor")
+                    editor.destroy?.()
+                    setEditor(undefined)
+                }
+
+                if (apollonRef.current) {
+                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: "ClassDiagram" });
+                    await ed.nextRender;
+
+                    if (currentSolution?.model) {
+                        ed.model = currentSolution.model;
+                    }
+
+                    setEditor(ed);
+                }
+            }, 350);
+
+            return () => {
+                clearTimeout(timer);
+            };
+        }
+    }, [activeTab, currentSolution]);
 
     useEffect(() => {
         setCurrentReference(currentSolution?.reference)
@@ -77,12 +93,15 @@ function SolutionCreator() {
         if (activeTab === "modeler") {
             if (editor) {
                 let builder = new ReferenceBuilder(editor.model)
+                console.log(editor.model)
                 let ref = builder.buildReference()
                 let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
                 if (courseId && exerciseId) {
-                    API.addSolution(courseId, exerciseId, ref, editor.model, svg)
-                } else {
-
+                    if (!currentSolution) {
+                        API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+                    } else {
+                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, ref, editor.model, svg).then(() => updateEx())
+                    }
                 }
             }
         } else {
@@ -93,43 +112,59 @@ function SolutionCreator() {
                     await editor.nextRender
                     editor.model = model
                     let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
-                    console.log(svg)
-                    if (courseId && exerciseId) { API.addSolution(courseId, exerciseId, currentReference, model, svg) }
+                    if (courseId && exerciseId) {
+                        if (!currentSolution) {
+                            API.addSolution(courseId, exerciseId, currentReference, model, svg).then(() => updateEx())
+                        } else {
+                            API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, model, svg).then(() => updateEx())
+                        }
+                    }
                 } else {
-                    const tempContainer = document.createElement("div");
-                    tempContainer.style.position = "absolute";
-                    tempContainer.style.left = "-9999px";
-                    tempContainer.style.width = "800px";
-                    tempContainer.style.height = "600px";
-                    document.body.appendChild(tempContainer);
-
-                    let ed = new ApollonEditor(tempContainer, { ...options, type: "ClassDiagram" });
-                    await ed.nextRender;
-
-                    ed.model = model;
-                    await ed.nextRender;
+                    setActiveTab("modeler")
+                    let ed: ApollonEditor
+                    let cont: HTMLElement | null = null
+                    for (let i = 0; i < 20; i++) {
+                        cont = document.getElementById("apollon")
+                        if (cont) break
+                        await new Promise(res => setTimeout(res, 50))
+                    }
+                    if (!cont) throw new Error("Apollon container not found")
+                    if (editor) {
+                        ed = editor;
+                    } else {
+                        ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram" })
+                        await ed.nextRender;
+                    }
+                    ed.model = model
+                    await ed.nextRender
+                    setEditor(ed)
+                    await ed.nextRender
 
                     let svg = await ed.exportAsSVG({ margin: 5, keepOriginalSize: true });
+                    //setActiveTab("reference");
                     if (courseId && exerciseId) {
-                        API.addSolution(courseId, exerciseId, currentReference, model, svg);
+                        if (!currentSolution) {
+                            API.addSolution(courseId, exerciseId, currentReference, ed.model, svg).then(() => updateEx());
+                        } else {
+                            API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, ed.model, svg).then(() => updateEx());
+                        }
                     }
-
-                    document.body.removeChild(tempContainer);
                 }
-
             }
         }
-        if (courseId && exerciseId) {
-            API.getCourse(courseId).then((c) => {
-                const ex = c.exercises.find((e) => e.exerciseId === exerciseId)
-                if (ex) {
-                    setExercise(ex)
-                    setCurrentReference(undefined)
-                    setCurrentSolution(undefined)
-                    setActiveTab("reference")
-                    close()
-                }
-            })
+        const updateEx = () => {
+            if (courseId && exerciseId) {
+                API.getCourse(courseId).then((c) => {
+                    const ex = c.exercises.find((e) => e.exerciseId === exerciseId)
+                    if (ex) {
+                        setExercise(ex)
+                        setCurrentReference(undefined)
+                        setCurrentSolution(undefined)
+                        setActiveTab("modeler")
+                        close()
+                    }
+                })
+            }
         }
     }
 
@@ -228,7 +263,7 @@ function SolutionCreator() {
                                                 <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" onClick={() => {
                                                     setCurrentSolution(solution)
                                                     setCurrentReference(solution.reference)
-                                                    setActiveTab("reference")
+                                                    setActiveTab("modeler")
                                                     open()
                                                 }} >Edit solution</Button>
                                                 <Button variant="light" color="red" rightSection={<IconTrashFilled size={16} stroke={1.5} />} mt="sm" ml="md"
@@ -254,7 +289,11 @@ function SolutionCreator() {
             )}
             <Center mt="md">
                 <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => {
-                    setActiveTab("reference")
+                    if (editor) {
+                        editor.destroy?.();
+                        setEditor(undefined);
+                    }
+                    setActiveTab("modeler")
                     setCurrentReference(undefined)
                     setCurrentSolution(undefined)
                     open()
@@ -269,15 +308,22 @@ function SolutionCreator() {
                 </Button>
             </Center>
 
-            <Modal opened={opened} onClose={close} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
+            <Modal opened={opened} onClose={() => {
+                if (editor) {
+                    editor.destroy?.();
+                    setEditor(undefined);
+                }
+                close()
+                setActiveTab("")
+            }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Solution Creator" style={{ width: "100%" }}>
                     <Tabs value={activeTab} onChange={setActiveTab} variant="pills" color="cyan">
                         <Tabs.List>
-                            <Tabs.Tab value="reference">Reference</Tabs.Tab>
                             <Tabs.Tab value="modeler">Modeler</Tabs.Tab>
+                            <Tabs.Tab value="reference">Reference</Tabs.Tab>
                         </Tabs.List>
                         <Tabs.Panel value="modeler">
-                            {activeTab === "modeler" && <div id="apollon"></div>}
+                            {activeTab === "modeler" && <div ref={apollonRef} id="apollon"></div>}
                         </Tabs.Panel>
                         <Tabs.Panel value="reference">
                             <Tabs defaultValue="classes" color="cyan">
@@ -418,7 +464,6 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
     const [nameError, setNameError] = useState<string | null>(null)
 
     useEffect(() => {
-        console.log(props.reference)
         if (props.reference) {
             setClasses(props.reference.classes)
         } else {
