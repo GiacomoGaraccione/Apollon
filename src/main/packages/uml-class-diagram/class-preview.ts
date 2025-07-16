@@ -10,6 +10,7 @@ import { UMLClassPackage } from './uml-class-package/uml-class-package';
 import { UMLClass } from './uml-class/uml-class';
 import { UMLEnumeration } from './uml-enumeration/uml-enumeration';
 import { UMLInterface } from './uml-interface/uml-interface';
+import { UMLIntermediateClass } from './uml-intermediate-class/uml-intermediate-class';
 
 export const composeClassPreview: ComposePreview = (layer: ILayer, translate: (id: string) => string): UMLElement[] => {
   const elements: UMLElement[] = [];
@@ -164,6 +165,29 @@ export const composeClassPreview: ComposePreview = (layer: ILayer, translate: (i
   elements.push(
     ...(umlEnumeration.render(layer, [umlEnumerationCase1, umlEnumerationCase2, umlEnumerationCase3]) as UMLElement[]),
   );
+
+  // UML Intermediate Class
+  const umlIntermediate = new UMLIntermediateClass({
+    name: "Intermediate Class",
+  });
+  umlIntermediate.bounds = {
+    ...umlIntermediate.bounds,
+    width: umlIntermediate.bounds.width,
+    height: umlIntermediate.bounds.height,
+  };
+  const umlIntermediateAttribute = new UMLClassAttribute({
+    name: translate('sidebar.classAttribute'),
+    owner: umlIntermediate.id,
+    bounds: {
+      x: 0,
+      y: 40,
+      width: computeDimension(1.0, 200),
+      height: computeDimension(1.0, 30),
+    },
+  });
+  umlIntermediate.ownedElements = [umlIntermediateAttribute.id];
+  elements.push(...(umlIntermediate.render(layer, [umlIntermediateAttribute]) as UMLElement[]));
+
 
   return elements;
 };

@@ -190,10 +190,12 @@ class UMLStructureBuilderFromReference {
 
     addUMLClass(cl: ReferenceClass) {
         let newClass = new UMLClass()
+        let type: UMLClassifier["type"]
+
         let custom = new UMLCustomClass(
             newClass.id,
             cl.name,
-            "Class",
+            cl.type === "Interface" ? "Interface" : cl.type === "AbstractClass" ? "AbstractClass" : "Class",
             newClass.owner,
             newClass.bounds
         )
@@ -249,8 +251,6 @@ class UMLStructureBuilderFromReference {
                     width: owner.bounds.width,
                     height: 20
                 }
-                console.log(attr)
-                console.log(owner)
                 this.model.elements[elementId] = attr
             }
         }

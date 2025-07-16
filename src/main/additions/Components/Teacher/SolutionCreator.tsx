@@ -3,7 +3,7 @@ import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, 
 import API from "../../API";
 import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
-import { ApollonMode } from "../../../typings"
+import { ApollonMode, UMLModel } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 //import { UMLStructureBuilderFromLLM, UMLStructureBuilderFromReference } from "../operations/UMLStructureBuilder";
 //import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
@@ -12,7 +12,7 @@ import JSZip from "jszip";
 import saveAs from "file-saver";
 import { Exercise, Solution } from "../../Utils/Models";
 import { useParams, useNavigate } from "react-router-dom";
-import { IconArrowBackUp, IconArrowLeft, IconArrowRight, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX } from "@tabler/icons-react";
+import { IconArrowBackUp, IconArrowLeft, IconArrowRight, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX, IconZoomCheckFilled } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { Carousel } from "@mantine/carousel";
 import { AssociationType, ReferenceAssociation, ReferenceAttribute, ReferenceBuilder, ReferenceClass, ReferenceClassInAssociation, ReferenceSolution, Weight } from "../../Utils/UMLMatcherTypes";
@@ -25,17 +25,18 @@ const options = {
     readonly: false
 }
 
-
 function SolutionCreator() {
     const { courseId, exerciseId } = useParams()
     const [exercise, setExercise] = useState<Exercise | undefined>(undefined)
-    const [activeTab, setActiveTab] = useState<string | null>("")
     const [editor, setEditor] = useState<ApollonEditor | undefined>()
     const [openDelete, setOpenDelete] = useState(false)
     const [currentSolution, setCurrentSolution] = useState<Solution | undefined>(undefined)
     const [currentReference, setCurrentReference] = useState<ReferenceSolution | undefined>(undefined)
-    const [opened, { open, close }] = useDisclosure(false)
+    const [openedModel, { open: openModel, close: closeModel }] = useDisclosure(false)
+    const [openedReference, { open: openReference, close: closeReference }] = useDisclosure(false)
+    const [preview, setPreview] = useState(false)
     const apollonRef = useRef<HTMLDivElement>(null)
+    const previewRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (courseId && exerciseId) {
@@ -54,119 +55,101 @@ function SolutionCreator() {
                 editor.destroy?.();
             }
         };
-    }, []);
-
+    }, [])
 
     useEffect(() => {
-        console.log(activeTab, currentSolution, editor)
-        if (activeTab === "modeler") {
+        if (openedModel) {
             const timer = setTimeout(async () => {
                 if (editor) {
-                    console.log("Destroying editor")
                     editor.destroy?.()
                     setEditor(undefined)
                 }
-
                 if (apollonRef.current) {
-                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: "ClassDiagram" });
-                    await ed.nextRender;
-
+                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: "ClassDiagram" })
+                    await ed.nextRender
                     if (currentSolution?.model) {
-                        ed.model = currentSolution.model;
+                        ed.model = currentSolution.model as UMLModel
                     }
-
-                    setEditor(ed);
+                    setEditor(ed)
                 }
-            }, 350);
+            }, 350)
 
             return () => {
-                clearTimeout(timer);
-            };
+                clearTimeout(timer)
+            }
         }
-    }, [activeTab, currentSolution]);
+    }, [openedModel])
+
 
     useEffect(() => {
         setCurrentReference(currentSolution?.reference)
     }, [currentSolution])
 
-    const saveSolution = async () => {
-        if (activeTab === "modeler") {
-            if (editor) {
-                let builder = new ReferenceBuilder(editor.model)
-                console.log(editor.model)
-                let ref = builder.buildReference()
-                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
-                if (courseId && exerciseId) {
-                    if (!currentSolution) {
-                        API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
-                    } else {
-                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, ref, editor.model, svg).then(() => updateEx())
-                    }
-                }
-            }
-        } else {
+    useEffect(() => {
+        if (preview) {
             if (currentReference) {
                 let builder = new UMLStructureBuilderFromReference(currentReference)
                 let model = builder.createUMLStructure()
-                if (editor) {
-                    await editor.nextRender
-                    editor.model = model
-                    let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
-                    if (courseId && exerciseId) {
-                        if (!currentSolution) {
-                            API.addSolution(courseId, exerciseId, currentReference, model, svg).then(() => updateEx())
-                        } else {
-                            API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, model, svg).then(() => updateEx())
-                        }
-                    }
-                } else {
-                    setActiveTab("modeler")
-                    let ed: ApollonEditor
-                    let cont: HTMLElement | null = null
-                    for (let i = 0; i < 20; i++) {
-                        cont = document.getElementById("apollon")
-                        if (cont) break
-                        await new Promise(res => setTimeout(res, 50))
-                    }
-                    if (!cont) throw new Error("Apollon container not found")
-                    if (editor) {
-                        ed = editor;
-                    } else {
-                        ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram" })
-                        await ed.nextRender;
-                    }
-                    ed.model = model
-                    await ed.nextRender
-                    setEditor(ed)
-                    await ed.nextRender
-
-                    let svg = await ed.exportAsSVG({ margin: 5, keepOriginalSize: true });
-                    //setActiveTab("reference");
-                    if (courseId && exerciseId) {
-                        if (!currentSolution) {
-                            API.addSolution(courseId, exerciseId, currentReference, ed.model, svg).then(() => updateEx());
-                        } else {
-                            API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, ed.model, svg).then(() => updateEx());
-                        }
-                    }
+                if (previewRef.current) {
+                    let ed = new ApollonEditor(previewRef.current, { ...options, type: "ClassDiagram", readonly: true })
+                    ed.nextRender.then(() => {
+                        ed.model = model as UMLModel
+                        setEditor(ed)
+                        ed.nextRender.then(() => { })
+                    })
                 }
             }
         }
-        const updateEx = () => {
+    }, [preview])
+
+    const updateEx = () => {
+        if (courseId && exerciseId) {
+            API.getCourse(courseId).then((c) => {
+                const ex = c.exercises.find((e) => e.exerciseId === exerciseId)
+                if (ex) {
+                    setExercise(ex)
+                    setCurrentReference(undefined)
+                    setCurrentSolution(undefined)
+                    closeModel()
+                    closeReference()
+                    setPreview(false)
+                }
+            })
+        }
+    }
+
+    const saveModel = async () => {
+        if (editor) {
+            let builder = new ReferenceBuilder(editor.model as UMLModel)
+
+            let ref = builder.buildReference()
+            let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
             if (courseId && exerciseId) {
-                API.getCourse(courseId).then((c) => {
-                    const ex = c.exercises.find((e) => e.exerciseId === exerciseId)
-                    if (ex) {
-                        setExercise(ex)
-                        setCurrentReference(undefined)
-                        setCurrentSolution(undefined)
-                        setActiveTab("modeler")
-                        close()
-                    }
-                })
+                if (currentSolution) {
+                    console.log("0")
+                    console.log(ref)
+                    console.log(editor.model)
+                    //API.updateSolution(courseId, exerciseId, currentSolution.solutionId, ref, editor.model, svg).then(() => updateEx())
+                } else {
+                    //API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+                }
             }
         }
     }
+
+    const saveReference = async () => {
+        if (currentReference && editor) {
+            let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+            if (courseId && exerciseId) {
+                if (!currentSolution) {
+                    API.addSolution(courseId, exerciseId, currentReference, editor.model, svg).then(() => updateEx())
+                } else {
+                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, editor.model, svg).then(() => updateEx())
+                }
+            }
+        }
+    }
+
 
     const handleDelete = () => {
         if (courseId && exerciseId && currentSolution) {
@@ -263,9 +246,15 @@ function SolutionCreator() {
                                                 <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" onClick={() => {
                                                     setCurrentSolution(solution)
                                                     setCurrentReference(solution.reference)
-                                                    setActiveTab("modeler")
-                                                    open()
-                                                }} >Edit solution</Button>
+                                                    openModel()
+                                                }} >Edit solution in UML modeler</Button>
+                                                <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
+                                                    setCurrentSolution(solution)
+                                                    setCurrentReference(solution.reference)
+                                                    openReference()
+                                                }} >
+                                                    Edit solution with reference form
+                                                </Button>
                                                 <Button variant="light" color="red" rightSection={<IconTrashFilled size={16} stroke={1.5} />} mt="sm" ml="md"
                                                     onClick={() => {
                                                         setCurrentSolution(solution)
@@ -289,16 +278,18 @@ function SolutionCreator() {
             )}
             <Center mt="md">
                 <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => {
-                    if (editor) {
-                        editor.destroy?.();
-                        setEditor(undefined);
-                    }
-                    setActiveTab("modeler")
+                    openModel()
                     setCurrentReference(undefined)
                     setCurrentSolution(undefined)
-                    open()
                 }} >
-                    Create new solution
+                    Create new solution with UML modeler
+                </Button>
+                <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
+                    openReference()
+                    setCurrentReference(undefined)
+                    setCurrentSolution(undefined)
+                }} >
+                    Create new solution with reference form
                 </Button>
                 <Button variant="light" color="orange" rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
                     Upload solution
@@ -308,56 +299,69 @@ function SolutionCreator() {
                 </Button>
             </Center>
 
-            <Modal opened={opened} onClose={() => {
+            <Modal opened={openedReference} onClose={closeReference} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
+                <Fieldset legend="Solution Creator" style={{ width: "100%" }}>
+                    {!preview && <>
+                        <Tabs defaultValue="classes" color="cyan">
+                            <Tabs.List>
+                                <Tabs.Tab value="classes">Classes</Tabs.Tab>
+                                <Tabs.Tab value="attributes">Attributes</Tabs.Tab>
+                                <Tabs.Tab value="associations">Associations</Tabs.Tab>
+                                <Tabs.Tab value="enumerations">Enumerations</Tabs.Tab>
+                                <Tabs.Tab value="enumerationAssociations">Enumeration Associations</Tabs.Tab>
+                                <Tabs.Tab value="forbidden">Forbidden Elements</Tabs.Tab>
+                            </Tabs.List>
+                            <Tabs.Panel value="classes">
+                                <ClassForm reference={currentReference} addClass={addClass} />
+                            </Tabs.Panel>
+                            <Tabs.Panel value="attributes">
+                                <AttributeForm reference={currentReference} addClass={addClass} />
+                            </Tabs.Panel>
+                            <Tabs.Panel value="associations">
+                                <AssociationForm reference={currentReference} addAssociation={addAssociation} />
+                            </Tabs.Panel>
+                            <Tabs.Panel value="enumerations">
+                                enumerations
+                            </Tabs.Panel>
+                            <Tabs.Panel value="enumerationAssociations">
+                                enumeration associations
+                            </Tabs.Panel>
+                            <Tabs.Panel value="forbidden">
+                                <ForbiddenElementsForm reference={currentReference} addForbiddenClasses={addForbiddenClasses} addForbiddenAssociations={addForbiddenAssociations} />
+                            </Tabs.Panel>
+                        </Tabs>
+                        <Center mt="md">
+                            <Button variant="light" color="cyan" rightSection={<IconZoomCheckFilled size={16} stroke={1.5} />} mt="sm" onClick={() => { setPreview(true) }} >
+                                Display reference preview
+                            </Button>
+                        </Center>
+                    </>}
+                    {preview && <>
+                        <Text size="lg" w={500} mb="md">Preview of the reference solution</Text>
+                        <div ref={previewRef} id="apollon-preview"></div>
+                        <Center mt="md">
+                            <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => { saveReference() }}  >
+                                Save reference
+                            </Button>
+                            <Button variant="light" color="gray" rightSection={<IconX size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => { setPreview(false) }} >
+                                Cancel preview
+                            </Button>
+                        </Center>
+                    </>}
+                </Fieldset>
+            </Modal>
+
+            <Modal opened={openedModel} onClose={() => {
                 if (editor) {
-                    editor.destroy?.();
-                    setEditor(undefined);
+                    editor.destroy?.()
+                    setEditor(undefined)
                 }
-                close()
-                setActiveTab("")
+                closeModel()
             }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Solution Creator" style={{ width: "100%" }}>
-                    <Tabs value={activeTab} onChange={setActiveTab} variant="pills" color="cyan">
-                        <Tabs.List>
-                            <Tabs.Tab value="modeler">Modeler</Tabs.Tab>
-                            <Tabs.Tab value="reference">Reference</Tabs.Tab>
-                        </Tabs.List>
-                        <Tabs.Panel value="modeler">
-                            {activeTab === "modeler" && <div ref={apollonRef} id="apollon"></div>}
-                        </Tabs.Panel>
-                        <Tabs.Panel value="reference">
-                            <Tabs defaultValue="classes" color="cyan">
-                                <Tabs.List>
-                                    <Tabs.Tab value="classes">Classes</Tabs.Tab>
-                                    <Tabs.Tab value="attributes">Attributes</Tabs.Tab>
-                                    <Tabs.Tab value="associations">Associations</Tabs.Tab>
-                                    <Tabs.Tab value="enumerations">Enumerations</Tabs.Tab>
-                                    <Tabs.Tab value="enumerationAssociations">Enumeration Associations</Tabs.Tab>
-                                    <Tabs.Tab value="forbidden">Forbidden Elements</Tabs.Tab>
-                                </Tabs.List>
-                                <Tabs.Panel value="classes">
-                                    <ClassForm reference={currentReference} addClass={addClass} />
-                                </Tabs.Panel>
-                                <Tabs.Panel value="attributes">
-                                    <AttributeForm reference={currentReference} addClass={addClass} />
-                                </Tabs.Panel>
-                                <Tabs.Panel value="associations">
-                                    <AssociationForm reference={currentReference} addAssociation={addAssociation} />
-                                </Tabs.Panel>
-                                <Tabs.Panel value="enumerations">
-                                    enumerations
-                                </Tabs.Panel>
-                                <Tabs.Panel value="enumerationAssociations">
-                                    enumeration associations
-                                </Tabs.Panel>
-                                <Tabs.Panel value="forbidden">
-                                    <ForbiddenElementsForm reference={currentReference} addForbiddenClasses={addForbiddenClasses} addForbiddenAssociations={addForbiddenAssociations} />
-                                </Tabs.Panel>
-                            </Tabs>
-                        </Tabs.Panel>
-                    </Tabs>
+                    <div ref={apollonRef} id="apollon"></div>
                     <Center mt="md">
-                        <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => { saveSolution() }} >
+                        <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => { saveModel() }} >
                             Save solution
                         </Button>
                     </Center>

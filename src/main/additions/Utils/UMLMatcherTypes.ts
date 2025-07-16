@@ -2,6 +2,7 @@ export type Weight = "STRONG" | "MEDIUM" | "WEAK" | "NONE"
 export type AssociationType = "Default" | "Inheritance"
 import { UMLModel } from "../.."
 import { UMLCustomAssociation, UMLCustomClass } from "./UMLStructureBuilder"
+import { ClassElementType } from "../../packages/uml-class-diagram"
 
 export class ReferenceClass {
     name: string = ""
@@ -11,6 +12,7 @@ export class ReferenceClass {
     forbiddenAttributes: string[] = []
     attributes: ReferenceAttribute[] = []
     elementId: string
+    type: string = ClassElementType.Class
 }
 
 export class ReferenceAttribute {
@@ -75,12 +77,16 @@ export class ReferenceBuilder {
     createReferenceClass(element: UMLCustomClass): ReferenceClass {
         let refCl = new ReferenceClass()
         refCl.name = element.name
+        console.log(typeof element, element)
+        refCl.type = element.type
         Object.keys(this.model.elements).forEach((elementId) => {
             let element2 = this.model.elements[elementId]
             if (element2.type === "ClassAttribute" && element2.owner === element.id) {
                 let refAttr = new ReferenceAttribute()
                 refAttr.name = element2.name.split(":")[0].trim()
-                refAttr.types.push(element2.name.split(":")[1].trim())
+                if (element2.name.includes(":")) {
+                    refAttr.types.push(element2.name.split(":")[1].trim())
+                }
                 refCl.attributes.push(refAttr)
             }
         })
@@ -149,13 +155,18 @@ export class ReferenceBuilder {
     }
 
     buildReference(): ReferenceSolution {
+        console.log(typeof this.model)
         Object.keys(this.model.elements).forEach((elementId) => {
             let element = this.model.elements[elementId]
-            if (element.type === "Class") {
+            if (element.type === "Class" ||
+                element.type === "AbstractClass" ||
+                element.type === "Interface" ||
+                element.type === "Enumeration"
+            ) {
                 this.referenceSolution.classes.push(this.createReferenceClass(element as UMLCustomClass))
-            } else if (element.type === "Enumeration") {
+            } /*else if (element.type === "Enumeration") {
                 this.referenceSolution.enumerations.push(this.createReferenceEnumeration(element as UMLCustomClass))
-            }
+            }*/
         })
         Object.keys(this.model.relationships).forEach((relId) => {
             let rel = this.model.relationships[relId] as UMLCustomAssociation

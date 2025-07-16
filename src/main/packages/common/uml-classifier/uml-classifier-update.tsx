@@ -254,7 +254,7 @@ class ClassifierUpdate extends Component<Props, State> {
   private toggle = (type: keyof typeof ClassElementType) => {
     const { element, update } = this.props;
     const newType: UMLElementType = element.type === type ? ClassElementType.Class : type;
-    console.log(element.stereotype, newType)
+    console.log('Toggling type to:', newType);
     const stereotype = !element.stereotype ? newType === "IntermediateClass" ? "IntermediateClass" : element.stereotype : undefined;
     const instance = new UMLElements[newType]({
       id: element.id,
@@ -264,7 +264,8 @@ class ClassifierUpdate extends Component<Props, State> {
       bounds: element.bounds,
       ownedElements: element.ownedElements,
       stereotype: stereotype,
-    });
+    })
+    instance.type = newType;
     console.log(instance)
     update(element.id, instance);
   };
