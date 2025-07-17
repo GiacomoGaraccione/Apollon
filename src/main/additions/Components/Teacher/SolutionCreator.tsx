@@ -3,7 +3,7 @@ import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, 
 import API from "../../API";
 import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
-import { ApollonMode, UMLModel } from "../../../typings"
+import { ApollonMode, UMLClassifier, UMLModel } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 //import { UMLStructureBuilderFromLLM, UMLStructureBuilderFromReference } from "../operations/UMLStructureBuilder";
 //import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
@@ -90,6 +90,8 @@ function SolutionCreator() {
             if (currentReference) {
                 let builder = new UMLStructureBuilderFromReference(currentReference)
                 let model = builder.createUMLStructure()
+                console.log(model)
+                console.log(currentReference)
                 if (previewRef.current) {
                     let ed = new ApollonEditor(previewRef.current, { ...options, type: "ClassDiagram", readonly: true })
                     ed.nextRender.then(() => {
@@ -129,9 +131,9 @@ function SolutionCreator() {
                     console.log("0")
                     console.log(ref)
                     console.log(editor.model)
-                    //API.updateSolution(courseId, exerciseId, currentSolution.solutionId, ref, editor.model, svg).then(() => updateEx())
+                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId, ref, editor.model, svg).then(() => updateEx())
                 } else {
-                    //API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+                    API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
                 }
             }
         }
@@ -299,7 +301,10 @@ function SolutionCreator() {
                 </Button>
             </Center>
 
-            <Modal opened={openedReference} onClose={closeReference} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
+            <Modal opened={openedReference} onClose={() => {
+                closeReference()
+                setPreview(false)
+            }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Solution Creator" style={{ width: "100%" }}>
                     {!preview && <>
                         <Tabs defaultValue="classes" color="cyan">
@@ -307,8 +312,6 @@ function SolutionCreator() {
                                 <Tabs.Tab value="classes">Classes</Tabs.Tab>
                                 <Tabs.Tab value="attributes">Attributes</Tabs.Tab>
                                 <Tabs.Tab value="associations">Associations</Tabs.Tab>
-                                <Tabs.Tab value="enumerations">Enumerations</Tabs.Tab>
-                                <Tabs.Tab value="enumerationAssociations">Enumeration Associations</Tabs.Tab>
                                 <Tabs.Tab value="forbidden">Forbidden Elements</Tabs.Tab>
                             </Tabs.List>
                             <Tabs.Panel value="classes">
@@ -319,12 +322,6 @@ function SolutionCreator() {
                             </Tabs.Panel>
                             <Tabs.Panel value="associations">
                                 <AssociationForm reference={currentReference} addAssociation={addAssociation} />
-                            </Tabs.Panel>
-                            <Tabs.Panel value="enumerations">
-                                enumerations
-                            </Tabs.Panel>
-                            <Tabs.Panel value="enumerationAssociations">
-                                enumeration associations
                             </Tabs.Panel>
                             <Tabs.Panel value="forbidden">
                                 <ForbiddenElementsForm reference={currentReference} addForbiddenClasses={addForbiddenClasses} addForbiddenAssociations={addForbiddenAssociations} />
@@ -466,6 +463,7 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
     const [weight, setWeight] = useState<string>("STRONG")
     const [message, setMessage] = useState<string>("")
     const [nameError, setNameError] = useState<string | null>(null)
+    const [type, setType] = useState<UMLClassifier["type"]>("Class")
 
     useEffect(() => {
         if (props.reference) {
@@ -482,12 +480,14 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
             setMessage(currentClass.message)
             setForbiddenAttributes(currentClass.forbiddenAttributes)
             setSynonyms(currentClass.synonyms)
+            setType(currentClass.type as UMLClassifier["type"])
         } else {
             setName("")
             setWeight("STRONG")
             setMessage("")
             setForbiddenAttributes([])
             setSynonyms([])
+            setType("Class")
         }
     }, [currentClass])
 
@@ -497,6 +497,7 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
         setMessage("")
         setForbiddenAttributes([])
         setSynonyms([])
+        setType("Class")
     }
 
     const handleSubmit = () => {
@@ -516,6 +517,7 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
             cl.message = message
             cl.forbiddenAttributes = forbiddenAttributes
             cl.synonyms = synonyms
+            cl.type = type
             setClasses([...classes, cl])
             resetForm()
             setCurrentClass(undefined)
@@ -532,6 +534,7 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
                 cl.message = message
                 cl.forbiddenAttributes = forbiddenAttributes
                 cl.synonyms = synonyms
+                cl.type = type
                 setClasses([...classes.filter((c) => c.name !== currentClass?.name), cl])
                 resetForm()
                 setCurrentClass(undefined)
@@ -556,6 +559,7 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
                     <Fieldset legend="Current class" style={{ width: "100%" }}>
                         <TextInput label="Class name" placeholder="Class name" value={name} onChange={(ev) => setName(ev.target.value)} error={nameError} />
                         <NativeSelect label="Weight" data={["STRONG", "MEDIUM", "WEAK", "NONE"]} value={weight} onChange={(ev) => setWeight(ev.target.value)} />
+                        <NativeSelect label="Type" data={["Class", "AbstractClass", "Interface", "Enumeration", "IntermediateClass"]} value={type} onChange={(ev) => setType(ev.target.value as UMLClassifier["type"])} />
                         <Textarea label="Message" placeholder="Custom feedback message" value={message} onChange={(ev) => setMessage(ev.target.value)} />
                         <Tabs defaultValue="forbiddenAttributes" color="cyan">
                             <Tabs.List>
@@ -654,7 +658,7 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
             setNameError("Attribute name cannot be empty")
             return
         }
-        if (types.length === 0) {
+        if (types.length === 0 && currentClass?.type !== "Enumeration") {
             setNameError("Attribute must have at least one type")
             return
         }
@@ -725,9 +729,12 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
                                     <Tabs.Tab value="synonyms">Synonyms</Tabs.Tab>
                                 </Tabs.List>
                                 <Tabs.Panel value="types">
-                                    <ListEditor mode="types" list={types} onListChange={(newList) => {
+                                    {currentClass.type !== "Enumeration" && <ListEditor mode="types" list={types} onListChange={(newList) => {
                                         setTypes(newList)
-                                    }} onSave={() => { }} />
+                                    }} onSave={() => { }} />}
+                                    {currentClass.type === "Enumeration" && <Alert variant="light" color="cyan" icon={<IconExclamationCircle size={16} />} title="Enumeration Class!" >
+                                        Enumeration classes cannot have types. You can only add synonyms.
+                                    </Alert>}
                                 </Tabs.Panel>
                                 <Tabs.Panel value="synonyms">
                                     <ListEditor mode="synonyms" list={synonyms} onListChange={(newList) => {

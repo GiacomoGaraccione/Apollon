@@ -77,7 +77,6 @@ export class ReferenceBuilder {
     createReferenceClass(element: UMLCustomClass): ReferenceClass {
         let refCl = new ReferenceClass()
         refCl.name = element.name
-        console.log(typeof element, element)
         refCl.type = element.type
         Object.keys(this.model.elements).forEach((elementId) => {
             let element2 = this.model.elements[elementId]
@@ -161,7 +160,8 @@ export class ReferenceBuilder {
             if (element.type === "Class" ||
                 element.type === "AbstractClass" ||
                 element.type === "Interface" ||
-                element.type === "Enumeration"
+                element.type === "Enumeration" ||
+                element.type === "IntermediateClass"
             ) {
                 this.referenceSolution.classes.push(this.createReferenceClass(element as UMLCustomClass))
             } /*else if (element.type === "Enumeration") {

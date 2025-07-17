@@ -190,18 +190,17 @@ class UMLStructureBuilderFromReference {
 
     addUMLClass(cl: ReferenceClass) {
         let newClass = new UMLClass()
-        let type: UMLClassifier["type"]
-
         let custom = new UMLCustomClass(
             newClass.id,
             cl.name,
-            cl.type === "Interface" ? "Interface" : cl.type === "AbstractClass" ? "AbstractClass" : "Class",
+            cl.type as UMLClassifier["type"],
             newClass.owner,
             newClass.bounds
         )
         cl.attributes.forEach((attr: ReferenceAttribute, index: number) => {
             let newAttr = new UMLClassAttribute()
-            let name = attr.name + ": " + attr.types[0]
+            let name = attr.name
+            if (cl.type !== "Enumeration") name += ": " + attr.types[0]
             newAttr.name = name
             newAttr.owner = custom.id
 

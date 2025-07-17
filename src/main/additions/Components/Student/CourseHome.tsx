@@ -8,7 +8,7 @@ import { AvatarAccessories, AvatarAccessoriesColors, AvatarClothesColors, Avatar
 import { useNavigate, useParams } from "react-router-dom";
 import "./style.scss"
 import { createAvatar } from "@dicebear/core"
-import { avataaars } from '@dicebear/collection';
+import { avataaars, bottts } from '@dicebear/collection';
 import Leaderboard from "./Leaderboard";
 
 function CourseHome() {
@@ -64,10 +64,13 @@ function CourseHome() {
                             let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
                             setLevelInfo(levelInfo)
                         }
+
+                        setLoad(false)
+                    }).then(() => {
                         API.getStudentCompletedExercises(courseId, user.username).then((ce) => {
+                            console.log(ce)
                             setCompletedExercises(ce)
                         })
-                        setLoad(false)
                     })
                 })
             } catch (error) {
@@ -700,10 +703,18 @@ function CourseHome() {
                                             </Alert>}
                                             <Flex direction="column" gap={10} style={{ width: "100%" }}>
                                                 {course.exercises.filter((ex) => ex.visible).map((exercise) => {
+                                                    let isCompleted = completedExercises.find((ex) => ex.exerciseId === exercise.exerciseId)
+                                                    let bossStr = exercise.boss?.bossOptions
                                                     return (
-                                                        <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder style={{ width: '100%', margin: 'auto', cursor: 'pointer', position: 'relative' }} onClick={() => {
-                                                            navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`)
-                                                        }}>
+                                                        <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder
+                                                            style={{ borderColor: isCompleted ? "#b07100" : "", backgroundColor: isCompleted ? "#ffdd9a" : "", width: '100%', margin: 'auto', cursor: 'pointer', position: 'relative', overflow: 'hidden', }}
+                                                            onClick={() => { navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`) }}>
+                                                            {isCompleted && (
+                                                                <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1, background: "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)", animation: "shine 1.5s infinite linear", }} />
+                                                            )}
+                                                            <style>
+                                                                {` @keyframes shine { 0% { transform: translateX(-100%); opacity: 0.7; } 50% { transform: translateX(100%);  opacity: 1; } 100% { transform: translateX(200%); opacity: 0.7;  }  } `}
+                                                            </style>
                                                             <Flex align="center" justify="space-between">
                                                                 <div>
                                                                     <Text color="green">{exercise.title}</Text>
@@ -714,15 +725,13 @@ function CourseHome() {
                                                                         </>}
                                                                     </Flex>
                                                                 </div>
-                                                                {completedExercises.some((ex) => ex.exerciseId === exercise.exerciseId) && (
-                                                                    <Tooltip label="Completed">
-                                                                        <span style={{ marginLeft: 8, display: "flex", alignItems: "center" }}>
-                                                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFD700" xmlns="http://www.w3.org/2000/svg">
-                                                                                <path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 7.1-1.01z" />
-                                                                            </svg>
-                                                                        </span>
-                                                                    </Tooltip>
-                                                                )}
+                                                                {isCompleted && <Tooltip label="You defeated this boss!">
+                                                                    <Avatar
+                                                                        src={`data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(bottts, JSON.parse(bossStr)).toString())}`}
+                                                                        size={80}
+                                                                        radius="md"
+                                                                    />
+                                                                </Tooltip>}
                                                             </Flex>
                                                         </Card>
                                                     )

@@ -157,7 +157,8 @@ function ExercisePage() {
                 error.type === "duplicateAttributeName" ||
                 error.type === "missingAttributeType" ||
                 error.type === "foreignKeyReference" ||
-                error.type === "invalidAttributeType").forEach((error: any) => {
+                error.type === "invalidAttributeType" ||
+                error.type === "enumerationTypeWithAttributes").forEach((error: any) => {
                     let element = model.elements[error.attribute.elementId]
                     element.fillColor = "var(--mantine-color-orange-1)"
                 })
@@ -177,6 +178,10 @@ function ExercisePage() {
                 let element = model.elements[error.id]
                 element.textColor = "var(--mantine-color-red-5)"
                 element.strokeColor = "var(--mantine-color-red-5)"
+            })
+            r.newSemanticErrors.filter((error: any) => error.type === "classType").forEach((error: any) => {
+                let element = model.elements[error.id]
+                element.fillColor = "var(--mantine-color-red-5)"
             })
             r.newSemanticErrors.filter((error: any) => error.type === "forbiddenAttribute").forEach((error: any) => {
                 let element = model.elements[error.id]
@@ -560,7 +565,17 @@ function ExercisePage() {
                                         <Center>
                                             <Stack align="center">
                                                 {!completionRecord && <>
-                                                    <RingProgress sections={[{ value: results.newXP, color: "blue" }]} label={<Text color="blue" ta="center" size="xl">{results.newXP} XP</Text>} />
+                                                    <RingProgress
+                                                        sections={[
+                                                            {
+                                                                value: exercise?.experience
+                                                                    ? Math.round((results.newXP) * 100 / exercise.experience)
+                                                                    : 0,
+                                                                color: "blue"
+                                                            }
+                                                        ]}
+                                                        label={<Text color="blue" ta="center" size="xl">{results.newXP} XP</Text>}
+                                                    />
                                                     <Text size="md" color="blue">Available Experience</Text>
                                                 </>}
                                                 {completionRecord && <> <Text size="md" color="#FFD700">You already completed this exercise!</Text>
