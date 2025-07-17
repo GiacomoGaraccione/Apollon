@@ -34,7 +34,6 @@ def evaluate_student_diagram(solutions, model):
         for sol in solutions:
             reference = json.loads(sol.get("content")).get("reference")
             diagram = utils.convert_apollon_model_to_reference(model)
-            print(diagram)
             report = {
                 "matchingClasses": [],
                 "matchingAssociations": [],
@@ -60,6 +59,8 @@ def evaluate_student_diagram(solutions, model):
                                 matching_attr = attr2
                         if matching_attr:
                             types_match = False
+                            if matching_class.get("type") == "Enumeration":
+                                types_match = True
                             if matching_attr.get("types") and attr1.get("types"):
                                 types_match = matching_attr["types"][0].lower() in [attr.lower() for attr in attr1["types"]]
                             matching_attributes.append({
@@ -90,7 +91,9 @@ def evaluate_student_diagram(solutions, model):
                         "diagramClass": {"elementId": matching_class.get("elementId"), "name": matching_class.get("name")}, 
                         "similarity": max_sim,
                         "matchingAttributes": matching_attributes,
-                        "forbiddenAttributes": forbidden_attributes
+                        "forbiddenAttributes": forbidden_attributes,
+                        "correctType": cl1.get("type") == matching_class.get("type"),
+                        "currentType": matching_class.get("type")
                     })
             matched_diagram_class_names = {mc["diagramClass"]["name"] for mc in report["matchingClasses"]}
             for cl in diagram.get("classes", []):
@@ -106,7 +109,7 @@ def evaluate_student_diagram(solutions, model):
                             "similarity": sim
                         })
                     continue
-            
+            used_diagram_associations = set()
             for assoc1 in reference.get("associations", []):
                 matching_association = None
                 source_pair = None
@@ -117,10 +120,13 @@ def evaluate_student_diagram(solutions, model):
                 target_match = next((mc for mc in report["matchingClasses"] if mc.get("referenceClass") == ref_target), None)
                 if source_match is not None and target_match is not None:
                     for assoc2 in diagram.get("associations", []):
+                        if assoc2.get("elementId") in used_diagram_associations:
+                            continue
                         source = assoc2.get("source", {}).get("referenceClass", {}).get("name")
                         target = assoc2.get("target", {}).get("referenceClass", {}).get("name")
                         if (source_match.get("diagramClass", {}).get("name") == source or source_match.get("diagramClass", {}).get("name") == target) and (target_match.get("diagramClass", {}).get("name") == target or target_match.get("diagramClass", {}).get("name") == source):
                             matching_association = assoc2
+                            used_diagram_associations.add(assoc2.get("elementId"))
                             if source_match.get("diagramClass", {}).get("name") == source:
                                 source_pair = {
                                     "diagramInfo":  {
@@ -235,18 +241,29 @@ def get_syntax_errors_from_model(model):
                 else:
                     attrs_seen[attr_name] = attr
                 attr_types = attr.get("types", [""])
-                if len(attr_types) == 0 or attr_types[0] == "":
-                    errors.append({
-                        "type": utils.SyntaxErrorType.MISSING_ATTRIBUTE_TYPE._value_,
-                        "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has no type defined",
-                        "attribute": attr,
-                        "class": cl.get("name")
-                    })  
-                else:
-                    if attr_types[0].lower() not in [t.value.lower() for t in utils.AttributeType]:
+                if cl.get("type") != "Enumeration":
+                    if len(attr_types) == 0 or attr_types[0] == "":
                         errors.append({
-                            "type": utils.SyntaxErrorType.INVALID_ATTRIBUTE_TYPE._value_,
-                            "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has an invalid type '{attr_types[0]}'",
+                            "type": utils.SyntaxErrorType.MISSING_ATTRIBUTE_TYPE._value_,
+                            "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has no type defined",
+                            "attribute": attr,
+                            "class": cl.get("name")
+                        })  
+                    else:
+                        enumeration_names = [c.get("name", "") for c in model.get("classes", []) if c.get("type") == "Enumeration"]
+                        allowed_types = [t.value.lower() for t in utils.AttributeType] + [en.lower() for en in enumeration_names]
+                        if attr_types[0].lower() not in allowed_types:
+                            errors.append({
+                                "type": utils.SyntaxErrorType.INVALID_ATTRIBUTE_TYPE._value_,
+                                "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has an invalid type '{attr_types[0]}'",
+                                "attribute": attr,
+                                "class": cl.get("name")
+                            })
+                else:
+                    if len(attr_types) > 0 and attr_types[0] != "":
+                        errors.append({
+                            "type": utils.SyntaxErrorType.ENUMERATION_TYPE_WITH_ATTRIBUTES._value_,
+                            "message": f"Enumeration '{cl.get('name')}' should not have attributes with types",
                             "attribute": attr,
                             "class": cl.get("name")
                         })
@@ -276,40 +293,43 @@ def get_syntax_errors_from_model(model):
             if assoc.get("type") == "Default":
                 source = assoc.get("source", {})
                 target = assoc.get("target", {})
-                if source.get("multiplicities", [""]) == [""]:
-                    errors.append({
-                        "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_MULTIPLICITY._value_,
-                        "message": f"Association '{assoc.get('name')}' has no source multiplicity defined",
-                        "association": assoc,
-                        "class": source.get("referenceClass", {}).get("name")
-                    })
-                elif not get_multiplicity(source.get("multiplicities", [""])[0]):
-                    errors.append({
-                        "type": utils.SyntaxErrorType.INVALID_ASSOCIATION_MULTIPLICITY._value_,
-                        "message": f"Association '{assoc.get('name')}' has an invalid source multiplicity '{source.get('multiplicities', [''])[0]}'",
-                        "association": assoc,
-                        "class": source.get("referenceClass", {}).get("name")
-                    })
-                if target.get("multiplicities", [""]) == [""]:
-                    errors.append({
-                        "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_MULTIPLICITY._value_,
-                        "message": f"Association '{assoc.get('name')}' has no target multiplicity defined",
-                        "association": assoc,
-                        "class": target.get("referenceClass", {}).get("name")
-                    })
-                elif not get_multiplicity(target.get("multiplicities", [""])[0]):
-                    errors.append({
-                        "type": utils.SyntaxErrorType.INVALID_ASSOCIATION_MULTIPLICITY._value_,
-                        "message": f"Association '{assoc.get('name')}' has an invalid target multiplicity '{target.get('multiplicities', [''])[0]}'",
-                        "association": assoc,
-                        "class": target.get("referenceClass", {}).get("name")
-                    })
-                if not assoc.get("name", "").strip():
-                    errors.append({
-                        "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_NAME._value_,
-                        "message": f"Association has no name defined",
-                        "association": assoc
-                    })
+                source_type = source.get("referenceClass", {}).get("type", "Class")
+                target_type = target.get("referenceClass", {}).get("type", "Class")
+                if source_type != "Enumeration" and target_type != "Enumeration":
+                    if source.get("multiplicities", [""]) == [""]:
+                        errors.append({
+                            "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_MULTIPLICITY._value_,
+                            "message": f"Association '{assoc.get('name')}' has no source multiplicity defined",
+                            "association": assoc,
+                            "class": source.get("referenceClass", {}).get("name")
+                        })
+                    elif not get_multiplicity(source.get("multiplicities", [""])[0]):
+                        errors.append({
+                            "type": utils.SyntaxErrorType.INVALID_ASSOCIATION_MULTIPLICITY._value_,
+                            "message": f"Association '{assoc.get('name')}' has an invalid source multiplicity '{source.get('multiplicities', [''])[0]}'",
+                            "association": assoc,
+                            "class": source.get("referenceClass", {}).get("name")
+                        })
+                    if target.get("multiplicities", [""]) == [""]:
+                        errors.append({
+                            "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_MULTIPLICITY._value_,
+                            "message": f"Association '{assoc.get('name')}' has no target multiplicity defined",
+                            "association": assoc,
+                            "class": target.get("referenceClass", {}).get("name")
+                        })
+                    elif not get_multiplicity(target.get("multiplicities", [""])[0]):
+                        errors.append({
+                            "type": utils.SyntaxErrorType.INVALID_ASSOCIATION_MULTIPLICITY._value_,
+                            "message": f"Association '{assoc.get('name')}' has an invalid target multiplicity '{target.get('multiplicities', [''])[0]}'",
+                            "association": assoc,
+                            "class": target.get("referenceClass", {}).get("name")
+                        })
+                    if not assoc.get("name", "").strip():
+                        errors.append({
+                            "type": utils.SyntaxErrorType.MISSING_ASSOCIATION_NAME._value_,
+                            "message": f"Association has no name defined",
+                            "association": assoc
+                        })
                 if source.get("referenceClass", {}).get("name", "") == target.get("referenceClass", {}).get("name", ""):
                     source_no_role = False
                     target_no_role = False
@@ -380,6 +400,14 @@ def get_semantic_errors_from_report(report, reference):
             for mc in report.get("matchingClasses", []):
                 if mc.get("referenceClass") == cl.get("name"):
                     found = True
+                    if not mc.get("correctType"):
+                        errors.append({
+                            "type": utils.SemanticErrorType.CLASS_TYPE._value_,
+                            "name": cl.get("name"),
+                            "message": "Class type does not match, it should be " + cl.get("type"),
+                            "id": mc.get("diagramClass", {}).get("elementId"),
+                            "currentType": mc.get("currentType", "")
+                        })
                     break
             if not found:
                 errors.append({
@@ -433,12 +461,17 @@ def get_semantic_errors_from_report(report, reference):
                     found = True
                     break
             if not found:
-                errors.append({
-                    "type": utils.SemanticErrorType.MISSING_ASSOCIATION._value_,
-                    "source": assoc.get("source", {}).get("referenceClass", {}).get("name"),
-                    "target": assoc.get("target", {}).get("referenceClass", {}).get("name"),
-                    "message": "Association not found in the diagram"
-                })
+                source = assoc.get("source", {}).get("referenceClass", {}).get("name")
+                target = assoc.get("target", {}).get("referenceClass", {}).get("name")
+                source_exists = any(mc.get("referenceClass") == source for mc in report.get("matchingClasses", []))
+                target_exists = any(mc.get("referenceClass") == target for mc in report.get("matchingClasses", []))
+                if source_exists and target_exists:
+                    errors.append({
+                        "type": utils.SemanticErrorType.MISSING_ASSOCIATION._value_,
+                        "source": source,
+                        "target": target,
+                        "message": "Association not found in the diagram"
+                    })
         for assoc in report.get("matchingAssociations", []):
             ref_assoc = assoc.get("referenceAssociation")
             if ref_assoc.get("name") != "":

@@ -3,13 +3,12 @@ from enum import Enum
 def convert_apollon_model_to_reference(model):
     reference = {
         "classes": [],
-        "associations": [],
-        "enumerations": [],
-        "enumerationAssociations": []
+        "associations": []
     }
     elements = model.get("elements", {})
     for element in elements.values():
-        if element.get("type") == "Class":
+        elementType = element.get("type", "")
+        if elementType == "Class" or elementType == "Enumeration" or elementType == "IntermediateClass" or elementType == "AbstractClass" or elementType == "Interface":
             newClass = {
                 "name": element.get("name"),
                 "synonyms": [],
@@ -17,7 +16,8 @@ def convert_apollon_model_to_reference(model):
                 "message": "",
                 "forbiddenAttributes": [],
                 "attributes": [],
-                "elementId": element.get("id")
+                "elementId": element.get("id"),
+                "type": elementType
             }
             attributes = element.get("attributes", [])
             for attr_id in attributes:
@@ -105,6 +105,8 @@ class SyntaxErrorType(Enum):
     INVALID_ASSOCIATION_MULTIPLICITY = "invalidAssociationMultiplicity"
     MISSING_ASSOCIATION_NAME = "missingAssociationName"
     MISSING_RECURSIVE_ASSOCIATION_ROLE = "missingRecursiveAssociationRole"
+    ENUMERATION_TYPE_WITH_ATTRIBUTES = "enumerationTypeWithAttributes"
+    INTERMEDIATE_CLASS_MULTIPLE_CONNECTIONS = "intermediateClassMultipleConnections"
 
 class SemanticErrorType(Enum):
     MISSING_CLASS = "missingClass"
@@ -116,3 +118,4 @@ class SemanticErrorType(Enum):
     ASSOCIATION_NAME = "associationName"
     ASSOCIATION_MULTIPLICITY = "associationMultiplicity"
     ASSOCIATION_TYPE = "associationType"
+    CLASS_TYPE = "classType"
