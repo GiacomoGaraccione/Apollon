@@ -244,6 +244,25 @@ function SyntaxErrorsList(props: { syntaxErrors: any[] }) {
                                         </>
                                     )
                                 })}
+                                {props.syntaxErrors.filter((error: any) => error.type === "enumerationTypeWithAttributes").map((error: any) => {
+                                    return (
+                                        <>
+                                            <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                <Highlight
+                                                    highlight={[error.class, error.attribute.name, error.attribute.types[0]]}
+                                                    highlightStyles={{
+                                                        backgroundColor: "var(--mantine-color-orange-5)",
+                                                        fontWeight: 700,
+                                                        WebkitBackgroundClip: 'text',
+                                                        WebkitTextFillColor: 'transparent'
+                                                    }}>
+                                                    {`The enumeration ${error.class} has an attribute (${error.attribute.name}) with a type (${error.attribute.types[0]}), which is not allowed.`}
+                                                </Highlight>
+                                            </List.Item>
+                                            <Divider my="xs" />
+                                        </>
+                                    )
+                                })}
                             </List>
                         </>}
                     </Popover.Dropdown>
@@ -441,6 +460,25 @@ function SemanticErrorsList(props: { semanticErrors: any[] }) {
                                                     WebkitTextFillColor: 'transparent'
                                                 }}>
                                                 {`The association between the classes ${error.diagramSource} and ${error.diagramTarget} has an incorrect type, it should not be ${error.diagramType}`}
+                                            </Highlight>
+                                            <Divider my="xs" />
+                                        </List.Item>
+                                    </>
+                                )
+                            })}
+                            {props.semanticErrors.filter((error: any) => error.type === "classType").map((error: any) => {
+                                return (
+                                    <>
+                                        <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="red" />} >
+                                            <Highlight
+                                                highlight={[error.name, error.currentType]}
+                                                highlightStyles={{
+                                                    backgroundColor: "var(--mantine-color-red-5)",
+                                                    fontWeight: 700,
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent'
+                                                }}>
+                                                {`The class ${error.name} has an incorrect type, it should not be ${error.currentType}.`}
                                             </Highlight>
                                             <Divider my="xs" />
                                         </List.Item>
