@@ -244,6 +244,61 @@ function SyntaxErrorsList(props: { syntaxErrors: any[] }) {
                                         </>
                                     )
                                 })}
+                                {props.syntaxErrors.filter((error: any) => error.type === "classAsAttributeType").map((error: any) => {
+                                    return (
+                                        <>
+                                            <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                <Highlight highlight={[error.attribute.name, error.class, error.attribute.types[0]]} highlightStyles={{
+                                                    backgroundColor: "var(--mantine-color-orange-5)",
+                                                    fontWeight: 700,
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent'
+                                                }}>
+                                                    {`The attribute ${error.attribute.name} in the class ${error.class} has another class as its type: ${error.attribute.types[0]}.`}
+                                                </Highlight>
+                                            </List.Item>
+                                            <Divider my="xs" />
+                                        </>
+                                    )
+                                })}
+                                {props.syntaxErrors.filter((error: any) => error.type === "unconnectedEnumeration").map((error: any) => {
+                                    return (
+                                        <>
+                                            <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                <Highlight
+                                                    highlight={[error.class, error.attribute.name, error.attribute.types[0]]}
+                                                    highlightStyles={{
+                                                        backgroundColor: "var(--mantine-color-orange-5)",
+                                                        fontWeight: 700,
+                                                        WebkitBackgroundClip: 'text',
+                                                        WebkitTextFillColor: 'transparent'
+                                                    }}>
+                                                    {`The attribute ${error.attribute.name} in class ${error.class} is an enumeration, but there is no connection between the class and ${error.attribute.types[0]}.`}
+                                                </Highlight>
+                                            </List.Item>
+                                            <Divider my="xs" />
+                                        </>
+                                    )
+                                })}
+                                {props.syntaxErrors.filter((error: any) => error.type === "invalidIntermediateClassConnections").map((error: any) => {
+                                    return (
+                                        <>
+                                            <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="orange" />} >
+                                                <Highlight
+                                                    highlight={[error.element.name, error.connectedClasses.length.toString()]}
+                                                    highlightStyles={{
+                                                        backgroundColor: "var(--mantine-color-orange-5)",
+                                                        fontWeight: 700,
+                                                        WebkitBackgroundClip: 'text',
+                                                        WebkitTextFillColor: 'transparent'
+                                                    }}>
+                                                    {`The intermediate class ${error.element.name} must be connected to exactly two classes but is currently connected to ${error.connectedClasses.length}.`}
+                                                </Highlight>
+                                            </List.Item>
+                                            <Divider my="xs" />
+                                        </>
+                                    )
+                                })}
                             </List>
                         </>}
                     </Popover.Dropdown>

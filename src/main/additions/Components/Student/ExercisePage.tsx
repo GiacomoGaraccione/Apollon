@@ -131,6 +131,8 @@ function ExercisePage() {
                 r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
                 r.results = JSON.parse(res.results || "{}")
             }
+            console.log(r.newSyntaxErrors)
+            console.log(r.newSemanticErrors)
             setResults(r)
             let model = JSON.parse(res.model)
             Object.keys(model.elements).forEach((key) => {
@@ -149,16 +151,20 @@ function ExercisePage() {
                 element.textColor = "var(--mantine-color-orange-7)"
                 element.strokeColor = "var(--mantine-color-orange-7)"
             })
-            r.newSyntaxErrors.filter((error: any) => error.type === "duplicateClassName" || error.type === "unconnectedClass").forEach((error: any) => {
-                let element = model.elements[error.element.elementId]
-                element.fillColor = "var(--mantine-color-orange-1)"
-            })
+            r.newSyntaxErrors.filter((error: any) => error.type === "duplicateClassName" ||
+                error.type === "unconnectedClass" ||
+                error.type === "invalidIntermediateClassConnections").forEach((error: any) => {
+                    let element = model.elements[error.element.elementId]
+                    element.fillColor = "var(--mantine-color-orange-1)"
+                })
             r.newSyntaxErrors.filter((error: any) => error.type === "missingAttributeName" ||
                 error.type === "duplicateAttributeName" ||
                 error.type === "missingAttributeType" ||
                 error.type === "foreignKeyReference" ||
                 error.type === "invalidAttributeType" ||
-                error.type === "enumerationTypeWithAttributes").forEach((error: any) => {
+                error.type === "enumerationTypeWithAttributes" ||
+                error.type === "classAsAttributeType" ||
+                error.type === "unconnectedEnumeration").forEach((error: any) => {
                     let element = model.elements[error.attribute.elementId]
                     element.fillColor = "var(--mantine-color-orange-1)"
                 })
@@ -366,6 +372,7 @@ function ExercisePage() {
                             }
                             setCompleteResults(completeRes)
                             API.completeStudentExercise(courseId, exerciseId, user.username, reward).then((res: any) => {
+                                setCompletionRecord(res.log)
                                 API.updateStudentCourseInfo(courseId, user.username, completeRes.newLevel, userXp, JSON.parse(studentInfo.avatar))
                             })
                             openComplete()

@@ -205,7 +205,9 @@ def get_syntax_errors_from_model(model):
     errors = []
     try:
         names_seen = {}
+        enumeration_names = [c.get("name", "") for c in model.get("classes", []) if c.get("type") == "Enumeration"]
         for cl in model.get("classes", []):
+            print(cl)
             name = cl.get("name", "").strip().lower()
             if not name:
                 errors.append({
@@ -250,7 +252,6 @@ def get_syntax_errors_from_model(model):
                             "class": cl.get("name")
                         })  
                     else:
-                        enumeration_names = [c.get("name", "") for c in model.get("classes", []) if c.get("type") == "Enumeration"]
                         allowed_types = [t.value.lower() for t in utils.AttributeType] + [en.lower() for en in enumeration_names]
                         if attr_types[0].lower() not in allowed_types:
                             errors.append({
@@ -277,6 +278,30 @@ def get_syntax_errors_from_model(model):
                             "class": cl.get("name"),
                             "containedClass": other_cl.get("name")
                         })
+                class_names = [c.get("name") for c in model.get("classes", [])]
+                if attr_types and attr_types[0] and attr_types[0] in class_names:
+                    typed_class = next((c for c in model.get("classes", []) if c.get("name") == attr_types[0]), None)
+                    if typed_class.get("type") == "Enumeration":
+                        for assoc in model.get("associations"):
+                            source = assoc.get("source", {}).get("referenceClass", {}).get("name")
+                            target = assoc.get("target", {}).get("referenceClass", {}).get("name")
+                            if ((source == cl.get("name") and target == typed_class.get("name")) or
+                                (source == typed_class.get("name") and target == cl.get("name"))):
+                                break
+                        else:
+                            errors.append({
+                                "type": utils.SyntaxErrorType.UNCONNECTED_ENUMERATION._value_,
+                                "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' is an enumeration, but there is no association between '{cl.get('name')}' and '{typed_class.get('name')}'",
+                                "attribute": attr,
+                                "class": cl.get("name")
+                            })
+                    else:
+                        errors.append({
+                            "type": utils.SyntaxErrorType.CLASS_AS_ATTRIBUTE_TYPE._value_,
+                            "message": f"Attribute '{attr.get('name')}' in class '{cl.get('name')}' has a type that is a class",
+                            "attribute": attr,
+                            "class": cl.get("name")
+                        })
                 
             class_used_in_association = any(
                 (assoc.get("source", {}).get("referenceClass", {}).get("name") == cl.get("name") or
@@ -289,6 +314,27 @@ def get_syntax_errors_from_model(model):
                     "message": f"Class '{cl.get('name')}' is not connected to any other class",
                     "element": cl
                 })
+            if cl.get("type", "Class") == "IntermediateClass":
+                connected_classes = set()
+                for assoc in model.get("associations", []):
+                    source = assoc.get("source", {}).get("referenceClass", {})
+                    target = assoc.get("target", {}).get("referenceClass", {})
+                    if source.get("name") == cl.get("name"):
+                        other = target
+                    elif target.get("name") == cl.get("name"):
+                        other = source
+                    else:
+                        continue
+                    for c in model.get("classes", []):
+                        if c.get("name") == other.get("name") and c.get("type", "Class") == "Class":
+                            connected_classes.add(c.get("name"))
+                if len(connected_classes) != 2:
+                    errors.append({
+                        "type": utils.SyntaxErrorType.INVALID_INTERMEDIATE_CLASS_CONNECTIONS._value_,
+                        "message": f"Intermediate class '{cl.get('name')}' must be connected to exactly two classes",
+                        "element": cl,
+                        "connectedClasses": list(connected_classes)
+                    })
         for assoc in model.get("associations", []):
             if assoc.get("type") == "Default":
                 source = assoc.get("source", {})

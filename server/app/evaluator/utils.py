@@ -107,6 +107,9 @@ class SyntaxErrorType(Enum):
     MISSING_RECURSIVE_ASSOCIATION_ROLE = "missingRecursiveAssociationRole"
     ENUMERATION_TYPE_WITH_ATTRIBUTES = "enumerationTypeWithAttributes"
     INTERMEDIATE_CLASS_MULTIPLE_CONNECTIONS = "intermediateClassMultipleConnections"
+    CLASS_AS_ATTRIBUTE_TYPE = "classAsAttributeType"
+    UNCONNECTED_ENUMERATION = "unconnectedEnumeration"
+    INVALID_INTERMEDIATE_CLASS_CONNECTIONS = "invalidIntermediateClassConnections"
 
 class SemanticErrorType(Enum):
     MISSING_CLASS = "missingClass"
