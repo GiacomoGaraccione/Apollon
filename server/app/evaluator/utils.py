@@ -18,7 +18,6 @@ def create_association_endpoint(endpoint_data, element_id, reference_classes):
         dict: Endpoint dell'associazione
     """
     if not endpoint_data:
-        logger.warning(f"Endpoint data is empty for element {element_id}")
         return {
             "role": "",
             "multiplicities": [""],
@@ -103,7 +102,6 @@ def convert_apollon_model_to_reference(model):
         source_multiplicity = source_info.get("multiplicity", "")
         target_multiplicity = target_info.get("multiplicity", "")
         
-        logger.info(f"Processing association {rel_id} ({rel_name}): SOURCE {source_element_id}[{source_multiplicity}] -> TARGET {target_element_id}[{target_multiplicity}]")
         
         # Usa la funzione helper per creare gli endpoint in modo sicuro
         sourceCls = create_association_endpoint(source_info, source_element_id, reference["classes"])
@@ -112,7 +110,6 @@ def convert_apollon_model_to_reference(model):
         newAssoc["source"] = sourceCls
         newAssoc["target"] = targetCls
         
-        # Verifica finale e logging degli errori
         actual_source_mult = sourceCls["multiplicities"][0] if sourceCls["multiplicities"] else ""
         actual_target_mult = targetCls["multiplicities"][0] if targetCls["multiplicities"] else ""
         
@@ -167,7 +164,6 @@ class SyntaxErrorType(Enum):
     MISSING_ASSOCIATION_NAME = "missingAssociationName"
     MISSING_RECURSIVE_ASSOCIATION_ROLE = "missingRecursiveAssociationRole"
     ENUMERATION_TYPE_WITH_ATTRIBUTES = "enumerationTypeWithAttributes"
-    INTERMEDIATE_CLASS_MULTIPLE_CONNECTIONS = "intermediateClassMultipleConnections"
     CLASS_AS_ATTRIBUTE_TYPE = "classAsAttributeType"
     UNCONNECTED_ENUMERATION = "unconnectedEnumeration"
     INVALID_INTERMEDIATE_CLASS_CONNECTIONS = "invalidIntermediateClassConnections"

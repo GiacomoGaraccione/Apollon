@@ -71,7 +71,8 @@ def evaluate_student_diagram(solutions, model):
                                 "referenceAttribute": attr1.get("name"), 
                                 "diagramAttribute": {"elementId": matching_attr.get("elementId"), "name": matching_attr.get("name")}, 
                                 "similarity": max_attr_sim,
-                                "typesMatch": types_match
+                                "typesMatch": types_match,
+                                "allowsForeignKeyName": attr1.get("allowsForeignKeyName", False)
                             })
                     forbidden_attributes = []
                     for attr in matching_class.get("attributes", []):
@@ -196,7 +197,7 @@ def evaluate_student_diagram(solutions, model):
                 best_reference = reference
                 best = report
         semantic_errors = get_semantic_errors_from_report(best, best_reference)
-        syntax_errors = get_syntax_errors_from_model(utils.convert_apollon_model_to_reference(model))
+        syntax_errors = get_syntax_errors_from_model(utils.convert_apollon_model_to_reference(model), best_reference, best)
         best["syntax_errors"] = syntax_errors
         best["semantic_errors"] = semantic_errors
         return best
@@ -205,7 +206,7 @@ def evaluate_student_diagram(solutions, model):
         logger.error(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
 
-def get_syntax_errors_from_model(model):
+def get_syntax_errors_from_model(model, reference=None, report=None):
     errors = []
     try:
         names_seen = {}
@@ -274,13 +275,18 @@ def get_syntax_errors_from_model(model):
                 for other_cl in model.get("classes", []):
                     other_name = other_cl.get("name", "").strip().lower()
                     if other_name and other_name in attr_name and other_name != name:
-                        errors.append({
-                            "type": utils.SyntaxErrorType.FOREIGN_KEY_REFERENCE._value_,
-                            "message": f"Attribute name '{attr.get('name')}' in class '{cl.get('name')}' may be a foreign key reference to another class '{other_cl.get('name')}'",
-                            "attribute": attr,
-                            "class": cl.get("name"),
-                            "containedClass": other_cl.get("name")
-                        })
+                        matching_report_class = next((mc for mc in report.get("matchingClasses", []) if mc.get("diagramClass", {}).get("name") == cl.get("name")), None)
+                        matching_report_attr = None
+                        if matching_report_class:
+                            matching_report_attr = next((ma for ma in matching_report_class.get("matchingAttributes", []) if ma.get("diagramAttribute", {}).get("elementId") == attr.get("elementId")), None)
+                        if not matching_report_attr or not matching_report_attr.get("allowsForeignKeyName", False):
+                            errors.append({
+                                "type": utils.SyntaxErrorType.FOREIGN_KEY_REFERENCE._value_,
+                                "message": f"Attribute name '{attr.get('name')}' in class '{cl.get('name')}' may be a foreign key reference to another class '{other_cl.get('name')}'",
+                                "attribute": attr,
+                                "class": cl.get("name"),
+                                "containedClass": other_cl.get("name")
+                            })
                 class_names = [c.get("name") for c in model.get("classes", [])]
                 if attr_types and attr_types[0] and attr_types[0] in class_names:
                     typed_class = next((c for c in model.get("classes", []) if c.get("name") == attr_types[0]), None)

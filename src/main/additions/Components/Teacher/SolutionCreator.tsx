@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Textarea, Group } from "@mantine/core";
+import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, TextInput, NativeSelect, Textarea, Group, Chip } from "@mantine/core";
 import API from "../../API";
 import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
@@ -622,6 +622,7 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
     const [message, setMessage] = useState("")
     const [synonyms, setSynonyms] = useState<string[]>([])
     const [classes, setClasses] = useState<ReferenceClass[]>([])
+    const [allowsForeignKeyName, setAllowsForeignKeyName] = useState<boolean>(false)
     const [currentClass, setCurrentClass] = useState<ReferenceClass | undefined>(undefined)
     const [currentAttribute, setCurrentAttribute] = useState<ReferenceAttribute | undefined>(undefined)
     const [nameError, setNameError] = useState<string | null>(null)
@@ -641,6 +642,7 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
             setWeight(currentAttribute.weight)
             setMessage(currentAttribute.message)
             setSynonyms(currentAttribute.synonyms)
+            setAllowsForeignKeyName(currentAttribute.allowsForeignKeyName || false)
         }
     }, [currentAttribute])
 
@@ -681,6 +683,7 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
             attr.weight = weight as Weight
             attr.message = message
             attr.synonyms = synonyms
+            attr.allowsForeignKeyName = allowsForeignKeyName
             let cl = currentClass
             cl.attributes.push(attr)
             resetForm()
@@ -695,6 +698,7 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
                 attr.weight = weight as Weight
                 attr.message = message
                 attr.synonyms = synonyms
+                attr.allowsForeignKeyName = allowsForeignKeyName
                 let cl = currentClass
                 setCurrentClass(cl)
                 resetForm()
@@ -723,6 +727,9 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
                         {currentClass && <> <TextInput label="Attribute name" placeholder="Attribute name" value={name} onChange={(ev) => setName(ev.target.value)} error={nameError} />
                             <NativeSelect label="Weight" data={["STRONG", "MEDIUM", "WEAK", "NONE"]} value={weight} onChange={(ev) => setWeight(ev.target.value)} />
                             <Textarea label="Message" placeholder="Custom feedback message" value={message} onChange={(ev) => setMessage(ev.target.value)} />
+                            <Chip checked={allowsForeignKeyName} onChange={(checked) => setAllowsForeignKeyName(checked)} mt="sm">
+                                Allows foreign key name
+                            </Chip>
                             <Tabs defaultValue="types" color="cyan">
                                 <Tabs.List>
                                     <Tabs.Tab value="types">Types</Tabs.Tab>

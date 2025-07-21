@@ -22,6 +22,7 @@ export class ReferenceAttribute {
     weight: Weight = "STRONG"
     message: string = ""
     elementId: string
+    allowsForeignKeyName: boolean = false
 }
 
 export class ReferenceAssociation {
