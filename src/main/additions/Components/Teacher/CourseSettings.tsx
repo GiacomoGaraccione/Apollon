@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { IconCheck, IconCloudUpload, IconDownload, IconInfoCircle, IconSquareRoundedPlusFilled, IconX } from '@tabler/icons-react';
+import { IconCheck, IconCloudUpload, IconDownload, IconInfoCircle, IconSquareRoundedPlusFilled, IconUpload, IconX } from '@tabler/icons-react';
 import { Avatar, Badge, Button, Card, Center, Divider, Fieldset, Flex, Grid, Group, Image, Modal, NativeSelect, Notification, NumberInput, Progress, RangeSlider, ScrollArea, Slider, Stack, Table, Tabs, Text, TextInput, } from '@mantine/core';
 import { useForm, } from "@mantine/form"
 import cx from 'clsx';
@@ -34,6 +34,9 @@ function CourseSettings() {
     const [differenceThreshold, setDifferenceThreshold] = useState<number | string>(10)
     const [differenceSettings, setDifferenceSettings] = useState<any[]>([])
     const [levelSettings, setLevelSettings] = useState<any[]>([])
+    const [openedUnlock, { open: openUnlock, close: closeUnlock }] = useDisclosure(false)
+    const [openedSettings, { open: openSettings, close: closeSettings }] = useDisclosure(false)
+    const [uploadNotif, setUploadNotif] = useState<Boolean>(false)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -70,7 +73,6 @@ function CourseSettings() {
                     setDifferenceThreshold(opts.difference.threshold)
                     setDifferenceSettings(opts.difference.settings)
                     setLevelSettings(opts.levels)
-
                 }
             })
         }
@@ -108,7 +110,6 @@ function CourseSettings() {
         setCheckSettings(checkArr);
     }
 
-
     const updateProgressSettings = (steps: number, maxMult: number) => {
         const minScore = 75;
         const maxScore = 100;
@@ -128,6 +129,67 @@ function CourseSettings() {
         setProgressSettings(progressArr);
     }
 
+    const handleUnlockDrop = (files: File[]) => {
+        if (files.length !== 1) {
+            return
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const contents = e.target?.result;
+                if (typeof contents === "string") {
+                    try {
+                        const json = JSON.parse(contents) as AvatarUnlockOptions
+                        setUnlockOptions(json)
+                        closeUnlock()
+                        setUploadNotif(true)
+                        setTimeout(() => {
+                            setUploadNotif(false)
+                        }, 3000)
+                    } catch (err) {
+                        console.error("Error parsing JSON:", err);
+                    }
+                }
+            }
+            reader.readAsText(files[0])
+        }
+    }
+
+    const handleSettingsDrop = (files: File[]) => {
+        if (files.length !== 1) {
+            return
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const contents = e.target?.result;
+                if (typeof contents === "string") {
+                    try {
+                        const json = JSON.parse(contents)
+                        setProgressMaxMult(json.progress.maxMultiplier)
+                        setProgressSteps(json.progress.steps)
+                        setProgressSettings(json.progress.settings)
+                        setChecksMaxMult(json.checks.maxMultiplier)
+                        setChecksSteps(json.checks.steps)
+                        setCheckThreshold(json.checks.threshold)
+                        setCheckSettings(json.checks.settings)
+                        setDifferenceMaxMult(json.difference.maxMultiplier)
+                        setDifferenceSteps(json.difference.steps)
+                        setDifferenceThreshold(json.difference.threshold)
+                        setDifferenceSettings(json.difference.settings)
+                        setLevelSettings(json.levels)
+                        closeSettings()
+                        setUploadNotif(true)
+                        setTimeout(() => {
+                            setUploadNotif(false)
+                        }, 3000)
+                    } catch (err) {
+                        console.error("Error parsing JSON:", err);
+                    }
+                }
+            }
+            reader.readAsText(files[0])
+        }
+    }
+
     return (
         <>
             <Badge color="cyan" size="xl" leftSection={<IconInfoCircle size={16} />} >Course ID: {courseId}</Badge>
@@ -141,13 +203,23 @@ function CourseSettings() {
                         <Tabs.Panel value="avatar">
                             <Fieldset legend="Pieces">
                                 <Center mb="md">
-                                    <Button variant="outline" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} />} onClick={() => {
+                                    <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} />} onClick={() => {
                                         if (courseId && unlockOptions) {
                                             API.updateCourseSettings(courseId, unlockOptions).then(() => {
                                                 navigate("/teacher/courses")
                                             })
                                         }
                                     }}>Save unlock settings</Button>
+                                    <Button variant="light" color="cyan" rightSection={<IconDownload size={16} />} onClick={() => {
+                                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(unlockOptions, null, 2));
+                                        const downloadAnchorNode = document.createElement('a');
+                                        downloadAnchorNode.setAttribute("href", dataStr);
+                                        downloadAnchorNode.setAttribute("download", `unlockOptions_${courseId}.json`);
+                                        document.body.appendChild(downloadAnchorNode);
+                                        downloadAnchorNode.click();
+                                        downloadAnchorNode.remove();
+                                    }} >Download unlock settings</Button>
+                                    <Button variant="light" color="yellow" rightSection={<IconUpload size={16} />} onClick={openUnlock} >Upload unlock settings</Button>
                                 </Center>
                                 <Tabs defaultValue="accessories" variant="pills" color="cyan">
                                     <Tabs.List>
@@ -205,7 +277,7 @@ function CourseSettings() {
                                     </Tabs.Panel>
                                     <Tabs.Panel value="hatColor">
                                         <Flex wrap="wrap" gap="xs" justify="center">
-                                            {renderAvatarOptions(AvatarHatColors, avatarOptions, "hatColor", unlockOptions, setUnlockOptions)}
+                                            {renderAvatarOptions(AvatarHatColors, avatarOptions, "hatsColor", unlockOptions, setUnlockOptions)}
                                         </Flex>
                                     </Tabs.Panel>
                                     <Tabs.Panel value="skinColor">
@@ -223,7 +295,7 @@ function CourseSettings() {
                         </Tabs.Panel>
                         <Tabs.Panel value="settings">
                             <Center mb="md">
-                                <Button variant="outline" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} />} onClick={() => {
+                                <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} />} onClick={() => {
                                     if (courseId) {
                                         let gameOptions = {
                                             progress: {
@@ -250,6 +322,35 @@ function CourseSettings() {
                                         })
                                     }
                                 }}>Save game settings</Button>
+                                <Button variant="light" color="cyan" rightSection={<IconDownload size={16} />} onClick={() => {
+                                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                                        progress: {
+                                            maxMultiplier: Number(progressMaxMult),
+                                            steps: Number(progressSteps),
+                                            settings: progressSettings
+                                        },
+                                        checks: {
+                                            maxMultiplier: Number(checksMaxMult),
+                                            steps: Number(checksSteps),
+                                            threshold: Number(checkThreshold),
+                                            settings: checkSettings
+                                        },
+                                        difference: {
+                                            maxMultiplier: Number(differenceMaxMult),
+                                            steps: Number(differenceSteps),
+                                            threshold: Number(differenceThreshold),
+                                            settings: differenceSettings
+                                        },
+                                        levels: levelSettings
+                                    }, null, 2));
+                                    const downloadAnchorNode = document.createElement('a');
+                                    downloadAnchorNode.setAttribute("href", dataStr);
+                                    downloadAnchorNode.setAttribute("download", `gameOptions_${courseId}.json`);
+                                    document.body.appendChild(downloadAnchorNode);
+                                    downloadAnchorNode.click();
+                                    document.body.removeChild(downloadAnchorNode);
+                                }} >Download game settings</Button>
+                                <Button variant="light" color="yellow" rightSection={<IconUpload size={16} />} onClick={openSettings} >Upload game settings</Button>
                             </Center>
                             <Stack align="stretch" justify="center" gap="md">
                                 <Fieldset legend="Level Thresholds">
@@ -358,6 +459,71 @@ function CourseSettings() {
 
                 </Grid.Col>
             </Grid >
+
+            <Modal opened={openedUnlock} onClose={closeUnlock} title="Upload Unlock Settings">
+                <Modal.Body>
+                    <Dropzone onDrop={handleUnlockDrop} accept={["application/json"]} className="dropzone" radius="md" >
+                        <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                            <Fieldset legend="Upload enrolled students">
+                                <Group justify='center' align='center'>
+                                    <Dropzone.Accept>
+                                        <IconDownload size={50} color="blue" stroke={1.5} />
+                                    </Dropzone.Accept>
+                                    <Dropzone.Reject>
+                                        <IconX size={50} color="red" stroke={1.5} />
+                                    </Dropzone.Reject>
+                                    <Dropzone.Idle>
+                                        <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                    </Dropzone.Idle>
+                                </Group>
+                                <Text ta="center" fw={700} fz="lg" mt="xl">
+                                    <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                    <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                    <Dropzone.Idle>Upload enrolled students</Dropzone.Idle>
+                                </Text>
+                                <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                    Drag&apos;n&apos;drop a JSON file with the avatar unlock settings
+                                </Text>
+                            </Fieldset>
+                        </div>
+                    </Dropzone>
+                </Modal.Body>
+            </Modal>
+
+            <Modal opened={openedSettings} onClose={closeSettings} title="Upload Game Settings">
+                <Modal.Body>
+                    <Dropzone onDrop={handleSettingsDrop} accept={["application/json"]} className="dropzone" radius="md" >
+                        <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                            <Fieldset legend="Upload game settings">
+                                <Group justify='center' align='center'>
+                                    <Dropzone.Accept>
+                                        <IconDownload size={50} color="blue" stroke={1.5} />
+                                    </Dropzone.Accept>
+                                    <Dropzone.Reject>
+                                        <IconX size={50} color="red" stroke={1.5} />
+                                    </Dropzone.Reject>
+                                    <Dropzone.Idle>
+                                        <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                    </Dropzone.Idle>
+                                </Group>
+                                <Text ta="center" fw={700} fz="lg" mt="xl">
+                                    <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                    <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                    <Dropzone.Idle>Upload game settings</Dropzone.Idle>
+                                </Text>
+                                <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                    Drag&apos;n&apos;drop a JSON file with the game settings
+                                </Text>
+                            </Fieldset>
+                        </div>
+                    </Dropzone>
+                </Modal.Body>
+            </Modal>
+
+
+            {uploadNotif && <Notification icon={<IconCheck size={20} />} color="teal" title="Success!" mt="md" className='notif' withCloseButton={false} >
+                <Text>Settings updated successfully!</Text>
+            </Notification>}
         </>
     )
 }
