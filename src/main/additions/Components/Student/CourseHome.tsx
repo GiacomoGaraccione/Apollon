@@ -29,6 +29,7 @@ function CourseHome() {
     const [levelInfo, setLevelInfo] = useState<any>(null)
     const [load, setLoad] = useState<boolean>(true)
     const [completedExercises, setCompletedExercises] = useState<any[]>([])
+    const [maxLevel, setMaxLevel] = useState<boolean>(false)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -62,6 +63,18 @@ function CourseHome() {
                             let svg = createAvatar(avataaars, avatarOpts).toString()
                             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                             let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
+                            console.log(c.gameOptions!.levels)
+                            if (!levelInfo && studentCourse.info.experience >= c.gameOptions!.levels[c.gameOptions!.levels.length - 1].max) {
+                                levelInfo = {
+                                    min: c.gameOptions!.levels[c.gameOptions!.levels.length - 1].max,
+                                    max: studentCourse.info.experience,
+                                    level: c.gameOptions!.levels[c.gameOptions!.levels.length - 1].level
+                                }
+                                setMaxLevel(true)
+                            }
+                            console.log(levelInfo)
+                            setLevel(levelInfo.level)
+                            API.updateStudentCourseInfo(courseId, user.username, levelInfo.level, studentCourse.info.experience, JSON.parse(studentCourse.info.avatar))
                             setLevelInfo(levelInfo)
                         }
 
@@ -114,7 +127,8 @@ function CourseHome() {
                                                 <Text fw={700} size="lg">Level: {level}</Text>
                                             </Stack>
                                                 <Divider my="sm" variant="dashed" />
-                                                {levelInfo && <><Text size="sm" color="dimmed" mb={4}>XP needed to reach the next level:</Text>
+                                                {levelInfo && <>{!maxLevel && <Text size="sm" color="dimmed" mb={4}>XP needed to reach the next level:</Text>}
+                                                    {maxLevel && <Text size="sm" color="dimmed" mb={4}>You have reached the maximum level!</Text>}
                                                     <Group justify="space-between" mb={4}>
                                                         <Text size="xs" color="dimmed">
                                                             {levelInfo.min} XP
@@ -132,8 +146,6 @@ function CourseHome() {
                                                     </Progress.Root>
                                                     <Divider my="sm" variant="dashed" />
                                                 </>}
-                                                {!levelInfo && <> <Text size="sm" color="dimmed" mb={4}>You are at the maximum level, no more XP can be gained.</Text>
-                                                    <Divider my="sm" variant="dashed" /></>}
 
                                                 <Text size="sm" w={"auto"} color="gray">You can change your avatar's appearance using the menu on the right.</Text>
                                                 {!courseInfo && <>

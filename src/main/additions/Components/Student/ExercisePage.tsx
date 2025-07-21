@@ -352,6 +352,7 @@ function ExercisePage() {
                             let found = courseInfo.gameOptions.levels.find(
                                 (level: any) => level.min <= userXp && userXp <= level.max
                             )
+                            console.log(courseInfo.gameOptions.levels)
                             let completeRes = {
                                 checkMult: checkMult,
                                 checks: record.checks,
@@ -363,12 +364,22 @@ function ExercisePage() {
                                 newLevel: studentInfo.level,
                                 newXp: userXp,
                                 levelUp: false,
-                                levelInfo: null
+                                levelInfo: null as any,
+                                maxLevel: false
                             }
                             if (found) {
                                 completeRes.newLevel = found.level
                                 completeRes.levelInfo = found
                                 if (found.level > studentInfo.level) completeRes.levelUp = true
+                            } else {
+                                completeRes.levelUp = false
+                                completeRes.newLevel = studentInfo.level
+                                completeRes.levelInfo = {
+                                    min: courseInfo.gameOptions!.levels[courseInfo.gameOptions!.levels.length - 1].max,
+                                    max: userXp,
+                                    level: courseInfo.gameOptions!.levels[courseInfo.gameOptions!.levels.length - 1].level
+                                }
+                                completeRes.maxLevel = true
                             }
                             setCompleteResults(completeRes)
                             API.completeStudentExercise(courseId, exerciseId, user.username, reward).then((res: any) => {
@@ -939,7 +950,8 @@ function ExercisePage() {
                             <Divider my="sm" variant="dashed" />
                         </>}
                         {completeResults.levelInfo && <>
-                            <Text size="sm" color="dimmed" mb={4}>XP needed to reach the next level:</Text>
+                            {!completeResults.maxLevel && <Text size="sm" color="dimmed" mb={4}>XP needed to reach the next level:</Text>}
+                            {completeResults.maxLevel && <Text size="sm" color="dimmed" mb={4}>You have reached the maximum level!</Text>}
                             <Group justify="space-between" mb={4}>
                                 <Text size="xs" color="dimmed">
                                     {completeResults.levelInfo.min} XP
