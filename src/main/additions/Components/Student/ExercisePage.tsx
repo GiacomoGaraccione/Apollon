@@ -352,7 +352,6 @@ function ExercisePage() {
                             let found = courseInfo.gameOptions.levels.find(
                                 (level: any) => level.min <= userXp && userXp <= level.max
                             )
-                            console.log(courseInfo.gameOptions.levels)
                             let completeRes = {
                                 checkMult: checkMult,
                                 checks: record.checks,
@@ -365,7 +364,8 @@ function ExercisePage() {
                                 newXp: userXp,
                                 levelUp: false,
                                 levelInfo: null as any,
-                                maxLevel: false
+                                maxLevel: false,
+                                unlockedKeys: {} as any
                             }
                             if (found) {
                                 completeRes.newLevel = found.level
@@ -380,6 +380,31 @@ function ExercisePage() {
                                     level: courseInfo.gameOptions!.levels[courseInfo.gameOptions!.levels.length - 1].level
                                 }
                                 completeRes.maxLevel = true
+                            }
+                            if (found.level > studentInfo.level) {
+                                let newLevels: number[] = []
+                                for (let lvl = studentInfo.level + 1; lvl <= found.level; lvl++) {
+                                    const levelInfo = courseInfo.gameOptions.levels.find((l: any) => l.level === lvl);
+                                    if (levelInfo) {
+                                        newLevels.push(levelInfo.level)
+                                    }
+                                }
+                                Object.entries(courseInfo.settings).forEach(([key, arr]) => {
+                                    if (Array.isArray(arr)) {
+                                        arr.forEach((item: any) => {
+                                            if (
+                                                item.unlockConditions &&
+                                                Array.isArray(item.unlockConditions) &&
+                                                item.unlockConditions[0] &&
+                                                newLevels.includes(item.unlockConditions[0].minLevel)
+                                            ) {
+                                                if (!completeRes.unlockedKeys) completeRes.unlockedKeys = {};
+                                                if (!completeRes.unlockedKeys[key]) completeRes.unlockedKeys[key] = [];
+                                                completeRes.unlockedKeys[key].push(item.key);
+                                            }
+                                        });
+                                    }
+                                });
                             }
                             setCompleteResults(completeRes)
                             API.completeStudentExercise(courseId, exerciseId, user.username, reward).then((res: any) => {
@@ -892,9 +917,9 @@ function ExercisePage() {
                 </Group>
             </Modal>
 
-            {completeResults && <Modal opened={completeOpened} onClose={closeComplete} size="60%" radius="md" centered withCloseButton={false} >
+            {completeResults && <Modal opened={completeOpened} onClose={closeComplete} size="auto" radius="md" centered withCloseButton={false} >
                 <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
-                    <Grid.Col span={8}>
+                    <Grid.Col span={6}>
                         <Text>Congratulations! You successfully completed this exercise!</Text>
                         <Divider my="sm" variant="dashed" />
                         <List spacing="md" size="md" center icon={<IconTrophyFilled color="gold" size={24} radius="xl" />} >
@@ -971,7 +996,7 @@ function ExercisePage() {
                         </>}
                         {!completeResults.levelInfo && <Text size="sm" color="dimmed" mb={4}>You are at the maximum level, no more XP can be gained.</Text>}
                     </Grid.Col>
-                    <Grid.Col span={4} >
+                    <Grid.Col span={3} >
                         <Center >
                             <Stack align="center">
                                 <Avatar
@@ -989,6 +1014,37 @@ function ExercisePage() {
                                 />
                             </Stack>
                         </Center>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <Text>You unlocked the following avatar pieces:</Text>
+                        <Divider my="sm" variant="dashed" />
+                        <List spacing="md" size="md" center style={{ maxHeight: "350px", overflowY: "auto", paddingRight: "8px", }} icon={<IconTrophyFilled color="gold" size={24} radius="xl" />}>
+                            {Object.entries(completeResults.unlockedKeys).map(
+                                ([key, value], idx) => (
+                                    <>
+                                        <List.Item key={key}>
+                                            <>
+                                                <Highlight highlight={[key]}
+                                                    highlightStyles={{
+                                                        backgroundColor: "var(--mantine-color-green-5)",
+                                                        fontWeight: 700,
+                                                        WebkitBackgroundClip: 'text',
+                                                        WebkitTextFillColor: 'transparent',
+                                                    }}>{key}</Highlight>
+                                                <List spacing="md" size="md">
+                                                    {(Array.isArray(value) ? value : []).map((item: any, index: number) => (
+                                                        <List.Item key={index} icon={<IconCheck size={16} color="green" />}>
+                                                            <Text size="sm">{item}</Text>
+                                                        </List.Item>
+                                                    ))}
+                                                </List>
+                                            </>
+                                        </List.Item>
+                                        <Divider my="sm" variant="dashed" />
+                                    </>
+                                )
+                            )}
+                        </List>
                     </Grid.Col>
                 </Grid>
             </Modal>}
