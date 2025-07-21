@@ -1,4 +1,48 @@
 from enum import Enum
+from .logger_config import get_utils_logger
+import copy
+
+# Configurazione del logger per utils.py
+logger = get_utils_logger()
+
+def create_association_endpoint(endpoint_data, element_id, reference_classes):
+    """
+    Crea un endpoint di associazione in modo sicuro.
+    
+    Args:
+        endpoint_data (dict): Dati dell'endpoint (source o target)
+        element_id (str): ID dell'elemento
+        reference_classes (list): Lista delle classi di riferimento
+    
+    Returns:
+        dict: Endpoint dell'associazione
+    """
+    if not endpoint_data:
+        logger.warning(f"Endpoint data is empty for element {element_id}")
+        return {
+            "role": "",
+            "multiplicities": [""],
+            "referenceClass": None
+        }
+    
+    # Usa conversioni esplicite per evitare riferimenti condivisi
+    role = str(endpoint_data.get("role", ""))
+    multiplicity = str(endpoint_data.get("multiplicity", ""))
+    
+    # Trova la classe di riferimento
+    reference_class = None
+    for cls in reference_classes:
+        if cls.get("elementId") == element_id:
+            reference_class = cls
+            break
+    
+    endpoint = {
+        "role": role,
+        "multiplicities": [multiplicity],
+        "referenceClass": reference_class
+    }
+    
+    return endpoint
 
 def convert_apollon_model_to_reference(model):
     reference = {
@@ -48,18 +92,35 @@ def convert_apollon_model_to_reference(model):
             "name": rel.get("name", ""),
             "elementId": rel.get("id")
         }
-        sourceCls = {
-            "role": rel.get("source", {}).get("role", ""),
-            "multiplicities": [rel.get("source", {}).get("multiplicity", "")],
-            "referenceClass": next((cls for cls in reference["classes"] if cls.get("elementId") == rel.get("source", {}).get("element")), None)
-        }
+        # Logging essenziale per debug delle associazioni
+        rel_id = rel.get("id", "unknown")
+        rel_name = rel.get("name", "unnamed")
+        source_info = rel.get("source", {})
+        target_info = rel.get("target", {})
+        
+        source_element_id = source_info.get("element")
+        target_element_id = target_info.get("element")
+        source_multiplicity = source_info.get("multiplicity", "")
+        target_multiplicity = target_info.get("multiplicity", "")
+        
+        logger.info(f"Processing association {rel_id} ({rel_name}): SOURCE {source_element_id}[{source_multiplicity}] -> TARGET {target_element_id}[{target_multiplicity}]")
+        
+        # Usa la funzione helper per creare gli endpoint in modo sicuro
+        sourceCls = create_association_endpoint(source_info, source_element_id, reference["classes"])
+        targetCls = create_association_endpoint(target_info, target_element_id, reference["classes"])
+        
         newAssoc["source"] = sourceCls
-        targetCls = {
-            "role": rel.get("target", {}).get("role", ""),
-            "multiplicities": [rel.get("target", {}).get("multiplicity", "")],
-            "referenceClass": next((cls for cls in reference["classes"] if cls.get("elementId") == rel.get("target", {}).get("element")), None)
-        }
         newAssoc["target"] = targetCls
+        
+        # Verifica finale e logging degli errori
+        actual_source_mult = sourceCls["multiplicities"][0] if sourceCls["multiplicities"] else ""
+        actual_target_mult = targetCls["multiplicities"][0] if targetCls["multiplicities"] else ""
+        
+        if actual_source_mult != source_multiplicity:
+            logger.error(f"ERRORE: sourceCls multiplicity non corrisponde! Associazione {rel_id}, Atteso: '{source_multiplicity}', Trovato: '{actual_source_mult}'")
+        if actual_target_mult != target_multiplicity:
+            logger.error(f"ERRORE: targetCls multiplicity non corrisponde! Associazione {rel_id}, Atteso: '{target_multiplicity}', Trovato: '{actual_target_mult}'")
+        
         reference["associations"].append(newAssoc)
             
     return reference

@@ -3,6 +3,10 @@ import Levenshtein
 import app.evaluator.utils as utils
 import sys, os
 import re
+from .logger_config import get_eval_logger
+
+# Configurazione del logger per eval.py
+logger = get_eval_logger()
 
 def find_closest_strings(dict1, dict2):
     """
@@ -152,18 +156,18 @@ def evaluate_student_diagram(solutions, model):
                                         "elementId": model.get("relationships", {}).get(matching_association.get("elementId")).get("target", {}).get("element"),
                                         "multiplicity": model.get("relationships", {}).get(matching_association.get("elementId")).get("target", {}).get("multiplicity"),
                                         "role": model.get("relationships", {}).get(matching_association.get("elementId")).get("target", {}).get("role"),
-                                        "name": target_match.get("diagramClass", {}).get("name")
+                                        "name": source_match.get("diagramClass", {}).get("name")
                                     },
-                                    "referenceInfo": assoc1.get("target", {})
+                                    "referenceInfo": assoc1.get("source", {})
                                 }
                                 target_pair = {
                                     "diagramInfo": {
                                         "elementId": model.get("relationships", {}).get(matching_association.get("elementId")).get("source", {}).get("element"),
                                         "multiplicity": model.get("relationships", {}).get(matching_association.get("elementId")).get("source", {}).get("multiplicity"),
                                         "role": model.get("relationships", {}).get(matching_association.get("elementId")).get("source", {}).get("role"),
-                                        "name": source_match.get("diagramClass", {}).get("name")
+                                        "name": target_match.get("diagramClass", {}).get("name")
                                     },
-                                    "referenceInfo": assoc1.get("source", {})
+                                    "referenceInfo": assoc1.get("target", {})
                                 }
                             break
                 if matching_association:
@@ -198,7 +202,7 @@ def evaluate_student_diagram(solutions, model):
         return best
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        print(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        logger.error(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
 
 def get_syntax_errors_from_model(model):
@@ -207,7 +211,6 @@ def get_syntax_errors_from_model(model):
         names_seen = {}
         enumeration_names = [c.get("name", "") for c in model.get("classes", []) if c.get("type") == "Enumeration"]
         for cl in model.get("classes", []):
-            print(cl)
             name = cl.get("name", "").strip().lower()
             if not name:
                 errors.append({
@@ -409,7 +412,7 @@ def get_syntax_errors_from_model(model):
                         })
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        print(f"Error in get_syntax_errors_from_model: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        logger.error(f"Error in get_syntax_errors_from_model: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
     return errors
 
@@ -561,6 +564,6 @@ def get_semantic_errors_from_report(report, reference):
                 })
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        print(f"Error in get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        logger.error(f"Error in get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
     return errors
