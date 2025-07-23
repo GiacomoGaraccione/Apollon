@@ -155,7 +155,6 @@ export class ReferenceBuilder {
     }
 
     buildReference(): ReferenceSolution {
-        console.log(typeof this.model)
         Object.keys(this.model.elements).forEach((elementId) => {
             let element = this.model.elements[elementId]
             if (element.type === "Class" ||
@@ -176,6 +175,39 @@ export class ReferenceBuilder {
             else {
                 let refEnumAssoc = this.createEnumerationAssociation(rel)
                 if (refEnumAssoc) this.referenceSolution.enumerationAssociations.push(refEnumAssoc)
+            }
+        })
+        return this.referenceSolution
+    }
+
+    updateReference(oldReference: ReferenceSolution): ReferenceSolution {
+        this.referenceSolution.classes.forEach((refClass) => {
+            let oldClass = oldReference.classes.find((cl) => cl.name === refClass.name)
+            if (oldClass) {
+                refClass.synonyms = oldClass.synonyms
+                refClass.forbiddenAttributes = oldClass.forbiddenAttributes
+                refClass.weight = oldClass.weight
+                refClass.message = oldClass.message
+                refClass.attributes.forEach((attr) => {
+                    let oldAttr = oldClass.attributes.find((a) => a.name === attr.name)
+                    if (oldAttr) {
+                        attr.synonyms = oldAttr.synonyms
+                        attr.types = oldAttr.types
+                        attr.weight = oldAttr.weight
+                        attr.message = oldAttr.message
+                        attr.allowsForeignKeyName = oldAttr.allowsForeignKeyName
+                    }
+                })
+            }
+        })
+        this.referenceSolution.associations.forEach((refAssoc) => {
+            let oldAssoc = oldReference.associations.find((assoc) => assoc.source.referenceClass.name === refAssoc.source.referenceClass.name &&
+                assoc.target.referenceClass.name === refAssoc.target.referenceClass.name)
+            if (oldAssoc) {
+                refAssoc.synonyms = oldAssoc.synonyms
+                refAssoc.weight = oldAssoc.weight
+                refAssoc.message = oldAssoc.message
+                refAssoc.type = oldAssoc.type
             }
         })
         return this.referenceSolution

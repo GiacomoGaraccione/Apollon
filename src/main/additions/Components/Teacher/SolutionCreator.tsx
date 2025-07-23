@@ -123,15 +123,11 @@ function SolutionCreator() {
     const saveModel = async () => {
         if (editor) {
             let builder = new ReferenceBuilder(editor.model as UMLModel)
-
             let ref = builder.buildReference()
             let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
             if (courseId && exerciseId) {
                 if (currentSolution) {
-                    console.log("0")
-                    console.log(ref)
-                    console.log(editor.model)
-                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId, ref, editor.model, svg).then(() => updateEx())
+                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
                 } else {
                     API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
                 }
