@@ -205,3 +205,21 @@ class StudentExerciseCompletion(Base):
             "syntax_errors": self.syntax_errors,
             "semantic_errors": self.semantic_errors
         }
+
+
+class ErrorExample(Base):
+    __tablename__ = "error_examples"
+    id = Column(String, primary_key=True)
+    key = Column(String, nullable=False)
+    type = Column(String, nullable=False, default="syntax")
+    model = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "key": self.key,
+            "type": self.type,
+            "model": self.model,
+            "description": self.description 
+        }

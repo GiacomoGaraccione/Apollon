@@ -176,6 +176,13 @@ function ExercisePage() {
                     element.strokeColor = "var(--mantine-color-orange-7)"
                     element.textColor = "var(--mantine-color-orange-7)"
                 })
+            r.newSemanticErrors.filter((error: any) => error.type === "associationName" ||
+                error.type === "associationMultiplicity" ||
+                error.type === "associationType").forEach((error: any) => {
+                    let element = model.relationships[error.association.elementId]
+                    element.strokeColor = "var(--mantine-color-red-5)"
+                    element.textColor = "var(--mantine-color-red-5)"
+                })
             r.newSemanticErrors.filter((error: any) => error.type === "attributeType").forEach((error: any) => {
                 let element = model.elements[error.id]
                 element.textColor = "var(--mantine-color-red-5)"
@@ -435,7 +442,7 @@ function ExercisePage() {
                 element.strokeColor = "#000000"
                 element.textColor = "#000000"
             })
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(model));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(model, null, 2));
             const link = document.createElement('a');
             link.href = dataStr
             let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`

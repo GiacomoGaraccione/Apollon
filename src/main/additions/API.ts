@@ -1,6 +1,7 @@
 import { UMLModel } from "../typings"
 import { User } from "./Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
+import { ErrorExample } from "./Utils/EvaluationTypes"
 import { Course, Exercise, Boss, Solution } from "./Utils/Models"
 import { ReferenceSolution } from "./Utils/UMLMatcherTypes"
 
@@ -764,12 +765,38 @@ async function getRankingByCompletedExercises(courseId: string) {
     }
 }
 
+// ----------------- Error APIs -----------------
+
+async function getExampleErrors() {
+    let response = await fetch(baseURL + "/errors/", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        let examples: ErrorExample[] = res.map((error: any) => {
+            return new ErrorExample(error.id, error.description, error.type, error.key, JSON.parse(error.model))
+        })
+        return examples
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo, getStudentCompletedExercises,
     addExercise, deleteExercise, updateExercise, createBoss, addSolution, updateSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise, getStudentDiagrams,
-    getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises
+    getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises,
+    getExampleErrors
 }
 
 export default API
