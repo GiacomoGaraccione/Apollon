@@ -5,11 +5,11 @@ import styled from 'styled-components';
 type Props = { color?: string; onColorChange: (hex: string | undefined) => void; open: boolean; key: string };
 
 const colors = [
-  '#fc5c65',
-  '#fd9644',
-  '#fed330',
-  '#26de81',
-  '#2bcbba',
+  '#ff6b6b',
+  "#f76707",
+  "#ffe8cc",
+  '#d3f9d8',
+  '#51cf66',
   '#45aaf2',
   '#4b7bec',
   '#6a89cc',
@@ -40,7 +40,7 @@ type ColorProps = {
   selected?: boolean;
 };
 
-const Color = styled.button.attrs<ColorProps>({})<ColorProps>`
+const Color = styled.button.attrs<ColorProps>({}) <ColorProps>`
   height: 28px;
   width: 28px;
   background-color: ${({ color }: ColorProps) => color || 'black'};
