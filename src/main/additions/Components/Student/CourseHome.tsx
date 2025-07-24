@@ -11,6 +11,7 @@ import { createAvatar } from "@dicebear/core"
 import { avataaars, bottts } from '@dicebear/collection';
 import Leaderboard from "./Leaderboard";
 import ErrorTutorial from "./ErrorTutorial";
+import SolutionViewer from "./SolutionViewer";
 
 function CourseHome() {
     const user = useContext(UserContext)
@@ -116,7 +117,7 @@ function CourseHome() {
                             <Tabs.Tab value="avatar">Avatar</Tabs.Tab>
                             <Tabs.Tab value="exercises">Exercises</Tabs.Tab>
                             <Tabs.Tab value="leaderboards">Leaderboards</Tabs.Tab>
-                            <Tabs.Tab value="errors">Error Examples</Tabs.Tab>
+                            <Tabs.Tab value="solutions">Solutions</Tabs.Tab>
                         </Tabs.List>
 
                         <Tabs.Panel value="avatar">
@@ -843,8 +844,8 @@ function CourseHome() {
                             </Grid>
                         </Tabs.Panel>
 
-                        <Tabs.Panel value="errors">
-                            <ErrorTutorial />
+                        <Tabs.Panel value="solutions">
+                            <SolutionViewer />
                         </Tabs.Panel>
                     </Tabs>
                 </Grid.Col>

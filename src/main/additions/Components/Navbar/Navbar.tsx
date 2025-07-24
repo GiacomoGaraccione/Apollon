@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react'
-import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconDeviceDesktopAnalytics, IconFingerprint, IconGauge, IconHome2, IconLighter, IconLogout, IconMoon, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
+import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconDeviceDesktopAnalytics, IconFingerprint, IconGauge, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
 import { ActionIcon, Center, Stack, Tooltip, UnstyledButton, Text, Group } from '@mantine/core';
 import { Roles, UserContext } from '../Login/UserContext';
 import "./style.css"
@@ -55,6 +55,9 @@ function Navbar(props: any) {
             case "/student/courses":
                 setActive("Courses")
                 break
+            case "/student/examples":
+                setActive("Examples")
+                break
             default:
                 setActive("")
         }
@@ -86,6 +89,10 @@ function Navbar(props: any) {
                                 <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} onClick={() => {
                                     navigate("/student/courses")
                                     setActive("Courses")
+                                }} />
+                                <NavbarLink icon={IconHelp} label="Error Examples" key={"Examples"} active={active === "Examples"} onClick={() => {
+                                    navigate("/student/examples")
+                                    setActive("Examples")
                                 }} />
                             </>}
                         </Stack>

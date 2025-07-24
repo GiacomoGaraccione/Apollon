@@ -17,6 +17,7 @@ import CourseSettings from './Components/Teacher/CourseSettings';
 import CourseHome from './Components/Student/CourseHome';
 import ExercisePage from './Components/Student/ExercisePage';
 import DiagramView from './Components/Teacher/DiagramView';
+import ErrorTutorial from './Components/Student/ErrorTutorial';
 
 
 function App() {
@@ -69,6 +70,9 @@ function App() {
                             element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)} />
                         <Route path="/login" element={
                             !loaded ? <Loading /> : (loggedIn ? <Navigate to="/" /> : <Login doLogin={doLogin} />)
+                        } />
+                        <Route path="/student/examples" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ErrorTutorial /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
                         } />
                         <Route path="/student/courses" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentCourses /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
