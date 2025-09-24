@@ -60,8 +60,6 @@ export class EnumerationAssociation {
 export class ReferenceSolution {
     classes: ReferenceClass[] = []
     associations: ReferenceAssociation[] = []
-    enumerations: ReferenceEnumeration[] = []
-    enumerationAssociations: EnumerationAssociation[] = []
     forbiddenClasses: string[] = []
     forbiddenAssociations: { source: string, target: string }[] = []
 }
@@ -120,7 +118,7 @@ export class ReferenceBuilder {
         return null
     }
 
-    createEnumerationAssociation(rel: UMLCustomAssociation): EnumerationAssociation | null {
+    /*createEnumerationAssociation(rel: UMLCustomAssociation): EnumerationAssociation | null {
         let source = Object.keys(this.model.elements).find((elementId) => this.model.elements[elementId].id === rel.source.element)
         let target = Object.keys(this.model.elements).find((elementId) => this.model.elements[elementId].id === rel.target.element)
         if (source && target) {
@@ -137,7 +135,7 @@ export class ReferenceBuilder {
             return enumAssoc
         }
         return null
-    }
+    }*/
 
     createReferenceEnumeration(element: UMLCustomClass): ReferenceEnumeration {
         let refEnum = new ReferenceEnumeration()
@@ -172,10 +170,7 @@ export class ReferenceBuilder {
             let rel = this.model.relationships[relId] as UMLCustomAssociation
             let refAssoc = this.createReferenceAssociation(rel)
             if (refAssoc) { this.referenceSolution.associations.push(refAssoc) }
-            else {
-                let refEnumAssoc = this.createEnumerationAssociation(rel)
-                if (refEnumAssoc) this.referenceSolution.enumerationAssociations.push(refEnumAssoc)
-            }
+
         })
         return this.referenceSolution
     }

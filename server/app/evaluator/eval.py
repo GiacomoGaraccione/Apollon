@@ -42,6 +42,7 @@ def evaluate_student_diagram(solutions, model):
                 "matchingClasses": [],
                 "matchingAssociations": [],
                 "forbiddenClasses": [],
+                "forbiddenAssociations": []
             }
             for cl1 in reference.get("classes", {}):
                 matching_class = None
@@ -178,6 +179,24 @@ def evaluate_student_diagram(solutions, model):
                         "source_pair": source_pair,
                         "target_pair": target_pair
                     })
+            for cls in report.get("matchingClasses", []):
+                cls_name = cls.get("referenceClass", {})
+                cls_associations = [
+                    assoc for assoc in diagram.get("associations", [])
+                    if assoc.get("source", {}).get("referenceClass", {}).get("name") == cls_name
+                    or assoc.get("target", {}).get("referenceClass", {}).get("name") == cls_name
+                ]
+                for assoc in cls_associations:
+                    source_name = assoc.get("source", {}).get("referenceClass", {}).get("name")
+                    target_name = assoc.get("target", {}).get("referenceClass", {}).get("name")
+                    for forbidden in reference.get("forbiddenAssociations", []):
+                        forbidden_source = forbidden.get("source")
+                        forbidden_target = forbidden.get("target")
+                        if (source_name == forbidden_source and target_name == forbidden_target) or (source_name == forbidden_target and target_name == forbidden_source):
+                            report["forbiddenAssociations"].append({
+                                "source": source_name,
+                                "target": target_name
+                            })
             class_completeness = len(report["matchingClasses"]) / len(reference.get("classes", [])) if reference.get("classes") else 0
             attribute_completeness = sum(len(mc.get("matchingAttributes", [])) for mc in report["matchingClasses"]) / sum(len(cl.get("attributes", [])) for cl in reference.get("classes", [])) if reference.get("classes") else 0
             association_completeness = len(report["matchingAssociations"]) / len(reference.get("associations", []))
@@ -568,6 +587,7 @@ def get_semantic_errors_from_report(report, reference):
                     "diagramSource": assoc.get("source_pair", {}).get("diagramInfo", {}).get("name"),
                     "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}).get("name")
                 })
+        print(reference.get("forbiddenAssociations", []))
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         logger.error(f"Error in get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")

@@ -1,0 +1,15 @@
+<svg width="191" height="131.5" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#ffffff"><defs><style>
+  text {
+    fill: #212529;
+    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+  }
+
+  marker, text {
+    fill-opacity: 1;
+  }
+
+  * {
+    overflow: visible;
+  }
+</style></defs><svg x="15" y="15" width="160" height="100" class="Class" fill="#ffffff"><g><rect width="100%" height="40" stroke="none" fill="white" class="sc-fqkvVR eDtKfR"></rect><rect y="40" width="100%" height="60" stroke="none" fill="white" class="sc-fqkvVR eDtKfR"></rect><svg height="40"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-weight="bold" pointer-events="none">Class</text></svg><svg x="0" y="40.5" width="159" height="30" class="+ attribute: Type" fill="#ffffff"><g><rect width="100%" height="100%" stroke="none" fill="white" class="sc-fqkvVR eDtKfR"></rect><text x="10" y="50%" dominant-baseline="middle" text-anchor="start" font-weight="normal" pointer-events="none">+ attribute: Type</text></g></svg><svg x="0" y="70.5" width="159" height="30" class="+ method()" fill="#ffffff"><g><rect width="100%" height="100%" stroke="none" fill="white" class="sc-fqkvVR eDtKfR"></rect><text x="10" y="50%" dominant-baseline="middle" text-anchor="start" font-weight="normal" pointer-events="none">+ method()</text></g></svg><rect width="100%" height="100%" stroke="black" fill="none" class="sc-fqkvVR jAaomD"></rect><path d="M 0 40 H 160" stroke="black" fill="white" class="sc-gEvEer fkqzOi"></path><path d="M 0 70 H 160" stroke="black" fill="white" class="sc-gEvEer fkqzOi"></path></g></svg></svg>
