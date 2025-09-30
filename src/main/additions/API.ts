@@ -5,7 +5,11 @@ import { ErrorExample } from "./Utils/EvaluationTypes"
 import { Course, Exercise, Boss, Solution } from "./Utils/Models"
 import { ReferenceSolution } from "./Utils/UMLMatcherTypes"
 
-const baseURL = "http://localhost:5000"
+let baseURL = "http://localhost:5000"
+
+if (process.env.NODE_ENV === "production") {
+    baseURL = "/umlegend/api"
+}
 
 // ----------------- Auth APIs -----------------
 

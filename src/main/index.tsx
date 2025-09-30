@@ -98,7 +98,7 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <BrowserRouter>
+  <BrowserRouter basename='/umlegend'>
     <MantineProvider defaultColorScheme='auto' >
       <App />
     </MantineProvider>

@@ -12,15 +12,23 @@ from app.routes.courses import courses_bp
 from app.routes.exercises import exercises_bp
 from app.routes.rankings import rankings_bp
 from app.routes.errors import errors_bp
+import os
 
 db = SQLAlchemy()
 jwt = JWTManager()
 Base.metadata.create_all(engine)
 
-def create_app(env_name='development'):
+def create_app():
+    env_name = os.getenv('FLASK_ENV', 'development')
+    if env_name not in config:
+        env_name = 'development'
     app = Flask(__name__)
     app.config.from_object(config[env_name])
-    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8888"])
+    for key, value in config[env_name].__dict__.items():
+        if not key.startswith('__'):
+            print(f"{key}: {value}")
+    print(f"Starting app in {env_name} environment.")
+    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8888", "http://127.0.0.1:5000", "http://se-fall25.noyce.calpoly.io"])
 
     # Initialize extensions
     jwt.init_app(app)
@@ -38,5 +46,5 @@ def create_app(env_name='development'):
     API_URL = app.config['API_URL']
     swagger_ui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
     app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
-
+    
     return app
