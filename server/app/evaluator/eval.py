@@ -47,6 +47,7 @@ def evaluate_student_diagram(solutions, model):
             for cl1 in reference.get("classes", {}):
                 matching_class = None
                 max_sim = 0.7
+                print(cl1.get("type", ""))
                 for cl2 in diagram.get("classes", {}):
                     _, _, sim = find_closest_strings(cl1, cl2)
                     if sim > max_sim:
@@ -475,6 +476,7 @@ def get_semantic_errors_from_report(report, reference):
                 if mc.get("referenceClass") == cl.get("name"):
                     found = True
                     if not mc.get("correctType"):
+                        print(cl)
                         errors.append({
                             "type": utils.SemanticErrorType.CLASS_TYPE._value_,
                             "name": cl.get("name"),
@@ -559,25 +561,32 @@ def get_semantic_errors_from_report(report, reference):
                         "diagramSource": assoc.get("source_pair", {}).get("diagramInfo", {}),
                         "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}),
                     })
-            if assoc.get("source_pair", {}).get("diagramInfo", {}).get("multiplicity", "") not in assoc.get("source_pair", {}).get("referenceInfo", {}).get("multiplicities", []):
+            reference_type = ref_assoc.get("type", "Default")
+            diagram_type = assoc.get("diagramAssociation",{}).get("type", "ClassBidirectional")
+            if (diagram_type == "ClassBidirectional" or diagram_type == "ClassUnidirectional") and assoc.get("source_pair", {}).get("diagramInfo", {}).get("multiplicity", "") not in assoc.get("source_pair", {}).get("referenceInfo", {}).get("multiplicities", []):
                 errors.append({
                     "type": utils.SemanticErrorType.ASSOCIATION_MULTIPLICITY._value_,
                     "message": "Association source multiplicity does not match",
                     "referenceSource": assoc.get("referenceAssociation").get("source"),
                     "referenceTarget": assoc.get("referenceAssociation").get("target"),
-                    "diagramSource": assoc.get("source_pair", {}).get("diagramInfo", {}).get("name")
+                    "diagramSource": assoc.get("source_pair", {}).get("diagramInfo", {}).get("name"),
+                    "elementId": assoc.get("diagramAssociation").get("id")
                 })
-            if assoc.get("target_pair", {}).get("diagramInfo", {}).get("multiplicity", "") not in assoc.get("target_pair", {}).get("referenceInfo", {}).get("multiplicities", []):
+            if (diagram_type == "ClassBidirectional" or diagram_type == "ClassUnidirectional") and assoc.get("target_pair", {}).get("diagramInfo", {}).get("multiplicity", "") not in assoc.get("target_pair", {}).get("referenceInfo", {}).get("multiplicities", []) :
                 errors.append({
                     "type": utils.SemanticErrorType.ASSOCIATION_MULTIPLICITY._value_,
                     "message": "Association target multiplicity does not match",
                     "referenceSource": assoc.get("referenceAssociation").get("source"),
                     "referenceTarget": assoc.get("referenceAssociation").get("target"),
-                    "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}).get("name")
+                    "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}).get("name"),
+                    "elementId": assoc.get("diagramAssociation").get("id")
                 })
-            reference_type = ref_assoc.get("type", "Default")
-            diagram_type = assoc.get("diagramAssociation",{}).get("type", "ClassBidirectional")
-            correct = reference_type == "Default" and (diagram_type == "ClassBidirectional" or diagram_type == "ClassUnidirectional")
+            correct = (
+                (reference_type == "Default" and (diagram_type == "ClassBidirectional" or diagram_type == "ClassUnidirectional")) or
+                (reference_type == "Aggregation" and diagram_type == "ClassAggregation") or
+                (reference_type == "Composition" and diagram_type == "ClassComposition") or
+                (reference_type == "Inheritance" and diagram_type == "ClassInheritance")
+            )
             if not correct:
                 errors.append({
                     "type": utils.SemanticErrorType.ASSOCIATION_TYPE._value_,
@@ -585,7 +594,8 @@ def get_semantic_errors_from_report(report, reference):
                     "referenceType": reference_type,
                     "diagramType": diagram_type,
                     "diagramSource": assoc.get("source_pair", {}).get("diagramInfo", {}).get("name"),
-                    "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}).get("name")
+                    "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}).get("name"),
+                    "elementId": assoc.get("diagramAssociation").get("id")
                 })
         print(reference.get("forbiddenAssociations", []))
     except Exception as e:

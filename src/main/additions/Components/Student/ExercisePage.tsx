@@ -174,10 +174,13 @@ function ExercisePage() {
                     element.strokeColor = "var(--mantine-color-orange-7)"
                     element.textColor = "var(--mantine-color-orange-7)"
                 })
+            console.log(model.relationships)
             r.newSemanticErrors.filter((error: any) => error.type === "associationName" ||
                 error.type === "associationMultiplicity" ||
                 error.type === "associationType").forEach((error: any) => {
-                    let element = model.relationships[error.association.elementId]
+                    console.log(error)
+
+                    let element = model.relationships[error.elementId]
                     element.strokeColor = "var(--mantine-color-red-5)"
                     element.textColor = "var(--mantine-color-red-5)"
                 })
@@ -353,6 +356,12 @@ function ExercisePage() {
                                 if (diff === 0) levelDiffMult = 1
                             }
                             let reward = Math.round(results.newXP * checkMult * progressMult * levelDiffMult)
+                            if (reward < 0) reward = results.newXP
+                            let rescaled = false
+                            if (reward > exercise.experience * 3) {
+                                rescaled = true
+                                reward = exercise.experience * 3
+                            }
                             let userXp = studentInfo.experience + reward
                             let found = courseInfo.gameOptions.levels.find(
                                 (level: any) => level.min <= userXp && userXp <= level.max
@@ -370,7 +379,8 @@ function ExercisePage() {
                                 levelUp: false,
                                 levelInfo: null as any,
                                 maxLevel: false,
-                                unlockedKeys: {} as any
+                                unlockedKeys: {} as any,
+                                rescaled: rescaled
                             }
                             if (found) {
                                 completeRes.newLevel = found.level
@@ -386,31 +396,34 @@ function ExercisePage() {
                                 }
                                 completeRes.maxLevel = true
                             }
-                            if (found.level > studentInfo.level) {
-                                let newLevels: number[] = []
-                                for (let lvl = studentInfo.level + 1; lvl <= found.level; lvl++) {
-                                    const levelInfo = courseInfo.gameOptions.levels.find((l: any) => l.level === lvl);
-                                    if (levelInfo) {
-                                        newLevels.push(levelInfo.level)
+                            if (found) {
+                                if (found.level > studentInfo.level) {
+                                    let newLevels: number[] = []
+                                    for (let lvl = studentInfo.level + 1; lvl <= found.level; lvl++) {
+                                        const levelInfo = courseInfo.gameOptions.levels.find((l: any) => l.level === lvl);
+                                        if (levelInfo) {
+                                            newLevels.push(levelInfo.level)
+                                        }
                                     }
+                                    Object.entries(courseInfo.settings).forEach(([key, arr]) => {
+                                        if (Array.isArray(arr)) {
+                                            arr.forEach((item: any) => {
+                                                if (
+                                                    item.unlockConditions &&
+                                                    Array.isArray(item.unlockConditions) &&
+                                                    item.unlockConditions[0] &&
+                                                    newLevels.includes(item.unlockConditions[0].minLevel)
+                                                ) {
+                                                    if (!completeRes.unlockedKeys) completeRes.unlockedKeys = {};
+                                                    if (!completeRes.unlockedKeys[key]) completeRes.unlockedKeys[key] = [];
+                                                    completeRes.unlockedKeys[key].push(item.key);
+                                                }
+                                            });
+                                        }
+                                    });
                                 }
-                                Object.entries(courseInfo.settings).forEach(([key, arr]) => {
-                                    if (Array.isArray(arr)) {
-                                        arr.forEach((item: any) => {
-                                            if (
-                                                item.unlockConditions &&
-                                                Array.isArray(item.unlockConditions) &&
-                                                item.unlockConditions[0] &&
-                                                newLevels.includes(item.unlockConditions[0].minLevel)
-                                            ) {
-                                                if (!completeRes.unlockedKeys) completeRes.unlockedKeys = {};
-                                                if (!completeRes.unlockedKeys[key]) completeRes.unlockedKeys[key] = [];
-                                                completeRes.unlockedKeys[key].push(item.key);
-                                            }
-                                        });
-                                    }
-                                });
                             }
+
                             setCompleteResults(completeRes)
                             API.completeStudentExercise(courseId, exerciseId, user.username, reward).then((res: any) => {
                                 setCompletionRecord(res.log)
@@ -966,7 +979,8 @@ function ExercisePage() {
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                             }}
-                        >{`Your total XP gained for this exercise is: ${completeResults.reward.toString()} XP`}</Highlight>
+                        >{`Your total XP gained for this exercise is: ${completeResults.reward.toString()} XP!`}</Highlight>
+                        {completeResults.rescaled && <Text color="orange" >*Note: Your reward has been rescaled to a maximum of {exercise!.experience * 3} XP</Text>}
                         <Divider my="sm" variant="dashed" />
                         {completeResults.levelUp && <>
                             <Highlight highlight={[completeResults.newLevel.toString()]}

@@ -6,11 +6,11 @@ import { Direction } from "../../services/uml-element/uml-element-port"
 import { Assessment, UMLAssociation, UMLClassifier, UMLDiagramType, UMLElement, UMLElementType, UMLModel, UMLRelationship, UMLRelationshipType } from "../../typings"
 import { IBoundary } from "../../utils/geometry/boundary"
 import { IPath } from "../../utils/geometry/path"
-import { ReferenceAssociation, ReferenceAttribute, ReferenceClass, ReferenceEnumeration, ReferenceSolution } from "./UMLMatcherTypes"
+import { ReferenceAssociation, ReferenceAttribute, ReferenceClass, ReferenceSolution } from "./UMLMatcherTypes"
 
 export class UMLCustomClass implements UMLClassifier {
     id: string
-    name: string
+    name!: string
     type: "Package" | "Class" | "AbstractClass" | "Interface" | "Enumeration" | "ClassAttribute" | "ClassMethod" | "IntermediateClass" | "ObjectName" | "ObjectAttribute" | "ObjectMethod" | "Activity" | "ActivityActionNode" | "ActivityFinalNode" | "ActivityForkNode" | "ActivityForkNodeHorizontal" | "ActivityInitialNode" | "ActivityMergeNode" | "ActivityObjectNode" | "UseCase" | "UseCaseActor" | "UseCaseSystem" | "CommunicationLinkMessage" | "Component" | "Subsystem" | "ComponentInterface" | "DeploymentNode" | "DeploymentComponent" | "DeploymentArtifact" | "DeploymentInterface" | "PetriNetPlace" | "PetriNetTransition" | "ReachabilityGraphMarking" | "SyntaxTreeTerminal" | "SyntaxTreeNonterminal" | "FlowchartTerminal" | "FlowchartProcess" | "FlowchartDecision" | "FlowchartInputOutput" | "FlowchartFunctionCall" | "ColorLegend" | "BPMNTask" | "BPMNSubprocess" | "BPMNTransaction" | "BPMNCallActivity" | "BPMNAnnotation" | "BPMNStartEvent" | "BPMNIntermediateEvent" | "BPMNEndEvent" | "BPMNGateway" | "BPMNDataObject" | "BPMNDataStore" | "BPMNPool" | "BPMNSwimlane" | "BPMNGroup"
     owner: string | null
     bounds: IBoundary
@@ -42,20 +42,20 @@ export class UMLCustomClass implements UMLClassifier {
 }
 
 export class UMLCustomAssociation implements UMLAssociation, UMLRelationship {
-    name: string
-    owner: string | null
-    bounds: IBoundary
+    name!: string
+    owner!: string | null
+    bounds!: IBoundary
     highlight?: string | undefined
     fillColor?: string | undefined
     strokeColor?: string | undefined
     textColor?: string | undefined
     assessmentNote?: string | undefined
-    path: IPath
-    source: { element: string; direction: Direction } & { multiplicity: string; role: string }
-    target: { element: string; direction: Direction } & { multiplicity: string; role: string }
+    path!: IPath
+    source!: { element: string; direction: Direction } & { multiplicity: string; role: string }
+    target!: { element: string; direction: Direction } & { multiplicity: string; role: string }
     isManuallyLayouted?: boolean | undefined
-    id: string
-    type: UMLRelationshipType
+    id!: string
+    type!: UMLRelationshipType
 }
 
 type Point = { x: number, y: number }
@@ -109,7 +109,7 @@ class UMLRegionMap {
         let fromKey = this.getKey(from)
         let toKey = this.getKey(to)
         if (!this.regions.has(fromKey) || !this.regions.has(toKey)) return
-        this.regions.get(fromKey)!.connections[direction] = toKey
+        this.regions.get(fromKey)!.connections.push({ direction, target: toKey })
     }
 
     findNearestFreePosition(place: Place): Place | null {
@@ -168,7 +168,7 @@ class UMLStructureBuilderFromReference {
     reference: ReferenceSolution
     associationInfo: AssociationInfo[]
     model: UMLModel
-    positions: Map<string, Region> | null
+    positions: Map<string, Region> | null = null
     regionWidth: number
     totalHeight: number
 
@@ -206,25 +206,6 @@ class UMLStructureBuilderFromReference {
 
             custom.addAttribute(newAttr.id)
             this.model.elements[newAttr.id] = newAttr
-        })
-        this.model.elements[custom.id] = custom
-    }
-
-    addUMLEnumeration(en: ReferenceEnumeration) {
-        let newEnum = new UMLClass()
-        let custom = new UMLCustomClass(
-            newEnum.id,
-            en.name,
-            "Enumeration",
-            newEnum.owner,
-            newEnum.bounds
-        )
-        en.literals.forEach((lit: ReferenceAttribute) => {
-            let newLit = new UMLClassAttribute()
-            newLit.name = lit.name
-            newLit.owner = custom.id
-            custom.addAttribute(newLit.id)
-            this.model.elements[newLit.id] = newLit
         })
         this.model.elements[custom.id] = custom
     }
@@ -297,24 +278,7 @@ class UMLStructureBuilderFromReference {
         }
     }
 
-    enumerateOperations(op: string) {
-        Object.keys(this.model.elements).forEach((elementId) => {
-            let element = this.model.elements[elementId] as UMLCustomClass
-            if (element.type === "Class") {
-                for (let attrId of element.attributes) {
-                    let attr = this.model.elements[attrId] as UMLClassAttribute
-                    let type = attr.name.split(": ")[1]
-                    Object.keys(this.model.elements).forEach((elementId2) => {
-                        let element2 = this.model.elements[elementId2] as UMLCustomClass
-                        if (element2.type === "Enumeration" && type === element2.name) {
-                            if (op === "associationInfo") this.addAssociationInfo(element.name, element2.name)
-                            else if (op === "umlAssociations") this.addUMLAssociations(element.name, element2.name, "", "", "")
-                        }
-                    })
-                }
-            }
-        })
-    }
+
 
     findSingleClasses(associations: ReferenceAssociation[]) {
         Object.keys(this.model.elements).forEach((elementId) => {
@@ -327,38 +291,42 @@ class UMLStructureBuilderFromReference {
     }
 
     calculateClosestMidpoint(cl1: UMLCustomClass, cl2: UMLCustomClass) {
-        let cl1Points = {
+        type CornerKey = "AB" | "BC" | "CD" | "AD";
+        const keys: CornerKey[] = ["AB", "BC", "CD", "AD"];
+        let cl1Points: Record<CornerKey, Point> = {
             AB: { x: cl1.bounds.x + cl1.bounds.width / 2, y: cl1.bounds.y },
             BC: { x: cl1.bounds.x + cl1.bounds.width, y: cl1.bounds.y + cl1.bounds.height / 2 },
             CD: { x: cl1.bounds.x + cl1.bounds.width / 2, y: cl1.bounds.y + cl1.bounds.height },
             AD: { x: cl1.bounds.x, y: cl1.bounds.y + cl1.bounds.height / 2 }
-        }
-        let cl2Points = {
+        };
+        let cl2Points: Record<CornerKey, Point> = {
             AB: { x: cl2.bounds.x + cl2.bounds.width / 2, y: cl2.bounds.y },
             BC: { x: cl2.bounds.x + cl2.bounds.width, y: cl2.bounds.y + cl2.bounds.height / 2 },
             CD: { x: cl2.bounds.x + cl2.bounds.width / 2, y: cl2.bounds.y + cl2.bounds.height },
             AD: { x: cl2.bounds.x, y: cl2.bounds.y + cl2.bounds.height / 2 }
-        }
-        let minDist = Number.MAX_VALUE
-        let closestPair: { p1: Point, p2: Point } = { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } }
-        for (let key1 in cl1Points) {
-            for (let key2 in cl2Points) {
-                let dist = distance(cl1Points[key1], cl2Points[key2])
+        };
+        let minDist = Number.MAX_VALUE;
+        let closestPair: { p1: Point, p2: Point } = { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } };
+        for (let key1 of keys) {
+            for (let key2 of keys) {
+                let dist = distance(cl1Points[key1], cl2Points[key2]);
                 if (dist < minDist) {
-                    minDist = dist
-                    closestPair = { p1: cl1Points[key1], p2: cl2Points[key2] }
+                    minDist = dist;
+                    closestPair = { p1: cl1Points[key1], p2: cl2Points[key2] };
                 }
             }
         }
-        return closestPair
+        return closestPair;
     }
 
-    addUMLAssociations(class1: string, class2: string, name: string, cardinality1: string, cardinality2: string) {
+    addUMLAssociations(class1: string, class2: string, name: string, cardinality1: string, cardinality2: string, type: string) {
         let newAssoc = new UMLCustomAssociation()
         newAssoc.id = "assoc_" + class1 + "_" + class2
         newAssoc.name = name
         newAssoc.owner = null
-        newAssoc.type = "ClassBidirectional"
+        console.log(newAssoc.id, type)
+        let newType = type === "Inheritance" ? "ClassInheritance" : type === "Aggregation" ? "ClassAggregation" : type === "Composition" ? "ClassComposition" : "ClassBidirectional"
+        newAssoc.type = newType as UMLRelationshipType
         newAssoc.isManuallyLayouted = false
         let cl1 = Object.values(this.model.elements).find((el) => el.name === class1) as UMLCustomClass
         let cl2 = Object.values(this.model.elements).find((el) => el.name === class2) as UMLCustomClass
@@ -414,9 +382,6 @@ class UMLStructureBuilderFromReference {
             this.reference.classes.forEach((cl: ReferenceClass) => {
                 this.addUMLClass(cl)
             })
-            this.reference.enumerations.forEach((en: ReferenceEnumeration) => {
-                this.addUMLEnumeration(en)
-            })
             Object.keys(this.model.elements).forEach((elementId) => {
                 this.calculateElementSize(elementId)
             })
@@ -424,14 +389,13 @@ class UMLStructureBuilderFromReference {
             this.reference.associations.forEach((assoc: ReferenceAssociation) => {
                 this.addAssociationInfo(assoc.source.referenceClass.name, assoc.target.referenceClass.name)
             })
-            this.enumerateOperations("associationInfo")
             this.findSingleClasses(this.reference.associations)
             this.associationInfo.sort((a, b) => b.count - a.count)
             this.createPositions()
             this.reference.associations.forEach((assoc: ReferenceAssociation) => {
-                this.addUMLAssociations(assoc.source.referenceClass.name, assoc.target.referenceClass.name, assoc.name, assoc.source.multiplicities[0], assoc.target.multiplicities[0])
+                console.log(assoc)
+                this.addUMLAssociations(assoc.source.referenceClass.name, assoc.target.referenceClass.name, assoc.name, assoc.source.multiplicities[0], assoc.target.multiplicities[0], assoc.type)
             })
-            this.enumerateOperations("umlAssociations")
         } catch (error) {
             console.error(error)
         }

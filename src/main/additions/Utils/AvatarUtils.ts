@@ -299,17 +299,17 @@ export interface AvatarItem {
 }
 
 export class AvatarUnlockOptions {
-    accessories: AvatarItem[]
-    accessoriesColor: AvatarItem[]
-    clothing: AvatarItem[]
-    clothesColor: AvatarItem[]
-    clothingGraphic: AvatarItem[]
-    facialHair: AvatarItem[]
-    facialHairColor: AvatarItem[]
-    hairColor: AvatarItem[]
-    hatsColor: AvatarItem[]
-    skinColor: AvatarItem[]
-    top: AvatarItem[]
+    accessories!: AvatarItem[]
+    accessoriesColor!: AvatarItem[]
+    clothing!: AvatarItem[]
+    clothesColor!: AvatarItem[]
+    clothingGraphic!: AvatarItem[]
+    facialHair!: AvatarItem[]
+    facialHairColor!: AvatarItem[]
+    hairColor!: AvatarItem[]
+    hatsColor!: AvatarItem[]
+    skinColor!: AvatarItem[]
+    top!: AvatarItem[]
 }
 
 export const generateDefaultAvatarUnlockOptions = (): AvatarUnlockOptions => {
@@ -406,6 +406,32 @@ export function generateRandomBot(): BotttsOptions {
     } as BotttsOptions
 }
 
+export function generateRandomLvl1Avatar(options: AvatarUnlockOptions): AvataaarsOptions {
+    let availableOpts = getAvailableAvatarProps(options, 1)
+    return {
+        backgroundColor: [getRandomEnumValue(BackgroundColors) as string],
+        accessories: [availableOpts.accessories[Math.floor(Math.random() * availableOpts.accessories.length)].name],
+        accessoriesColor: [availableOpts.accessoriesColor[Math.floor(Math.random() * availableOpts.accessoriesColor.length)].name],
+        clothesColor: [availableOpts.clothesColor[Math.floor(Math.random() * availableOpts.clothesColor.length)].name],
+        clothing: [availableOpts.clothing[Math.floor(Math.random() * availableOpts.clothing.length)].name],
+        clothingGraphic: [],
+        facialHair: [availableOpts.facialHair[Math.floor(Math.random() * availableOpts.facialHair.length)].name],
+        facialHairColor: [availableOpts.facialHairColor[Math.floor(Math.random() * availableOpts.facialHairColor.length)].name],
+        hairColor: [availableOpts.hairColor[Math.floor(Math.random() * availableOpts.hairColor.length)].name],
+        hatColor: [availableOpts.hatColor[Math.floor(Math.random() * availableOpts.hatColor.length)].name],
+        skinColor: [availableOpts.skinColor[Math.floor(Math.random() * availableOpts.skinColor.length)].name],
+        top: [availableOpts.top[Math.floor(Math.random() * availableOpts.top.length)].name],
+        eyes: ["default"],
+        mouth: ["default"],
+        eyebrows: ["defaultNatural"],
+        accessoriesProbability: 100,
+        facialHairProbability: 100,
+        topProbability: 100,
+        style: ["circle"],
+        base: ["default"],
+        nose: ["default"],
+    } as AvataaarsOptions
+}
 
 export function generateRandomAvatar(): AvataaarsOptions {
     return {

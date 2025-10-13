@@ -11,7 +11,7 @@ export class ReferenceClass {
     message: string = ""
     forbiddenAttributes: string[] = []
     attributes: ReferenceAttribute[] = []
-    elementId: string
+    elementId!: string
     type: string = ClassElementType.Class
 }
 
@@ -21,41 +21,27 @@ export class ReferenceAttribute {
     types: string[] = []
     weight: Weight = "STRONG"
     message: string = ""
-    elementId: string
+    elementId!: string
     allowsForeignKeyName: boolean = false
 }
 
 export class ReferenceAssociation {
-    source: ReferenceClassInAssociation
-    target: ReferenceClassInAssociation
+    source!: ReferenceClassInAssociation
+    target!: ReferenceClassInAssociation
     message: string = ""
     name: string = ""
     synonyms: string[] = []
     weight: Weight = "STRONG"
     type: string = ""
-    elementId: string
+    elementId!: string
 }
 
 export class ReferenceClassInAssociation {
-    referenceClass: ReferenceClass
+    referenceClass!: ReferenceClass
     role: string = ""
     multiplicities: string[] = []
 }
 
-export class ReferenceEnumeration {
-    name: string = ""
-    synonyms: string[] = []
-    weight: Weight = "STRONG"
-    message: string = ""
-    literals: ReferenceAttribute[] = []
-    elementId: string
-}
-
-export class EnumerationAssociation {
-    enumeration: ReferenceEnumeration
-    class: ReferenceClass
-    elementId: string
-}
 
 export class ReferenceSolution {
     classes: ReferenceClass[] = []
@@ -111,46 +97,14 @@ export class ReferenceBuilder {
             let refAssoc = new ReferenceAssociation()
             refAssoc.source = refSource
             refAssoc.target = refTarget
-            refAssoc.type = rel.type === "ClassInheritance" ? "Inheritance" : "Default"
+            console.log(rel)
+            refAssoc.type = rel.type //=== "ClassInheritance" ? "Inheritance" : rel.type === "ClassAggregation" ? "Aggregation" : rel.type === "ClassComposition" ? "Composition" : "Default"
             refAssoc.elementId = rel.id
             return refAssoc
         }
         return null
     }
 
-    /*createEnumerationAssociation(rel: UMLCustomAssociation): EnumerationAssociation | null {
-        let source = Object.keys(this.model.elements).find((elementId) => this.model.elements[elementId].id === rel.source.element)
-        let target = Object.keys(this.model.elements).find((elementId) => this.model.elements[elementId].id === rel.target.element)
-        if (source && target) {
-            let refEnum = this.referenceSolution.enumerations.find((en) => en.name === this.model.elements[source].name)
-            if (!refEnum) refEnum = this.referenceSolution.enumerations.find((en) => en.name === this.model.elements[target].name)
-            if (!refEnum) return null
-            let refClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[source].name)
-            if (!refClass) refClass = this.referenceSolution.classes.find((cl) => cl.name === this.model.elements[target].name)
-            if (!refClass) return null
-            let enumAssoc = new EnumerationAssociation()
-            enumAssoc.class = refClass
-            enumAssoc.enumeration = refEnum
-            enumAssoc.elementId = rel.id
-            return enumAssoc
-        }
-        return null
-    }*/
-
-    createReferenceEnumeration(element: UMLCustomClass): ReferenceEnumeration {
-        let refEnum = new ReferenceEnumeration()
-        refEnum.name = element.name
-        Object.keys(this.model.elements).forEach((elementId) => {
-            let element2 = this.model.elements[elementId]
-            if (element2.type === "ClassAttribute" && element2.owner === element.id) {
-                let refLit = new ReferenceAttribute()
-                refLit.name = element2.name
-                refEnum.literals.push(refLit)
-            }
-        })
-        refEnum.elementId = element.id
-        return refEnum
-    }
 
     buildReference(): ReferenceSolution {
         Object.keys(this.model.elements).forEach((elementId) => {
@@ -162,9 +116,7 @@ export class ReferenceBuilder {
                 element.type === "IntermediateClass"
             ) {
                 this.referenceSolution.classes.push(this.createReferenceClass(element as UMLCustomClass))
-            } /*else if (element.type === "Enumeration") {
-                this.referenceSolution.enumerations.push(this.createReferenceEnumeration(element as UMLCustomClass))
-            }*/
+            }
         })
         Object.keys(this.model.relationships).forEach((relId) => {
             let rel = this.model.relationships[relId] as UMLCustomAssociation

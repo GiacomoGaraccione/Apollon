@@ -4,7 +4,7 @@ import API from "../../API";
 import { UserContext } from "../Login/UserContext";
 import { IconCheck, IconExclamationCircle, IconInfoCircle, IconLockFilled, IconSquareRoundedPlusFilled } from "@tabler/icons-react";
 import { Course } from "../../Utils/Models";
-import { AvatarAccessories, AvatarAccessoriesColors, AvatarClothesColors, AvatarClothingGraphics, AvatarClothings, AvatarFacialHairColors, AvatarFacialHairs, AvatarHairColors, AvatarHatColors, AvatarSkinColors, AvatarTops, AvatarUnlockOptions, BackgroundColors, generateRandomAvatar, getAvailableAvatarProps } from "../../Utils/AvatarUtils";
+import { AvatarAccessories, AvatarAccessoriesColors, AvatarClothesColors, AvatarClothingGraphics, AvatarClothings, AvatarFacialHairColors, AvatarFacialHairs, AvatarHairColors, AvatarHatColors, AvatarSkinColors, AvatarTops, AvatarUnlockOptions, BackgroundColors, generateRandomAvatar, generateRandomLvl1Avatar, getAvailableAvatarProps } from "../../Utils/AvatarUtils";
 import { useNavigate, useParams } from "react-router-dom";
 import "./style.scss"
 import { createAvatar } from "@dicebear/core"
@@ -46,9 +46,10 @@ function CourseHome() {
                         setAvatarSettings(settings)
                         if (!studentCourse.info) {
                             setNotif(true)
-                            let avatarOpts = generateRandomAvatar()
+                            let avatarOpts = generateRandomLvl1Avatar(c.settings as AvatarUnlockOptions)
                             avatarOpts.accessoriesProbability = 0
                             setAvatarOptions(avatarOpts)
+                            console.log(avatarOpts)
                             let svg = createAvatar(avataaars, avatarOpts).toString()
                             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                             setLevel(1)
@@ -216,7 +217,7 @@ function CourseHome() {
                                                         let unlockLevel = opts?.unlockConditions[0].type === "level" ? opts?.unlockConditions[0].minLevel : 1
                                                         return (
                                                             <Card shadow="sm" padding="lg" radius="md" withBorder key={key}
-                                                                style={{ width: 'fit-content', margin: 'auto', opacity: unlocked ? 1 : 0.4, filter: unlocked ? 'none' : 'grayscale(80%)', cursor: unlocked ? 'pointer' : 'not-allowed', border: avatarOptions.accessories[0] === value ? '5px solid cyan' : undefined }}
+                                                                style={{ width: 'fit-content', margin: 'auto', opacity: unlocked ? 1 : 0.4, filter: unlocked ? 'none' : 'grayscale(80%)', cursor: unlocked ? 'pointer' : 'not-allowed', border: avatarOptions.accessories[0] === value && avatarOptions.accessoriesProbability > 0 ? '5px solid cyan' : undefined }}
                                                                 onClick={() => {
                                                                     if (avatarOptions && unlocked) {
                                                                         let botOpts = { ...avatarOptions, accessories: [value], accessoriesProbability: 100 }
@@ -245,7 +246,7 @@ function CourseHome() {
                                                             </Card>
                                                         )
                                                     })}
-                                                    <Card shadow="sm" padding="lg" radius="md" withBorder style={{ width: 'fit-content', margin: 'auto', cursor: 'pointer', }}
+                                                    <Card shadow="sm" padding="lg" radius="md" withBorder style={{ width: 'fit-content', margin: 'auto', cursor: 'pointer', border: avatarOptions.accessoriesProbability === 0 ? '5px solid cyan' : undefined }}
                                                         onClick={() => {
                                                             let avatarOpts = { ...avatarOptions, accessoriesProbability: 0 }
                                                             let svg = createAvatar(avataaars, avatarOpts).toString()

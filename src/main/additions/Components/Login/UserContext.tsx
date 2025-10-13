@@ -8,7 +8,7 @@ class User {
     name: string
     surname: string
     role: Roles
-    courses: string[]
+    courses: string[] | undefined
 
     constructor(userId: string, username: string, name: string, surname: string, role: string, courses: string[] = []) {
         this.userId = userId

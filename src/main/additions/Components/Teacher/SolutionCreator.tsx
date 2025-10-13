@@ -9,7 +9,6 @@ import { ApollonEditor } from "../../../apollon-editor";
 //import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
 //import { ReferenceDisplayer, DividerLine } from "./ReferenceDisplayer";
 import JSZip from "jszip";
-import saveAs from "file-saver";
 import { Exercise, Solution } from "../../Utils/Models";
 import { useParams, useNavigate } from "react-router-dom";
 import { IconArrowBackUp, IconArrowLeft, IconArrowRight, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX, IconZoomCheckFilled } from "@tabler/icons-react";
@@ -169,10 +168,8 @@ function SolutionCreator() {
                 let ref = new ReferenceSolution()
                 ref.classes = classes
                 ref.associations = []
-                ref.enumerations = []
                 ref.forbiddenClasses = []
                 ref.forbiddenAssociations = []
-                ref.enumerationAssociations = []
                 setCurrentReference(ref)
             } else {
                 let ref = { ...currentReference, classes: classes }
@@ -938,6 +935,7 @@ function AssociationForm(props: { reference: ReferenceSolution | undefined, addA
                 resetForm()
                 setCurrentAssociation(undefined)
                 setAssociations([...associations.filter((a) => a !== currentAssociation), assoc])
+                console.log(assoc)
                 props.addAssociation([...associations.filter((a) => a !== currentAssociation), assoc])
             }
         }
@@ -959,7 +957,7 @@ function AssociationForm(props: { reference: ReferenceSolution | undefined, addA
                     {classes.length > 0 && <>
                         <TextInput label="Association name" placeholder="Association name" value={name} onChange={(ev) => setName(ev.target.value)} error={error} />
                         <NativeSelect label="Weight" data={["STRONG", "MEDIUM", "WEAK", "NONE"]} value={weight} onChange={(ev) => setWeight(ev.target.value)} />
-                        <NativeSelect label="Association type" data={["Default", "Inheritance"]} value={type} onChange={(ev) => setType(ev.target.value)} />
+                        <NativeSelect label="Association type" data={["Default", "Inheritance", "Aggregation", "Composition"]} value={type} onChange={(ev) => setType(ev.target.value)} />
                         <Textarea label="Message" placeholder="Custom feedback message" value={message} onChange={(ev) => setMessage(ev.target.value)} />
                         <ListEditor mode="synonyms" list={synonyms} onListChange={(newList) => {
                             setSynonyms(newList)

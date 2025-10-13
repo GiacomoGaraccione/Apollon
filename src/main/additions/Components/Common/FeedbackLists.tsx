@@ -330,7 +330,7 @@ function SemanticErrorsList(props: { semanticErrors: any[] }) {
                                                     WebkitBackgroundClip: 'text',
                                                     WebkitTextFillColor: 'transparent'
                                                 }}>
-                                                {`The concept ${error.name} is required but does not have a matching class in your diagram.`}
+                                                {`The concept ${error.name} is required but does not have a matching element in your diagram.`}
                                             </Highlight>
                                         </List.Item>
                                         <Divider my="xs" />
@@ -382,6 +382,25 @@ function SemanticErrorsList(props: { semanticErrors: any[] }) {
                                                     WebkitTextFillColor: 'transparent'
                                                 }}>
                                                 {`The attribute ${error.name} in the class that represents the concept ${error.class} has an incorrect type.`}
+                                            </Highlight>
+                                        </List.Item>
+                                        <Divider my="xs" />
+                                    </>
+                                )
+                            })}
+                            {props.semanticErrors.filter((error: any) => error.type === "classType").map((error: any) => {
+                                return (
+                                    <>
+                                        <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="red" />}>
+                                            <Highlight
+                                                highlight={[error.name]}
+                                                highlightStyles={{
+                                                    backgroundColor: "var(--mantine-color-red-5)",
+                                                    fontWeight: 700,
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent'
+                                                }}>
+                                                {`The class ${error.name} has an incorrect type.`}
                                             </Highlight>
                                         </List.Item>
                                         <Divider my="xs" />
