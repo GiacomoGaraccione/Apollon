@@ -591,7 +591,7 @@ function MatchingElementsList(props: { results: any }) {
                                                     WebkitBackgroundClip: 'text',
                                                     WebkitTextFillColor: 'transparent'
                                                 }}>
-                                                {`Your association between ${match.source_pair.diagramInfo.name} and ${match.source_pair.diagramInfo.name} matches the required association between ${match.referenceAssociation.target.referenceClass.name} and ${match.referenceAssociation.source.referenceClass.name}.`}
+                                                {`Your association between ${match.source_pair.diagramInfo.name} and ${match.target_pair.diagramInfo.name} matches the required association between ${match.referenceAssociation.target.referenceClass.name} and ${match.referenceAssociation.source.referenceClass.name}.`}
                                             </Highlight>
                                         </List.Item>
                                         <Divider my="xs" />
