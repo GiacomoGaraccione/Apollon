@@ -64,9 +64,13 @@ module.exports = {
       template: './public/index.html.ejs',
       xhtml: true,
       version: appVersion,
+      publicPath: "/"
     }),
     new CopyPlugin({
-      patterns: [{ from: 'public/assets', to: outputDir }],
+      patterns: [
+        { from: 'public/assets', to: outputDir },
+        { from: "public/assets/favicon.ico", to: path.join(outputDir, 'favicon.ico') },
+      ],
     }),
   ],
   devServer: {

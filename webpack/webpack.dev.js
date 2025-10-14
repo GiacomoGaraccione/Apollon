@@ -23,6 +23,7 @@ module.exports = merge(common, {
       index: '/index.html',
       disableDotRule: true,
       rewrites: [
+        { from: /^\/assets\/.*$/, to: context => context.parsedUrl.pathname },
         { from: /./, to: '/index.html' },
       ]
     },
