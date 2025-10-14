@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Center, Text, Modal, Fieldset, Tabs, Grid, Notification, Stack, TextInput, Group, Avatar, RingProgress, Drawer, List, ThemeIcon, Highlight, Divider, Progress, Skeleton } from "@mantine/core";
+import { Alert, Button, Center, Text, Modal, Fieldset, Tabs, Grid, Notification, Stack, TextInput, Group, Avatar, RingProgress, Drawer, List, ThemeIcon, Highlight, Divider, Progress, Skeleton, Popover } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
 import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconExclamationCircle, IconFileDescriptionFilled, IconMedal, IconMenu4, IconReload, IconSquareXFilled, IconTrophyFilled, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
@@ -12,6 +12,7 @@ import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
 import { EvaluationResults } from "../../Utils/EvaluationTypes";
 import "csshake/dist/csshake.css"
+import { Shake, ShakeCrazy } from "reshake"
 import { Dropzone } from "@mantine/dropzone";
 import 'svg2pdf.js'
 import jsPDF from "jspdf";
@@ -49,6 +50,9 @@ function ExercisePage() {
     const [results, setResults] = useState<EvaluationResults>(new EvaluationResults())
     const [mood, setMood] = useState<string>("Neutral")
     const [shaker, setShaker] = useState<string>("")
+    const [shakeProps, setShakeProps] = useState<any>({})
+    const [bossShake, setBossShake] = useState<boolean>(false)
+    const [bossDefeated, setBossDefeated] = useState<boolean>(false)
     const [filename, setFilename] = useState<string>("")
     const openRef = useRef<() => void>(null)
     const [uploaded, setUploaded] = useState<boolean>(false)
@@ -57,6 +61,7 @@ function ExercisePage() {
     const [completeResults, setCompleteResults] = useState<any>(null)
     const [completionRecord, setCompletionRecord] = useState<any>(null)
     const [load, setLoad] = useState<boolean>(true)
+    const [dialogue, setDialogue] = useState<string>("")
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -68,7 +73,9 @@ function ExercisePage() {
                     setExercise(ex)
                     setGamified(ex.gamified)
                     let opts = JSON.parse(ex.boss?.bossOptions)
+                    console.log(ex.boss)
                     setBossSettings(opts)
+                    setDialogue(ex.boss?.introDialogue || "")
                     let bossStr = createAvatar(bottts, opts).toString()
                     setBossString(`data:image/svg+xml;utf8,${encodeURIComponent(bossStr)}`)
                     API.getStudentCourseInfo(courseId, user.username).then(async (studentCourse) => {
@@ -89,8 +96,29 @@ function ExercisePage() {
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
                             handleFeedback(res, false)
                             API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
+                                console.log(comp)
                                 setCompletionRecord(comp.log)
+                                if (comp.log) {
+                                    setBossShake(true)
+                                    setDialogue(ex.boss?.victoryDialogue || "")
+                                    setTimeout(() => {
+                                        setDialogue("")
+                                        setBossDefeated(true)
+                                        setBossShake(false)
+                                    }, 10000)
+                                } else {
+                                    setDialogue(ex.boss?.introDialogue || "")
+                                    setTimeout(() => {
+                                        setDialogue("")
+                                        setBossDefeated(false)
+                                    }, 10000)
+                                }
                             }).catch((err) => {
+                                setDialogue(ex.boss?.introDialogue || "")
+                                setTimeout(() => {
+                                    setDialogue("")
+                                    setBossDefeated(false)
+                                }, 10000)
                                 setCompletionRecord(null)
                             })
                         }).catch((err) => {
@@ -174,12 +202,9 @@ function ExercisePage() {
                     element.strokeColor = "var(--mantine-color-orange-7)"
                     element.textColor = "var(--mantine-color-orange-7)"
                 })
-            console.log(model.relationships)
             r.newSemanticErrors.filter((error: any) => error.type === "associationName" ||
                 error.type === "associationMultiplicity" ||
                 error.type === "associationType").forEach((error: any) => {
-                    console.log(error)
-
                     let element = model.relationships[error.elementId]
                     element.strokeColor = "var(--mantine-color-red-5)"
                     element.textColor = "var(--mantine-color-red-5)"
@@ -298,9 +323,20 @@ function ExercisePage() {
             let svg = createAvatar(avataaars, { ...avatarOptions, style: ["default"], mouth: newMouth, eyes: newEyes }).toString()
             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
             setMood(newMood || "Neutral")
+            let shakeOptions = {
+                h: newMood === "Worried" ? 2 : newMood === "Upset" ? 8 : 14,
+                v: newMood === "Worried" ? 1 : newMood === "Upset" ? 6 : 10,
+                r: newMood === "Worried" ? 0 : newMood === "Upset" ? 6 : 12,
+                dur: newMood === "Worried" ? 100 : newMood === "Upset" ? 100 : 80,
+                int: newMood === "Worried" ? 10 : newMood === "Upset" ? 20 : 10,
+                fixed: true,
+                active: newMood === "Worried" || newMood === "Upset" || newMood === "Defeated"
+            }
+            setShakeProps(shakeOptions)
             setShaker(newMood === "Worried" ? "shake-little shake-constant" : newMood === "Upset" ? "shake-hard shake-constant" : newMood === "Defeated" ? "shake-crazy shake-constant" : "")
             setTimeout(() => {
                 setShaker("")
+                setShakeProps({})
             }, 3000)
         }
     }
@@ -586,28 +622,41 @@ function ExercisePage() {
                         <Grid.Col span={4}>
                             <Skeleton visible={load} >
                                 <Grid my="md" grow justify="center" align="center">
-                                    <Grid.Col span={6}>
+                                    <Grid.Col span={bossDefeated ? 12 : 6}>
+                                        <Center>
+                                            <Shake {...shakeProps}>
+                                                <Stack align="center">
+                                                    <Avatar src={avatarString} size={100} radius="md" className={shaker} />
+                                                    <Highlight
+                                                        highlight={[mood]}
+                                                        highlightStyles={{
+                                                            backgroundColor: (mood === "Happy" || mood === "Ecstatic" || mood === "Content") ? "var(--mantine-color-green-5)" : (mood === "Worried" || mood === "Upset" || mood === "Defeated") ? "var(--mantine-color-red-5)" : "var(--mantine-color-cyan-5)",
+                                                            fontWeight: 700,
+                                                            WebkitBackgroundClip: 'text',
+                                                            WebkitTextFillColor: 'transparent'
+                                                        }}>
+                                                        {`Current mood: ${mood}`}
+                                                    </Highlight>
+                                                </Stack>
+                                            </Shake>
+                                        </Center>
+                                    </Grid.Col>
+                                    {!bossDefeated && <Grid.Col span={6}>
                                         <Center>
                                             <Stack align="center">
-                                                <Avatar src={avatarString} size={100} radius="md" className={shaker} />
-                                                <Highlight
-                                                    highlight={[mood]}
-                                                    highlightStyles={{
-                                                        backgroundColor: (mood === "Happy" || mood === "Ecstatic" || mood === "Content") ? "var(--mantine-color-green-5)" : (mood === "Worried" || mood === "Upset" || mood === "Defeated") ? "var(--mantine-color-red-5)" : "var(--mantine-color-cyan-5)",
-                                                        fontWeight: 700,
-                                                        WebkitBackgroundClip: 'text',
-                                                        WebkitTextFillColor: 'transparent'
-                                                    }}>
-                                                    {`Current mood: ${mood}`}
-                                                </Highlight>
+                                                <ShakeCrazy active={bossShake} fixed={true}>
+                                                    <Popover width={200} position="bottom" withArrow shadow="sm" opened={dialogue !== ""} >
+                                                        <Popover.Target>
+                                                            <Avatar src={bossString} size={100} radius="md" />
+                                                        </Popover.Target>
+                                                        <Popover.Dropdown>
+                                                            {dialogue && <Text size="md" color="orange" ta="center" >{`"${dialogue}"`}</Text>}
+                                                        </Popover.Dropdown>
+                                                    </Popover>
+                                                </ShakeCrazy>
                                             </Stack>
                                         </Center>
-                                    </Grid.Col>
-                                    <Grid.Col span={6}>
-                                        <Center>
-                                            <Avatar src={bossString} size={100} radius="md" />
-                                        </Center>
-                                    </Grid.Col>
+                                    </Grid.Col>}
                                 </Grid>
                             </Skeleton>
                         </Grid.Col>
