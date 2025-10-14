@@ -38,7 +38,6 @@ function CourseHome() {
         if (courseId && user) {
             try {
                 API.getCourseInfo(courseId).then((c) => {
-                    console.log(c)
                     setCourse(c)
                     API.getStudentCourseInfo(courseId, user.username).then((studentCourse) => {
                         setCourseInfo(studentCourse.info)
@@ -49,7 +48,6 @@ function CourseHome() {
                             let avatarOpts = generateRandomLvl1Avatar(c.settings as AvatarUnlockOptions)
                             avatarOpts.accessoriesProbability = 0
                             setAvatarOptions(avatarOpts)
-                            console.log(avatarOpts)
                             let svg = createAvatar(avataaars, avatarOpts).toString()
                             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                             setLevel(1)
@@ -66,7 +64,6 @@ function CourseHome() {
                             let svg = createAvatar(avataaars, avatarOpts).toString()
                             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                             let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
-                            console.log(c.gameOptions!.levels)
                             if (!levelInfo && studentCourse.info.experience >= c.gameOptions!.levels[c.gameOptions!.levels.length - 1].max) {
                                 levelInfo = {
                                     min: c.gameOptions!.levels[c.gameOptions!.levels.length - 1].max,
@@ -75,7 +72,6 @@ function CourseHome() {
                                 }
                                 setMaxLevel(true)
                             }
-                            console.log(levelInfo)
                             setLevel(levelInfo.level)
                             API.updateStudentCourseInfo(courseId, user.username, levelInfo.level, studentCourse.info.experience, JSON.parse(studentCourse.info.avatar))
                             setLevelInfo(levelInfo)
@@ -84,7 +80,6 @@ function CourseHome() {
                         setLoad(false)
                     }).then(() => {
                         API.getStudentCompletedExercises(courseId, user.username).then((ce) => {
-                            console.log(ce)
                             setCompletedExercises(ce)
                         })
                     })
@@ -104,6 +99,22 @@ function CourseHome() {
                 setTimeout(() => {
                     setSaved(false)
                 }, 4000)
+                if (!courseInfo) {
+                    API.getStudentCourseInfo(courseId, user.username).then((studentCourse) => {
+                        setCourseInfo(studentCourse.info)
+                        setLevel(studentCourse.info.level)
+                        setExperience(studentCourse.info.experience)
+                        let levelInfo = course!.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
+                        if (!levelInfo && studentCourse.info.experience >= course!.gameOptions!.levels[course!.gameOptions!.levels.length - 1].max) {
+                            levelInfo = {
+                                min: course!.gameOptions!.levels[course!.gameOptions!.levels.length - 1].max,
+                                max: studentCourse.info.experience,
+                                level: course!.gameOptions!.levels[course!.gameOptions!.levels.length - 1].level
+                            }
+                            setMaxLevel(true)
+                        }
+                    })
+                }
             })
         }
     }
@@ -443,7 +454,7 @@ function CourseHome() {
                                                         let unlockLevel = opts?.unlockConditions[0].type === "level" ? opts?.unlockConditions[0].minLevel : 1
                                                         return (
                                                             <Card shadow="sm" padding="lg" radius="md" withBorder key={key}
-                                                                style={{ width: 'fit-content', margin: 'auto', opacity: unlocked ? 1 : 0.4, filter: unlocked ? 'none' : 'grayscale(80%)', cursor: unlocked ? 'pointer' : 'not-allowed', border: avatarOptions.facialHair[0] === value ? '5px solid cyan' : undefined }}
+                                                                style={{ width: 'fit-content', margin: 'auto', opacity: unlocked ? 1 : 0.4, filter: unlocked ? 'none' : 'grayscale(80%)', cursor: unlocked ? 'pointer' : 'not-allowed', border: avatarOptions.facialHair[0] === value && avatarOptions.facialHairProbability !== 0 ? '5px solid cyan' : undefined }}
                                                                 onClick={() => {
                                                                     if (avatarOptions && unlocked) {
                                                                         let botOpts = { ...avatarOptions, facialHair: [value], facialHairProbability: 100 }
@@ -471,7 +482,7 @@ function CourseHome() {
                                                             </Card>
                                                         )
                                                     })}
-                                                    <Card shadow="sm" padding="lg" radius="md" withBorder style={{ width: 'fit-content', margin: 'auto', cursor: 'pointer', }} onClick={() => {
+                                                    <Card shadow="sm" padding="lg" radius="md" withBorder style={{ width: 'fit-content', margin: 'auto', cursor: 'pointer', border: avatarOptions.facialHairProbability === 0 ? '5px solid cyan' : undefined }} onClick={() => {
                                                         if (avatarOptions) {
                                                             let avatarOpts = { ...avatarOptions, facialHairProbability: 0 }
                                                             let svg = createAvatar(avataaars, avatarOpts).toString()
