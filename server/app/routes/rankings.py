@@ -23,20 +23,24 @@ def get_rankings_by_exercise(courseId, exerciseId):
                     StudentCourseInfo.avatar,
                     StudentExerciseLog.correctness,
                 )
-                .join(StudentCourseInfo, StudentCourseInfo.username == User.username)
-                .join(StudentExerciseLog, (StudentExerciseLog.username == User.username) & (StudentExerciseLog.exerciseId == exerciseId) )
+                .join(StudentCourseInfo, (StudentCourseInfo.username == User.username) & (StudentCourseInfo.courseId == courseId))
+                .join(StudentExerciseLog, (StudentExerciseLog.username == User.username) & (StudentExerciseLog.exerciseId == exerciseId))
+                .filter(StudentExerciseLog.courseId == courseId)
+                .distinct(User.username)
                 .all()
             )
-            if results is None:
+            if not results:
                 return jsonify({"rankings": []}), 200
-            rankings = [
-                {
-                    "username": username,
-                    "avatar": avatar,
-                    "correctness": correctness
-                }
-                for username, avatar, correctness in results
-            ]
+            print(f"Results: {results}")
+            unique_rankings = {}
+            for username, avatar, correctness in results:
+                if username not in unique_rankings or correctness > unique_rankings[username]["correctness"]:
+                    unique_rankings[username] = {
+                        "username": username,
+                        "avatar": avatar,
+                        "correctness": correctness
+                    }
+            rankings = list(unique_rankings.values())
             rankings.sort(key=lambda x: x["correctness"], reverse=True)
             return jsonify({"rankings": rankings}), 200
         except Exception as e:
