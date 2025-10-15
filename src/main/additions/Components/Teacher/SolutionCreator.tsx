@@ -11,11 +11,12 @@ import { ApollonEditor } from "../../../apollon-editor";
 import JSZip from "jszip";
 import { Exercise, Solution } from "../../Utils/Models";
 import { useParams, useNavigate } from "react-router-dom";
-import { IconArrowBackUp, IconArrowLeft, IconArrowRight, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX, IconZoomCheckFilled } from "@tabler/icons-react";
+import { IconArrowBackUp, IconArrowLeft, IconArrowRight, IconCloudUpload, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX, IconZoomCheckFilled } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { Carousel } from "@mantine/carousel";
 import { AssociationType, ReferenceAssociation, ReferenceAttribute, ReferenceBuilder, ReferenceClass, ReferenceClassInAssociation, ReferenceSolution, Weight } from "../../Utils/UMLMatcherTypes";
 import { UMLStructureBuilderFromReference } from "../../Utils/UMLStructureBuilder";
+import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 
 const options = {
     colorEnabled: false,
@@ -31,8 +32,11 @@ function SolutionCreator() {
     const [openDelete, setOpenDelete] = useState(false)
     const [currentSolution, setCurrentSolution] = useState<Solution | undefined>(undefined)
     const [currentReference, setCurrentReference] = useState<ReferenceSolution | undefined>(undefined)
+    const [successUpload, setSuccessUpload] = useState(false)
+    const [uploading, setUploading] = useState(false)
     const [openedModel, { open: openModel, close: closeModel }] = useDisclosure(false)
     const [openedReference, { open: openReference, close: closeReference }] = useDisclosure(false)
+    const [openedUpload, { open: openUpload, close: closeUpload }] = useDisclosure(false)
     const [preview, setPreview] = useState(false)
     const apollonRef = useRef<HTMLDivElement>(null)
     const previewRef = useRef<HTMLDivElement>(null)
@@ -147,7 +151,6 @@ function SolutionCreator() {
         }
     }
 
-
     const handleDelete = () => {
         if (courseId && exerciseId && currentSolution) {
             API.deleteSolution(courseId, exerciseId, currentSolution.solutionId).then((res) => {
@@ -203,6 +206,67 @@ function SolutionCreator() {
                 setCurrentReference(ref)
             }
         }
+    }
+
+    const downloadSolutions = async () => {
+        if (exercise && exercise.solutions.length > 0) {
+            const zip = new JSZip()
+            exercise.solutions.forEach((solution, index) => {
+                let svgData = solution.image.svg;
+                const folderName = `solution-${index + 1}.zip`;
+                const solutionZip = new JSZip();
+                solutionZip.file(`solution.svg`, svgData);
+                solutionZip.file(`solution.json`, JSON.stringify({
+                    reference: solution.reference,
+                    model: solution.model
+                }, null, 2));
+                zip.file(folderName, solutionZip.generateAsync({ type: "blob" }));
+            })
+            zip.generateAsync({ type: "blob" }).then((content) => {
+                const element = document.createElement("a");
+                const fileURL = URL.createObjectURL(content);
+                element.href = fileURL;
+                element.download = `exercise-${exercise.exerciseId}-solutions.zip`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            })
+        }
+    }
+
+    const handleDrop = (files: File[]) => {
+        if (files.length !== 1) {
+            return
+        }
+        const file = files[0];
+        JSZip.loadAsync(file).then(async (zip) => {
+            let jsonContent = ""
+            let svgContent = ""
+
+            for (const filename of Object.keys(zip.files)) {
+                const fileObj = zip.files[filename];
+                if (!fileObj.dir) {
+                    if (filename.endsWith(".json")) {
+                        jsonContent = await fileObj.async("string");
+                    } else if (filename.endsWith(".svg")) {
+                        svgContent = await fileObj.async("string");
+                    }
+                }
+            }
+            if (courseId && exerciseId && jsonContent && svgContent) {
+                API.addSolution(courseId, exerciseId, JSON.parse(jsonContent).reference, JSON.parse(jsonContent).model, { svg: svgContent }).then(() => {
+                    setSuccessUpload(true)
+                    setTimeout(() => {
+                        setSuccessUpload(false)
+                        setUploading(false)
+                        closeUpload()
+                        updateEx()
+                    }, 3000)
+                })
+            }
+        }).catch((err) => {
+            console.error("Error reading zip file:", err);
+        });
     }
 
     return (
@@ -286,13 +350,44 @@ function SolutionCreator() {
                 }} >
                     Create new solution with reference form
                 </Button>
-                <Button variant="light" color="orange" rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
+                <Button variant="light" color="orange" onClick={openUpload} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
                     Upload solution
                 </Button>
-                <Button variant="light" color="cyan" rightSection={<IconDownload size={16} stroke={1.5} />} mt="sm" ml="md">
+                <Button variant="light" color="cyan" onClick={() => downloadSolutions()} rightSection={<IconDownload size={16} stroke={1.5} />} mt="sm" ml="md">
                     Download all solutions
                 </Button>
             </Center>
+
+            <Modal opened={openedUpload} onClose={closeUpload}>
+                {!successUpload && <Dropzone loading={uploading} onDrop={(file) => handleDrop(file)} className="dropzone" radius="md" accept={[MIME_TYPES.zip]} maxSize={30 * 1024 ** 2}>
+                    <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                        <Fieldset legend="Upload enrolled students">
+                            <Group justify='center' align='center'>
+                                <Dropzone.Accept>
+                                    <IconDownload size={50} color="blue" stroke={1.5} />
+                                </Dropzone.Accept>
+                                <Dropzone.Reject>
+                                    <IconX size={50} color="red" stroke={1.5} />
+                                </Dropzone.Reject>
+                                <Dropzone.Idle>
+                                    <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                </Dropzone.Idle>
+                            </Group>
+                            <Text ta="center" fw={700} fz="lg" mt="xl">
+                                <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                <Dropzone.Idle>Upload new solution</Dropzone.Idle>
+                            </Text>
+                            <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                Drag&apos;n&apos;drop a ZIP folder to upload a new solution. The file must be a valid solution exported from the UML modeler.
+                            </Text>
+                        </Fieldset>
+                    </div>
+                </Dropzone>}
+                {successUpload && <Alert variant="light" title="Success!" color="green" icon={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} >
+                    Your solution has been uploaded successfully!
+                </Alert>}
+            </Modal>
 
             <Modal opened={openedReference} onClose={() => {
                 closeReference()
