@@ -11,6 +11,6 @@ echo "Pulling latest image..."
 sudo docker pull giacomogaraccione/umlegend-new-server:latest
 
 echo "Running container..."
-sudo docker run -d --restart always -p 5001:5000 --name umlegend-server -v /app/database:/data  --network umlegend-network giacomogaraccione/umlegend-new-server:latest
+sudo docker run -d --restart always -p 5001:5000 --name umlegend-server -v umlegend-db:/app/database  --network umlegend-network giacomogaraccione/umlegend-new-server:latest
 
 echo "Done. Container 'umlegend-server' is running."

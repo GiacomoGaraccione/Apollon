@@ -64,7 +64,6 @@ module.exports = {
       template: './public/index.html.ejs',
       xhtml: true,
       version: appVersion,
-      publicPath: "/"
     }),
     new CopyPlugin({
       patterns: [
