@@ -96,7 +96,6 @@ function ExercisePage() {
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
                             handleFeedback(res, false)
                             API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
-                                console.log(comp)
                                 setCompletionRecord(comp.log)
                                 if (comp.log) {
                                     setBossShake(true)
@@ -983,7 +982,16 @@ function ExercisePage() {
                 </Group>
             </Modal>
 
-            {completeResults && <Modal opened={completeOpened} onClose={closeComplete} size="auto" radius="md" centered withCloseButton={false} >
+            {completeResults && <Modal opened={completeOpened} onClose={() => {
+                closeComplete()
+                setBossShake(true)
+                setDialogue(exercise!.boss?.victoryDialogue || "")
+                setTimeout(() => {
+                    setDialogue("")
+                    setBossDefeated(true)
+                    setBossShake(false)
+                }, 10000)
+            }} size="auto" radius="md" centered withCloseButton={false} >
                 <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <Grid.Col span={6}>
                         <Text>Congratulations! You successfully completed this exercise!</Text>
