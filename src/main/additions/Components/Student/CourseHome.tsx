@@ -735,7 +735,13 @@ function CourseHome() {
                                                     return (
                                                         <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder
                                                             style={{ borderColor: isCompleted ? "#b07100" : "", backgroundColor: isCompleted ? "#ffdd9a" : "", width: '100%', margin: 'auto', cursor: 'pointer', position: 'relative', overflow: 'hidden', }}
-                                                            onClick={() => { navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`) }}>
+                                                            onClick={() => {
+                                                                if (courseInfo) {
+                                                                    navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`)
+                                                                } else {
+                                                                    alert("Your avatar has not been saved yet. Please make sure to save it before accessing exercises.")
+                                                                }
+                                                            }}>
                                                             {isCompleted && (
                                                                 <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1, background: "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)", animation: "shine 1.5s infinite linear", }} />
                                                             )}
