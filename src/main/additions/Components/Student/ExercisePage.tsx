@@ -553,38 +553,37 @@ function ExercisePage() {
                 let ed = new ApollonEditor(newDiv, { ...options, type: "ClassDiagram", model: model })
                 await ed.nextRender
                 const { svg } = await ed.exportAsSVG({ keepOriginalSize: true, margin: 20 });
-                let canvas = document.createElement('canvas')
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = svg;
-                const svgElement = tempDiv.querySelector('svg');
-                if (!svgElement) {
-                    newDiv.remove();
-                    ed.destroy();
-                    return;
-                }
-                canvas.width = parseFloat(svgElement?.getAttribute("width") ?? "800")
-                canvas.height = parseFloat(svgElement?.getAttribute("height") ?? "600")
-                let ctx = canvas.getContext('2d')
-                if (!ctx) {
-                    newDiv.remove();
-                    ed.destroy();
-                    return;
-                }
-                let v = await Canvg.fromString(ctx, svg)
-                await v.render()
-                let pngDataUrl = canvas.toDataURL('image/png')
-                const doc = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'pt',
-                    format: [canvas.width, canvas.height],
-                })
-                doc.addImage(pngDataUrl, 'PNG', 0, 0, canvas.width, canvas.height);
-                let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`;
-                doc.save(`${fn}.pdf`);
+                const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
+                const url = URL.createObjectURL(blob);
+                const img = new Image()
+                img.onload = () => {
+                    const canvas = document.createElement('canvas')
+                    canvas.width = img.width
+                    canvas.height = img.height
+                    const ctx = canvas.getContext('2d')
+                    ctx?.drawImage(img, 0, 0)
+                    const pndDataUrl = canvas.toDataURL('image/png')
+                    const doc = new jsPDF({
+                        orientation: img.width > img.height ? 'landscape' : 'portrait',
+                        unit: 'pt',
+                        format: [img.width, img.height],
+                    })
+                    doc.addImage(pndDataUrl, 'PNG', 0, 0, img.width, img.height);
+                    let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`;
+                    doc.save(`${fn}.pdf`);
 
-                newDiv.remove()
-                ed.destroy()
-                canvas.remove()
+                    URL.revokeObjectURL(url)
+                    newDiv.remove()
+                    ed.destroy()
+                    canvas.remove()
+                }
+                img.onerror = (err) => {
+                    console.error("Error loading SVG image:", err)
+                    URL.revokeObjectURL(url)
+                    newDiv.remove()
+                    ed.destroy()
+                }
+                img.src = url
             }
             download()
         }
