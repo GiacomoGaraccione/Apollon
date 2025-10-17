@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Anchor, Button, Checkbox, Paper, PasswordInput, Text, TextInput, Title, } from '@mantine/core';
+import { Alert, Anchor, Button, Checkbox, Paper, PasswordInput, Text, TextInput, Title, } from '@mantine/core';
 import "./style.css"
 import API from "../../API";
 
@@ -28,6 +28,10 @@ function Login(props: any) {
                         Don&apos;t have an account?{' '}
                         Contact your teacher.
                     </Text>
+
+                    {props.failed && <Alert variant="light" color="red" title="Login failed">
+                        <Text>Invalid username or password. Please try again.</Text>
+                    </Alert>}
                 </Paper>
             </div>
         </>

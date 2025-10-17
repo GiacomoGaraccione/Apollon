@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { AppShell, Burger, Group, Loader, Text, useMantineTheme } from '@mantine/core'
+import { Alert, AppShell, Burger, Group, Loader, Text, useMantineTheme } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks';
 import Login from './Components/Login/Login'
 import { User, UserContext, Roles } from "./Components/Login/UserContext"
@@ -25,6 +25,7 @@ function App() {
     const [user, setUser] = useState<User | undefined>(undefined)
     const [loggedIn, setLoggedIn] = useState(false)
     const [loaded, setLoaded] = useState(false)
+    const [failed, setFailed] = useState(false)
     const navigate = useNavigate()
     const [open, { toggle: toggleOpen }] = useDisclosure(true)
 
@@ -46,6 +47,10 @@ function App() {
             setUser(user)
             setLoggedIn(true)
             navigate("/")
+        }).catch((err) => {
+            console.log(err)
+            setFailed(true)
+            setTimeout(() => setFailed(false), 5000)
         })
     }
 
@@ -69,7 +74,7 @@ function App() {
                         <Route path="/"
                             element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)} />
                         <Route path="/login" element={
-                            !loaded ? <Loading /> : (loggedIn ? <Navigate to="/" /> : <Login doLogin={doLogin} />)
+                            !loaded ? <Loading /> : (loggedIn ? <Navigate to="/" /> : <Login failed={failed} setFailed={setFailed} doLogin={doLogin} />)
                         } />
                         <Route path="/student/examples" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ErrorTutorial /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
@@ -111,6 +116,8 @@ function App() {
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <DiagramView />) : <Navigate to="/login" />)
                         } />
                     </Routes>
+
+
                 </AppShell.Main>
 
             </UserContext.Provider>
