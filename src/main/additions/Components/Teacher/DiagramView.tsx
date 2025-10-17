@@ -122,7 +122,7 @@ function DiagramView() {
         if (exercise && diagrams) {
             let workbook = XLSX.utils.book_new();
             let statsData = [
-                ["Username", "Correctness", "Checks", "Experience", "Timestamp", "Class Completeness", "Attribute Completeness", "Association Completeness"],
+                ["Username", "Correctness", "Checks", "Experience", "Timestamp", "Class Completeness", "Attribute Completeness", "Association Completeness", "Syntax Errors", "Semantic Errors"],
             ]
             let syntaxErrorsData = [
                 ["Username", "Type", "Message"],
@@ -145,7 +145,9 @@ function DiagramView() {
                     diagram.timestamp,
                     results.classCompleteness,
                     results.attributeCompleteness,
-                    results.associationCompleteness
+                    results.associationCompleteness,
+                    syntaxErrors.length,
+                    semanticErrors.length
                 ])
                 results.matchingClasses.forEach((cls: any) => {
                     resultsData.push([
