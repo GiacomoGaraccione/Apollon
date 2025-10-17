@@ -560,6 +560,7 @@ def get_semantic_errors_from_report(report, reference):
                         "referenceTarget": ref_assoc.get("target"),
                         "diagramSource": assoc.get("source_pair", {}).get("diagramInfo", {}),
                         "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}),
+                        "elementId": assoc.get("diagramAssociation").get("id")
                     })
             reference_type = ref_assoc.get("type", "Default")
             diagram_type = assoc.get("diagramAssociation",{}).get("type", "ClassBidirectional")
