@@ -179,3 +179,4 @@ class SemanticErrorType(Enum):
     ASSOCIATION_MULTIPLICITY = "associationMultiplicity"
     ASSOCIATION_TYPE = "associationType"
     CLASS_TYPE = "classType"
+    FORBIDDEN_ASSOCIATION = "forbiddenAssociation"

@@ -47,7 +47,6 @@ def evaluate_student_diagram(solutions, model):
             for cl1 in reference.get("classes", {}):
                 matching_class = None
                 max_sim = 0.7
-                print(cl1.get("type", ""))
                 for cl2 in diagram.get("classes", {}):
                     _, _, sim = find_closest_strings(cl1, cl2)
                     if sim > max_sim:
@@ -187,17 +186,30 @@ def evaluate_student_diagram(solutions, model):
                     if assoc.get("source", {}).get("referenceClass", {}).get("name") == cls_name
                     or assoc.get("target", {}).get("referenceClass", {}).get("name") == cls_name
                 ]
-                for assoc in cls_associations:
-                    source_name = assoc.get("source", {}).get("referenceClass", {}).get("name")
-                    target_name = assoc.get("target", {}).get("referenceClass", {}).get("name")
-                    for forbidden in reference.get("forbiddenAssociations", []):
-                        forbidden_source = forbidden.get("source")
-                        forbidden_target = forbidden.get("target")
-                        if (source_name == forbidden_source and target_name == forbidden_target) or (source_name == forbidden_target and target_name == forbidden_source):
-                            report["forbiddenAssociations"].append({
-                                "source": source_name,
-                                "target": target_name
-                            })
+            for assoc in diagram.get("associations", []):
+                ref_source = assoc.get("source", {}).get("referenceClass", {}).get("name")
+                ref_target = assoc.get("target", {}).get("referenceClass", {}).get("name")
+                for forbidden in reference.get("forbiddenAssociations", []):
+                    forbidden_source = forbidden.get("source")
+                    forbidden_target = forbidden.get("target")
+                    diag_source = next(
+                        (mc for mc in report.get("matchingClasses", [])
+                         if mc.get("diagramClass", {}).get("name") == ref_source),
+                        None
+                    )
+                    diag_target = next(
+                        (mc for mc in report.get("matchingClasses", [])
+                            if mc.get("diagramClass", {}).get("name") == ref_target),
+                        None
+                    )
+                    if (diag_source.get("referenceClass") == forbidden_source and diag_target.get("referenceClass") == forbidden_target) or (diag_source.get("referenceClass") == forbidden_target and diag_target.get("referenceClass") == forbidden_source):
+                        report["forbiddenAssociations"].append({
+                            "diagramSource": ref_source,
+                            "diagramTarget": ref_target,
+                            "refSource": diag_source.get("referenceClass"),
+                            "refTarget": diag_target.get("referenceClass"),
+                            "id": assoc.get("elementId")
+                        })
             class_completeness = len(report["matchingClasses"]) / len(reference.get("classes", [])) if reference.get("classes") else 0
             attribute_completeness = sum(len(mc.get("matchingAttributes", [])) for mc in report["matchingClasses"]) / sum(len(cl.get("attributes", [])) for cl in reference.get("classes", [])) if reference.get("classes") else 0
             association_completeness = len(report["matchingAssociations"]) / len(reference.get("associations", []))
@@ -476,7 +488,6 @@ def get_semantic_errors_from_report(report, reference):
                 if mc.get("referenceClass") == cl.get("name"):
                     found = True
                     if not mc.get("correctType"):
-                        print(cl)
                         errors.append({
                             "type": utils.SemanticErrorType.CLASS_TYPE._value_,
                             "name": cl.get("name"),
@@ -598,7 +609,16 @@ def get_semantic_errors_from_report(report, reference):
                     "diagramTarget": assoc.get("target_pair", {}).get("diagramInfo", {}).get("name"),
                     "elementId": assoc.get("diagramAssociation").get("id")
                 })
-        print(reference.get("forbiddenAssociations", []))
+        for forbidden in report.get("forbiddenAssociations", []):
+            errors.append({
+                "type": utils.SemanticErrorType.FORBIDDEN_ASSOCIATION._value_,
+                "message": "Forbidden association found in the diagram",
+                "diagramSource": forbidden.get("diagramSource"),
+                "diagramTarget": forbidden.get("diagramTarget"),
+                "refSource": forbidden.get("refSource"),
+                "refTarget": forbidden.get("refTarget"),
+                "elementId": forbidden.get("id")
+            })
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         logger.error(f"Error in get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")

@@ -160,6 +160,7 @@ function ExercisePage() {
             console.log(r.newSemanticErrors)
             setResults(r)
             let model = JSON.parse(res.model)
+            console.log(model)
             Object.keys(model.elements).forEach((key) => {
                 let element = model.elements[key]
                 element.strokeColor = "#000000"
@@ -203,7 +204,8 @@ function ExercisePage() {
                 })
             r.newSemanticErrors.filter((error: any) => error.type === "associationName" ||
                 error.type === "associationMultiplicity" ||
-                error.type === "associationType").forEach((error: any) => {
+                error.type === "associationType" ||
+                error.type === "forbiddenAssociation").forEach((error: any) => {
                     let element = model.relationships[error.elementId]
                     element.strokeColor = "var(--mantine-color-red-5)"
                     element.textColor = "var(--mantine-color-red-5)"

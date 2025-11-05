@@ -521,6 +521,24 @@ function SemanticErrorsList(props: { semanticErrors: any[] }) {
                                     </>
                                 )
                             })}
+                            {props.semanticErrors.filter((error: any) => error.type === "forbiddenAssociation").map((error: any) => {
+                                return (
+                                    <>
+                                        <List.Item key={error.id} icon={<IconExclamationCircle size={16} color="red" />} >
+                                            <Highlight
+                                                highlight={[error.diagramSource ? error.diagramSource : "null", error.diagramTarget ? error.diagramTarget : "null"]}
+                                                highlightStyles={{
+                                                    backgroundColor: "var(--mantine-color-red-5)",
+                                                    fontWeight: 700,
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent'
+                                                }}>
+                                                {`The association between the classes ${error.diagramSource} and ${error.diagramTarget} is not allowed.`}
+                                            </Highlight>
+                                        </List.Item>
+                                    </>
+                                )
+                            })}
                         </List>
                     </>}
                 </Popover.Dropdown>

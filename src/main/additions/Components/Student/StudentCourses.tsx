@@ -17,16 +17,25 @@ function StudentCourses() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (user) {
+        if (user && Array.isArray(user.courses) && user.courses.length > 0) {
             setCourseLoad(true)
             Promise.all(user.courses.map((course: string) => API.getCourseInfo(course)))
                 .then(results => {
                     console.log(results)
-                    setCourseLoad(false)
                     setCourses(results)
                 })
+                .catch(err => {
+                    console.error("Failed to load courses", err)
+                    setCourses([])
+                })
+                .finally(() => {
+                    setCourseLoad(false)
+                })
+        } else {
+            setCourses([])
+            setCourseLoad(false)
         }
-    }, [])
+    }, [user])
 
     return (
         <>
