@@ -202,6 +202,8 @@ def evaluate_student_diagram(solutions, model):
                             if mc.get("diagramClass", {}).get("name") == ref_target),
                         None
                     )
+                    if not diag_source or not diag_target:
+                        continue
                     if (diag_source.get("referenceClass") == forbidden_source and diag_target.get("referenceClass") == forbidden_target) or (diag_source.get("referenceClass") == forbidden_target and diag_target.get("referenceClass") == forbidden_source):
                         report["forbiddenAssociations"].append({
                             "diagramSource": ref_source,
