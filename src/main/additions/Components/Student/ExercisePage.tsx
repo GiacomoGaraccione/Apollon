@@ -7,7 +7,7 @@ import { Exercise } from "../../Utils/Models";
 import { useNavigate, useParams } from "react-router-dom";
 import { createAvatar } from "@dicebear/core";
 import { avataaars, bottts } from "@dicebear/collection";
-import { ApollonMode } from "../../../typings"
+import { ApollonMode, UMLDiagramType } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
 import { EvaluationResults } from "../../Utils/EvaluationTypes";
@@ -87,7 +87,7 @@ function ExercisePage() {
                         try {
                             let cont = document.getElementById("apollon");
                             if (cont) {
-                                let ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram", });
+                                let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, });
                                 setEditor(ed)
                             }
                         } catch (error) {
@@ -247,7 +247,7 @@ function ExercisePage() {
             })
             let cont = document.getElementById("apollon");
             if (cont) {
-                let ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram", model: model });
+                let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : "ClassDiagram", model: model });
                 setEditor(ed);
             }
         } catch (error) {
@@ -516,7 +516,7 @@ function ExercisePage() {
                     element.textColor = "#000000"
                 })
                 let newDiv = document.createElement("div");
-                let ed = new ApollonEditor(newDiv, { ...options, type: "ClassDiagram", model: model })
+                let ed = new ApollonEditor(newDiv, { ...options, type: exercise ? exercise.exType as UMLDiagramType : "ClassDiagram", model: model })
                 await ed.nextRender
                 const { svg } = await ed.exportAsSVG({ keepOriginalSize: true, margin: 20 });
                 const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
@@ -551,7 +551,7 @@ function ExercisePage() {
                     element.textColor = "#000000"
                 })
                 let newDiv = document.createElement("div");
-                let ed = new ApollonEditor(newDiv, { ...options, type: "ClassDiagram", model: model })
+                let ed = new ApollonEditor(newDiv, { ...options, type: exercise ? exercise.exType as UMLDiagramType : "ClassDiagram", model: model })
                 await ed.nextRender
                 const { svg } = await ed.exportAsSVG({ keepOriginalSize: true, margin: 20 });
                 const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
@@ -599,7 +599,7 @@ function ExercisePage() {
                 try {
                     let cont = document.getElementById("apollon");
                     if (cont) {
-                        let ed = new ApollonEditor(cont, { ...options, type: "ClassDiagram", model: JSON.parse(e.target?.result as string) });
+                        let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : "ClassDiagram", model: JSON.parse(e.target?.result as string) });
                         setEditor(ed)
                         setUploaded(true)
                         setTimeout(() => {

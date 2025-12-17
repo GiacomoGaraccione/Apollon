@@ -751,6 +751,7 @@ function CourseHome() {
                                                             <Flex align="center" justify="space-between">
                                                                 <div>
                                                                     <Text color="green">{exercise.title}</Text>
+                                                                    <Text size="sm" color="dimmed">Type: {exercise.exType}</Text>
                                                                     <Flex align="center" gap="xs">
                                                                         {exercise.gamified && <>
                                                                             <Text size="sm">Level: {exercise.level}</Text>

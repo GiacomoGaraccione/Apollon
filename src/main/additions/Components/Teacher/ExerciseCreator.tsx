@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { IconCheck, IconDeviceGamepad2, IconEye, IconInfoCircle, IconSquareRoundedPlusFilled } from '@tabler/icons-react';
-import { Badge, Button, Center, Checkbox, Fieldset, Group, Notification, NumberInput, SimpleGrid, Text, Textarea, TextInput, } from '@mantine/core';
+import { Badge, Button, Center, Checkbox, Fieldset, Group, NativeSelect, Notification, NumberInput, SimpleGrid, Text, Textarea, TextInput, } from '@mantine/core';
 import { useForm, } from "@mantine/form"
 import API from '../../API';
 import { Exercise } from '../../Utils/Models';
 import { useNavigate, useParams } from 'react-router-dom';
 import "./style.scss"
-
+import { UMLDiagramType } from '../../../typings';
 
 
 function ExerciseCreator() {
@@ -15,7 +15,7 @@ function ExerciseCreator() {
 
     useEffect(() => {
         if (courseId) {
-            let ex = new Exercise("", "", "", 1, 0, true, false, null, [])
+            let ex = new Exercise("", "", "", 1, 0, true, false, UMLDiagramType.ClassDiagram, null, [])
             setExercise(ex)
         }
     }, [])
@@ -70,6 +70,7 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
             experience: exercise.experience,
             visible: exercise.visible,
             gamified: exercise.gamified,
+            exType: exercise.exType
         },
         validate: (values) => ({
             title: values.title.length < 3 ? "Title must be at least 3 characters" : null,
@@ -86,8 +87,9 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
             <form onSubmit={form.onSubmit((values) => {
                 setLoading(true)
                 if (courseId) {
+                    console.log(values)
                     if (props.mode === "create") {
-                        API.addExercise(courseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified).then(() => {
+                        API.addExercise(courseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified, values.exType).then(() => {
                             setLoading(false)
                             setSuccessNotif(true)
                             navigate(`/teacher/courses/${courseId}`)
@@ -102,7 +104,7 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                             }, 3000)
                         })
                     } else {
-                        API.updateExercise(courseId, props.exercise.exerciseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified).then(() => {
+                        API.updateExercise(courseId, props.exercise.exerciseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified, values.exType).then(() => {
                             setLoading(false)
                             setSuccessNotif(true)
                             navigate(`/teacher/courses/${courseId}`)
@@ -123,7 +125,7 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                 <Textarea label="Description" placeholder="Description" {...form.getInputProps("description")} />
                 <NumberInput label="Level" placeholder="Level must be between 1 and 10" {...form.getInputProps("level")} min={1} max={10} />
                 <NumberInput label="Experience" placeholder="Experience" {...form.getInputProps("experience")} min={1} />
-                <SimpleGrid cols={2} mt="md">
+                <SimpleGrid cols={3} mt="md">
                     <Checkbox.Card className='checkbox-root' radius="md"  {...form.getInputProps("visible", { type: "checkbox" })} >
                         <Group wrap="nowrap" align="center">
                             <IconEye size={32} />
@@ -142,6 +144,7 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                             </div>
                         </Group>
                     </Checkbox.Card>
+                    <NativeSelect {...form.getInputProps("exType")} label="Diagram Type" data={[UMLDiagramType.ClassDiagram, UMLDiagramType.UseCaseDiagram, UMLDiagramType.DeploymentDiagram]} />
                 </SimpleGrid>
 
                 <Center mt="md">

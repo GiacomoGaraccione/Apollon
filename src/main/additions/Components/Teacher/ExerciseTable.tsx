@@ -57,12 +57,13 @@ function ExerciseTable() {
                                         <Table.Th>Experience</Table.Th>
                                         <Table.Th>Visible</Table.Th>
                                         <Table.Th>Gamified</Table.Th>
+                                        <Table.Th>Exercise Type</Table.Th>
                                         <Table.Th></Table.Th>
                                     </Table.Tr>
                                 </Table.Tbody>
                                 <Table.Tbody>
                                     {exercises.length === 0 ? (<Table.Tr>
-                                        <Table.Td colSpan={6}>
+                                        <Table.Td colSpan={7}>
                                             <Center>
                                                 <Text> No exercises found</Text>
                                             </Center>
@@ -74,6 +75,7 @@ function ExerciseTable() {
                                             <Table.Td>{row.experience}</Table.Td>
                                             <Table.Td><Checkbox checked={row.visible} disabled /></Table.Td>
                                             <Table.Td><Checkbox checked={row.gamified} disabled /></Table.Td>
+                                            <Table.Td>{row.exType}</Table.Td>
                                             <Table.Td>
                                                 <Menu shadow="md" width={200} position="left" withArrow>
                                                     <Menu.Target>

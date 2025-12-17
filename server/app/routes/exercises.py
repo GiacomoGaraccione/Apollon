@@ -40,7 +40,8 @@ def create_course_exercise(courseId):
                 gamified=data.get("gamified", False),
                 courseId=courseId,
                 course=course,
-                exerciseId=f"{courseId}_{next}"
+                exerciseId=f"{courseId}_{next}",
+                exType=data.get("exType", "ClassDiagram")
             )
             session.add(exercise)
             session.commit()
@@ -87,6 +88,8 @@ def update_exercise(courseId, exerciseId):
                 exercise.visible = data["visible"]
             if "gamified" in data:
                 exercise.gamified = data["gamified"]
+            if "exType" in data:
+                exercise.exType = data["exType"]
             session.commit()
             return jsonify(exercise.serialize()), 200
         except Exception as e:

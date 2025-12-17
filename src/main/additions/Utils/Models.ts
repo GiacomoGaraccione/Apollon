@@ -29,10 +29,11 @@ class Exercise {
     experience: number
     visible: boolean
     gamified: boolean
+    exType: string
     boss: Boss | null
     solutions: Solution[] = []
 
-    constructor(exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean, boss: Boss | null = null, solutions: any[]) {
+    constructor(exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean, exType: string, boss: Boss | null = null, solutions: any[]) {
         this.boss = boss
         this.exerciseId = exerciseId
         this.title = title
@@ -41,6 +42,7 @@ class Exercise {
         this.experience = experience
         this.visible = visible
         this.gamified = gamified
+        this.exType = exType
         this.solutions = solutions
     }
 }

@@ -171,7 +171,7 @@ async function getAllCourses() {
                     let sol = JSON.parse(solution.content)
                     return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
                 })
-                return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
+                return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, exercise.exType, boss, solutionsList)
             })
             let settings
             try {
@@ -204,7 +204,7 @@ async function getCourse(courseId: string) {
                 let sol = JSON.parse(solution.content)
                 return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
             })
-            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
+            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, exercise.exType, boss, solutionsList)
         })
         let settings
         try {
@@ -382,7 +382,7 @@ async function getCourseInfo(courseId: string) {
                 let sol = JSON.parse(solution.content)
                 return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
             })
-            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, boss, solutionsList)
+            return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, exercise.exType, boss, solutionsList)
         })
         let settings
         try {
@@ -462,7 +462,7 @@ async function getStudentCompletedExercises(courseId: string, studentId: string)
 
 // ----------------- Exercise APIs -----------------
 
-async function addExercise(courseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean) {
+async function addExercise(courseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean, exType: string) {
     let response = await fetch(baseURL + "/courses/" + courseId + "/exercises", {
         method: "POST",
         credentials: "include",
@@ -470,7 +470,7 @@ async function addExercise(courseId: string, title: string, description: string,
             "Content-Type": "application/json",
             "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ title, description, level, experience, visible, gamified })
+        body: JSON.stringify({ title, description, level, experience, visible, gamified, exType })
     })
     if (response.ok) {
         let res = await response.json()
@@ -502,7 +502,7 @@ async function deleteExercise(courseId: string, exerciseId: string) {
     }
 }
 
-async function updateExercise(courseId: string, exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean) {
+async function updateExercise(courseId: string, exerciseId: string, title: string, description: string, level: number, experience: number, visible: boolean, gamified: boolean, exType: string) {
     let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId, {
         method: "PUT",
         credentials: "include",
@@ -510,7 +510,7 @@ async function updateExercise(courseId: string, exerciseId: string, title: strin
             "Content-Type": "application/json",
             "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
         },
-        body: JSON.stringify({ title, description, level, experience, visible, gamified })
+        body: JSON.stringify({ title, description, level, experience, visible, gamified, exType })
     })
     if (response.ok) {
         let res = await response.json()

@@ -72,6 +72,7 @@ class Exercise(Base):
     experience = Column(Integer, nullable=False, default=0)
     visible = Column(Boolean, nullable=False, default=True)
     gamified = Column(Boolean, nullable=False, default=False)
+    exType = Column(String, nullable=False, default="ClassDiagram")
     courseId = Column(String, ForeignKey("courses.courseId", ondelete="CASCADE"), nullable=False)
 
     course = relationship("Course", back_populates="exercises")
@@ -90,6 +91,7 @@ class Exercise(Base):
             "visible": self.visible,
             "gamified": self.gamified,
             "courseId": self.courseId,
+            "exType": self.exType,
             "solutions": [solution.serialize() for solution in self.solutions],
             "boss": self.boss.serialize() if self.boss else None,
             "records": [record.serialize() for record in self.student_exercises],
