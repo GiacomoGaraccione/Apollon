@@ -21,6 +21,7 @@ import { UMLUseCaseExtend } from '../uml-use-case-extend/uml-use-case-extend';
 import { UMLUseCaseGeneralization } from '../uml-use-case-generalization/uml-use-case-generalization';
 import { UMLUseCaseInclude } from '../uml-use-case-include/uml-use-case-include';
 import { UMLUseCaseAssociation } from './uml-use-case-association';
+import { UMLUseCaseSupport } from '../uml-use-case-support/uml-use-case-support';
 
 const Flex = styled.div`
   display: flex;
@@ -70,6 +71,7 @@ class UseCaseAssociationUpdate extends Component<Props, State> {
                     [UseCaseRelationshipType.UseCaseExtend]: this.props.translate(
                       'packages.UseCaseDiagram.UseCaseExtend',
                     ),
+                    [UseCaseRelationshipType.UseCaseSupport]: "Support",
                   }[element.type]
                 }
               </Header>
@@ -97,6 +99,9 @@ class UseCaseAssociationUpdate extends Component<Props, State> {
             </Dropdown.Item>
             <Dropdown.Item value={UseCaseRelationshipType.UseCaseExtend}>
               {this.props.translate('packages.UseCaseDiagram.UseCaseExtend')}
+            </Dropdown.Item>
+            <Dropdown.Item value={UseCaseRelationshipType.UseCaseSupport}>
+              {"Support"}
             </Dropdown.Item>
           </Dropdown>
         </section>

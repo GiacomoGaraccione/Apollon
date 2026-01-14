@@ -10,4 +10,5 @@ export const UseCaseRelationshipType = {
   UseCaseGeneralization: 'UseCaseGeneralization',
   UseCaseInclude: 'UseCaseInclude',
   UseCaseExtend: 'UseCaseExtend',
+  UseCaseSupport: 'UseCaseSupport',
 } as const;

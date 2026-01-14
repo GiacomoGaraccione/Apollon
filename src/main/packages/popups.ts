@@ -108,6 +108,7 @@ export const Popups: { [key in UMLElementType | UMLRelationshipType]: ComponentT
   [UMLRelationshipType.UseCaseExtend]: UMLUseCaseAssociationUpdate,
   [UMLRelationshipType.UseCaseGeneralization]: UMLUseCaseAssociationUpdate,
   [UMLRelationshipType.UseCaseInclude]: UMLUseCaseAssociationUpdate,
+  [UMLRelationshipType.UseCaseSupport]: UMLUseCaseAssociationUpdate,
   [UMLRelationshipType.CommunicationLink]: UMLCommunicationLinkUpdate,
   [UMLRelationshipType.ComponentInterfaceProvided]: UMLComponentAssociationUpdate,
   [UMLRelationshipType.ComponentInterfaceRequired]: UMLComponentAssociationUpdate,

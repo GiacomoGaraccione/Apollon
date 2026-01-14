@@ -24,6 +24,7 @@ import { UMLUseCaseAssociationComponent } from './uml-use-case-diagram/uml-use-c
 import { UMLUseCaseExtendComponent } from './uml-use-case-diagram/uml-use-case-extend/uml-use-case-extend-component';
 import { UMLUseCaseGeneralizationComponent } from './uml-use-case-diagram/uml-use-case-generalization/uml-use-case-generalization-component';
 import { UMLUseCaseIncludeComponent } from './uml-use-case-diagram/uml-use-case-include/uml-use-case-include-component';
+import { UMLUseCaseSupportComponent } from './uml-use-case-diagram/uml-use-case-support/uml-use-case-support-component';
 import { UMLUseCaseSystemComponent } from './uml-use-case-diagram/uml-use-case-system/uml-use-case-system-component';
 import { UMLUseCaseExternalSystemComponent } from './uml-use-case-diagram/uml-use-case-external-system/uml-use-case-external-system-component';
 import { UMLUseCaseComponent } from './uml-use-case-diagram/uml-use-case/uml-use-case-component';
@@ -138,6 +139,7 @@ export const Components: {
   [UMLRelationshipType.UseCaseExtend]: UMLUseCaseExtendComponent,
   [UMLRelationshipType.UseCaseGeneralization]: UMLUseCaseGeneralizationComponent,
   [UMLRelationshipType.UseCaseInclude]: UMLUseCaseIncludeComponent,
+  [UMLRelationshipType.UseCaseSupport]: UMLUseCaseSupportComponent,
   [UMLRelationshipType.CommunicationLink]: UMLCommunicationLinkComponent,
   [UMLRelationshipType.ComponentInterfaceProvided]: UMLInterfaceProvidedComponent,
   [UMLRelationshipType.ComponentInterfaceRequired]: UMLInterfaceRequiredComponent,
