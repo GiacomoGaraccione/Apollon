@@ -25,6 +25,7 @@ import { UMLUseCaseExtendComponent } from './uml-use-case-diagram/uml-use-case-e
 import { UMLUseCaseGeneralizationComponent } from './uml-use-case-diagram/uml-use-case-generalization/uml-use-case-generalization-component';
 import { UMLUseCaseIncludeComponent } from './uml-use-case-diagram/uml-use-case-include/uml-use-case-include-component';
 import { UMLUseCaseSystemComponent } from './uml-use-case-diagram/uml-use-case-system/uml-use-case-system-component';
+import { UMLUseCaseExternalSystemComponent } from './uml-use-case-diagram/uml-use-case-external-system/uml-use-case-external-system-component';
 import { UMLUseCaseComponent } from './uml-use-case-diagram/uml-use-case/uml-use-case-component';
 import { UMLInterfaceComponent } from './common/uml-interface/uml-interface-component';
 import { UMLInterfaceProvidedComponent } from './common/uml-interface-provided/uml-interface-provided-component';
@@ -90,6 +91,7 @@ export const Components: {
   [UMLElementType.UseCase]: UMLUseCaseComponent,
   [UMLElementType.UseCaseActor]: UMLUseCaseActorComponent,
   [UMLElementType.UseCaseSystem]: UMLUseCaseSystemComponent,
+  [UMLElementType.UseCaseExternalSystem]: UMLUseCaseExternalSystemComponent,
   [UMLElementType.Component]: UMLComponentComponent,
   [UMLElementType.Subsystem]: UMLComponentSubsystem,
   [UMLElementType.ComponentInterface]: UMLInterfaceComponent,

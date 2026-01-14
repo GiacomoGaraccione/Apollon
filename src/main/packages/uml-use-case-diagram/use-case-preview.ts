@@ -4,6 +4,7 @@ import { computeDimension } from '../../utils/geometry/boundary';
 import { ComposePreview } from '../compose-preview';
 import { UMLUseCaseActor } from './uml-use-case-actor/uml-use-case-actor';
 import { UMLUseCaseSystem } from './uml-use-case-system/uml-use-case-system';
+import { UMLUseCaseExternalSystem } from './uml-use-case-external-system/uml-use-case-external-system';
 import { UMLUseCase } from './uml-use-case/uml-use-case';
 
 export const composeUseCasePreview: ComposePreview = (
@@ -41,6 +42,15 @@ export const composeUseCasePreview: ComposePreview = (
     height: umlSystem.bounds.height,
   };
   elements.push(umlSystem);
+
+  // UML External System
+  const umlExternalSystem = new UMLUseCaseExternalSystem({ name: "<<External System>>" });
+  umlExternalSystem.bounds = {
+    ...umlExternalSystem.bounds,
+    width: umlExternalSystem.bounds.width,
+    height: umlExternalSystem.bounds.height,
+  };
+  elements.push(umlExternalSystem);
 
   return elements;
 };

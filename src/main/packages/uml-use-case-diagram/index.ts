@@ -2,6 +2,7 @@ export const UseCaseElementType = {
   UseCase: 'UseCase',
   UseCaseActor: 'UseCaseActor',
   UseCaseSystem: 'UseCaseSystem',
+  UseCaseExternalSystem: 'UseCaseExternalSystem',
 } as const;
 
 export const UseCaseRelationshipType = {

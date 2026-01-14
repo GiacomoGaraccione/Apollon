@@ -22,6 +22,7 @@ import { UMLObjectMethod } from './uml-object-diagram/uml-object-method/uml-obje
 import { UMLObjectName } from './uml-object-diagram/uml-object-name/uml-object-name';
 import { UMLUseCaseActor } from './uml-use-case-diagram/uml-use-case-actor/uml-use-case-actor';
 import { UMLUseCaseSystem } from './uml-use-case-diagram/uml-use-case-system/uml-use-case-system';
+import { UMLUseCaseExternalSystem } from './uml-use-case-diagram/uml-use-case-external-system/uml-use-case-external-system';
 import { UMLUseCase } from './uml-use-case-diagram/uml-use-case/uml-use-case';
 import { UMLDeploymentInterface } from './uml-deployment-diagram/uml-deployment-interface/uml-component-interface';
 import { UMLPetriNetTransition } from './uml-petri-net/uml-petri-net-transition/uml-petri-net-transition';
@@ -77,6 +78,7 @@ export const UMLElements = {
   [UMLElementType.UseCase]: UMLUseCase,
   [UMLElementType.UseCaseActor]: UMLUseCaseActor,
   [UMLElementType.UseCaseSystem]: UMLUseCaseSystem,
+  [UMLElementType.UseCaseExternalSystem]: UMLUseCaseExternalSystem,
   [UMLElementType.Component]: UMLComponentComponent,
   [UMLElementType.Subsystem]: UMLSubsystem,
   [UMLElementType.ComponentInterface]: UMLComponentInterface,
