@@ -212,7 +212,7 @@ def get_student_exercise(courseId, exerciseId, studentId):
             record = session.query(StudentExerciseLog).filter_by(exerciseId=exerciseId, username=studentId).first()
             if record is None:
                 return jsonify({"message": "Student exercise record not found"}), 404
-            return jsonify(record.serialize()), 200
+            return jsonify({"data": record.serialize(), "exerciseType": exercise.exType}), 200
         except Exception as e:
             print(e)
             return jsonify({"message": "Invalid JSON"}), 400
@@ -234,7 +234,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
             solutions = session.query(Solution).filter_by(exerciseId=exerciseId).all()
             solutions = [sol.serialize() for sol in solutions]
             model = data.get("model", None)
-            results = evaluator.evaluate_student_diagram(solutions=solutions, model=model)
+            results = evaluator.evaluate_class_diagram(solutions=solutions, model=model) if exercise.exType == "ClassDiagram" else None
             completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
             if record is None:
                 record = StudentExerciseLog(
@@ -249,7 +249,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                     semantic_errors=json.dumps([]),
                     results=json.dumps(results) if results else None
                 )
-                if data.get("evaluation", False):
+                if data.get("evaluation", False) and results is not None:
                     record.correctness = results.get("completeness", 0)
                     record.checks = 1
                     record.experience = update_experience_points(exercise, results, record) if completed is None else completed.experience

@@ -30,7 +30,7 @@ def find_closest_strings(dict1, dict2):
                 closest_pair = (s1, s2)
     return closest_pair[0], closest_pair[1], max_distance
 
-def evaluate_student_diagram(solutions, model):
+def evaluate_class_diagram(solutions, model):
     try:
         best = None
         best_completeness = 0
@@ -230,8 +230,8 @@ def evaluate_student_diagram(solutions, model):
                 best_completeness = 0
                 best_reference = reference
                 best = report
-        semantic_errors = get_semantic_errors_from_report(best, best_reference)
-        syntax_errors = get_syntax_errors_from_model(utils.convert_apollon_model_to_reference(model), best_reference, best)
+        semantic_errors = get_CD_semantic_errors_from_report(best, best_reference)
+        syntax_errors = get_CD_syntax_errors_from_model(utils.convert_apollon_model_to_reference(model), best_reference, best)
         best["syntax_errors"] = syntax_errors
         best["semantic_errors"] = semantic_errors
         return best
@@ -240,7 +240,7 @@ def evaluate_student_diagram(solutions, model):
         logger.error(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
 
-def get_syntax_errors_from_model(model, reference=None, report=None):
+def get_CD_syntax_errors_from_model(model, reference=None, report=None):
     errors = []
     try:
         names_seen = {}
@@ -481,7 +481,7 @@ def get_multiplicity(multiplicity):
     return None
     
 
-def get_semantic_errors_from_report(report, reference):
+def get_CD_semantic_errors_from_report(report, reference):
     errors = []
     try:
         for cl in reference.get("classes", []):

@@ -19,6 +19,7 @@ import jsPDF from "jspdf";
 import { Canvg } from "canvg";
 import Leaderboard from "./Leaderboard";
 import { MatchingElementsList, SemanticErrorsList, SyntaxErrorsList } from "../Common/FeedbackLists";
+import { colorClassDiagram } from "../../Utils/Feedback";
 
 const options = {
     colorEnabled: false,
@@ -87,6 +88,7 @@ function ExercisePage() {
                         try {
                             let cont = document.getElementById("apollon");
                             if (cont) {
+                                console.log(ex)
                                 let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, });
                                 setEditor(ed)
                             }
@@ -133,121 +135,66 @@ function ExercisePage() {
     const handleFeedback = (res: any, afterCheck: boolean) => {
         try {
             let r = new EvaluationResults()
+            let data = res.data
             if (afterCheck) {
                 r.oldXP = results.newXP
-                r.newXP = res.experience
+                r.newXP = data.experience
                 r.oldProgress = results.newProgress
-                r.newProgress = res.correctness
+                r.newProgress = data.correctness
                 r.oldSyntaxErrors = results.newSyntaxErrors
-                r.newSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
+                r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
                 r.oldSemanticErrors = results.newSemanticErrors
-                r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
-                r.results = JSON.parse(res.results || "{}")
+                r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                r.results = JSON.parse(data.results || "{}")
                 handleMoodChange(r)
-                setCompleted(res.correctness >= 75)
+                setCompleted(data.correctness >= 75)
             } else {
-                r.oldXP = res.experience
-                r.newXP = res.experience
-                r.oldProgress = res.correctness
-                r.newProgress = res.correctness
-                r.oldSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
-                r.newSyntaxErrors = JSON.parse(res.syntax_errors || "[]")
-                r.oldSemanticErrors = JSON.parse(res.semantic_errors || "[]")
-                r.newSemanticErrors = JSON.parse(res.semantic_errors || "[]")
-                r.results = JSON.parse(res.results || "{}")
+                r.oldXP = data.experience
+                r.newXP = data.experience
+                r.oldProgress = data.correctness
+                r.newProgress = data.correctness
+                r.oldSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                r.oldSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                r.results = JSON.parse(data.results || "{}")
             }
-            console.log(r.newSyntaxErrors)
-            console.log(r.newSemanticErrors)
-            setResults(r)
-            let model = JSON.parse(res.model)
+            console.log(res)
+            //console.log(r.newSyntaxErrors)
+            //console.log(r.newSemanticErrors)
+            if (exercise && exercise.exType === "ClassDiagram") setResults(r)
+            let model = JSON.parse(data.model)
             console.log(model)
             Object.keys(model.elements).forEach((key) => {
                 let element = model.elements[key]
                 element.strokeColor = "#000000"
                 element.textColor = "#000000"
-                element.fillColor = "#FFFFFF"
+                element.type === "UseCaseActor" ? element.fillColor = "undefined" : element.fillColor = "#FFFFFF"
             })
             Object.keys(model.relationships).forEach((key) => {
                 let element = model.relationships[key]
                 element.strokeColor = "#000000"
                 element.textColor = "#000000"
             })
-            r.newSyntaxErrors.filter((error: any) => error.type === "missingClassName").forEach((error: any) => {
-                let element = model.elements[error.element.elementId]
-                element.textColor = "var(--mantine-color-orange-7)"
-                element.strokeColor = "var(--mantine-color-orange-7)"
-            })
-            r.newSyntaxErrors.filter((error: any) => error.type === "duplicateClassName" ||
-                error.type === "unconnectedClass" ||
-                error.type === "invalidIntermediateClassConnections").forEach((error: any) => {
-                    let element = model.elements[error.element.elementId]
-                    element.fillColor = "var(--mantine-color-orange-1)"
-                })
-            r.newSyntaxErrors.filter((error: any) => error.type === "missingAttributeName" ||
-                error.type === "duplicateAttributeName" ||
-                error.type === "missingAttributeType" ||
-                error.type === "foreignKeyReference" ||
-                error.type === "invalidAttributeType" ||
-                error.type === "enumerationTypeWithAttributes" ||
-                error.type === "classAsAttributeType" ||
-                error.type === "unconnectedEnumeration").forEach((error: any) => {
-                    let element = model.elements[error.attribute.elementId]
-                    element.fillColor = "var(--mantine-color-orange-1)"
-                })
-            r.newSyntaxErrors.filter((error: any) => error.type === "missingAssociationName" ||
-                error.type === "missingAssociationMultiplicity" ||
-                error.type === "invalidAssociationMultiplicity" ||
-                error.type === "missingRecursiveAssociationRole").forEach((error: any) => {
-                    let element = model.relationships[error.association.elementId]
-                    element.strokeColor = "var(--mantine-color-orange-7)"
-                    element.textColor = "var(--mantine-color-orange-7)"
-                })
-            r.newSemanticErrors.filter((error: any) => error.type === "associationName" ||
-                error.type === "associationMultiplicity" ||
-                error.type === "associationType" ||
-                error.type === "forbiddenAssociation").forEach((error: any) => {
-                    let element = model.relationships[error.elementId]
-                    element.strokeColor = "var(--mantine-color-red-5)"
-                    element.textColor = "var(--mantine-color-red-5)"
-                })
-            r.newSemanticErrors.filter((error: any) => error.type === "attributeType").forEach((error: any) => {
-                let element = model.elements[error.id]
-                element.textColor = "var(--mantine-color-red-5)"
-            })
-            r.newSemanticErrors.filter((error: any) => error.type === "forbiddenClass").forEach((error: any) => {
-                let element = model.elements[error.id]
-                element.textColor = "var(--mantine-color-red-5)"
-                element.strokeColor = "var(--mantine-color-red-5)"
-            })
-            r.newSemanticErrors.filter((error: any) => error.type === "classType").forEach((error: any) => {
-                let element = model.elements[error.id]
-                element.fillColor = "var(--mantine-color-red-5)"
-            })
-            r.newSemanticErrors.filter((error: any) => error.type === "forbiddenAttribute").forEach((error: any) => {
-                let element = model.elements[error.id]
-                element.textColor = "var(--mantine-color-red-5)"
-                element.strokeColor = "var(--mantine-color-red-5)"
-            })
-            r.results.matchingClasses.forEach((match: any) => {
-                let id = match.diagramClass.elementId
-                let element = model.elements[id]
-                element.strokeColor = "var(--mantine-color-green-5)";
-                element.textColor = "var(--mantine-color-green-5)";
-                match.matchingAttributes.forEach((attr: any) => {
-                    let attrId = attr.diagramAttribute.elementId
-                    let attrElement = model.elements[attrId]
-                    attrElement.fillColor = "var(--mantine-color-green-1)"
-                })
-            })
-            r.results.matchingAssociations.forEach((match: any) => {
-                let id = match.diagramAssociation.id
-                let element = model.relationships[id]
-                element.strokeColor = "var(--mantine-color-green-5)";
-                element.textColor = "var(--mantine-color-green-5)";
-            })
+            if (exercise) {
+                switch (exercise.exType) {
+                    case UMLDiagramType.UseCaseDiagram:
+                        console.log("Use Case Diagram coloring not implemented yet");
+                        break;
+                    case UMLDiagramType.DeploymentDiagram:
+                        console.log("Deployment Diagram coloring not implemented yet");
+                        break;
+                    case UMLDiagramType.ClassDiagram:
+                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                        break;
+                    default:
+                        break;
+                }
+            }
             let cont = document.getElementById("apollon");
             if (cont) {
-                let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : "ClassDiagram", model: model });
+                console.log(exercise)
+                let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : res.exerciseType, model: model });
                 setEditor(ed);
             }
         } catch (error) {
@@ -347,6 +294,7 @@ function ExercisePage() {
             setChecking(true)
             if (courseId && exerciseId && user && editor) {
                 API.saveExerciseRecord(courseId, exerciseId, user.username, editor.model, true).then((res: any) => {
+                    console.log(res)
                     setChecking(false)
                     handleFeedback(res.record, true)
                     openResults()
@@ -716,7 +664,7 @@ function ExercisePage() {
 
                     </>
                 </Grid>}
-                <div id="apollon" className="canv" style={{ width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
+                <div id="apollon" className="canv" style={{ height: "80vh", width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
                 <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <Grid.Col span={4}>
                         <Center>
@@ -728,6 +676,7 @@ function ExercisePage() {
                             <Button variant="light" color="cyan" leftSection={<IconUpload size={14} />} onClick={() => {
                                 setSaving(true)
                                 if (courseId && exerciseId && user && editor) {
+                                    console.log(editor?.model)
                                     API.saveExerciseRecord(courseId, exerciseId, user?.username, editor?.model, false).then((res) => {
                                         setSaving(false)
                                     })
