@@ -10,7 +10,7 @@ import { avataaars, bottts } from "@dicebear/collection";
 import { ApollonMode, UMLDiagramType } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
-import { EvaluationResults } from "../../Utils/EvaluationTypes";
+import { UMLClassDiagramEvaluationResults } from "../../Utils/EvaluationTypes";
 import "csshake/dist/csshake.css"
 import { Shake, ShakeCrazy } from "reshake"
 import { Dropzone } from "@mantine/dropzone";
@@ -19,7 +19,7 @@ import jsPDF from "jspdf";
 import { Canvg } from "canvg";
 import Leaderboard from "./Leaderboard";
 import { MatchingElementsList, SemanticErrorsList, SyntaxErrorsList } from "../Common/FeedbackLists";
-import { colorClassDiagram } from "../../Utils/Feedback";
+import { colorClassDiagram, resetColorsClassDiagram } from "../../Utils/Feedback";
 
 const options = {
     colorEnabled: false,
@@ -48,7 +48,7 @@ function ExercisePage() {
     const [completeOpened, { open: openComplete, close: closeComplete }] = useDisclosure(false)
     const [exercise, setExercise] = useState<Exercise | null>(null)
     const [checking, setChecking] = useState<boolean>(false)
-    const [results, setResults] = useState<EvaluationResults>(new EvaluationResults())
+    const [results, setResults] = useState<UMLClassDiagramEvaluationResults>(new UMLClassDiagramEvaluationResults())
     const [mood, setMood] = useState<string>("Neutral")
     const [shaker, setShaker] = useState<string>("")
     const [shakeProps, setShakeProps] = useState<any>({})
@@ -96,7 +96,7 @@ function ExercisePage() {
                             console.error("Error creating Apollon editor:", error);
                         }
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                            handleFeedback(res, false)
+                            handleFeedback(res, false, ex.exType as UMLDiagramType)
                             API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
                                 setCompletionRecord(comp.log)
                                 if (comp.log) {
@@ -132,10 +132,11 @@ function ExercisePage() {
         }
     }, [])
 
-    const handleFeedback = (res: any, afterCheck: boolean) => {
+    const handleFeedback = (res: any, afterCheck: boolean, exType: UMLDiagramType) => {
         try {
-            let r = new EvaluationResults()
-            let data = res.data
+            let r = new UMLClassDiagramEvaluationResults()
+            let data = afterCheck ? res : res.data
+            console.log(data, afterCheck)
             if (afterCheck) {
                 r.oldXP = results.newXP
                 r.newXP = data.experience
@@ -159,41 +160,29 @@ function ExercisePage() {
                 r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
                 r.results = JSON.parse(data.results || "{}")
             }
+            setResults(r)
             console.log(res)
             //console.log(r.newSyntaxErrors)
             //console.log(r.newSemanticErrors)
             if (exercise && exercise.exType === "ClassDiagram") setResults(r)
             let model = JSON.parse(data.model)
             console.log(model)
-            Object.keys(model.elements).forEach((key) => {
-                let element = model.elements[key]
-                element.strokeColor = "#000000"
-                element.textColor = "#000000"
-                element.type === "UseCaseActor" ? element.fillColor = "undefined" : element.fillColor = "#FFFFFF"
-            })
-            Object.keys(model.relationships).forEach((key) => {
-                let element = model.relationships[key]
-                element.strokeColor = "#000000"
-                element.textColor = "#000000"
-            })
-            if (exercise) {
-                switch (exercise.exType) {
-                    case UMLDiagramType.UseCaseDiagram:
-                        console.log("Use Case Diagram coloring not implemented yet");
-                        break;
-                    case UMLDiagramType.DeploymentDiagram:
-                        console.log("Deployment Diagram coloring not implemented yet");
-                        break;
-                    case UMLDiagramType.ClassDiagram:
-                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
-                        break;
-                    default:
-                        break;
-                }
+            model = resetColorsClassDiagram(model)
+            switch (exType) {
+                case UMLDiagramType.UseCaseDiagram:
+                    console.log("Use Case Diagram coloring not implemented yet");
+                    break;
+                case UMLDiagramType.DeploymentDiagram:
+                    console.log("Deployment Diagram coloring not implemented yet");
+                    break;
+                case UMLDiagramType.ClassDiagram:
+                    model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                    break;
+                default:
+                    break;
             }
             let cont = document.getElementById("apollon");
             if (cont) {
-                console.log(exercise)
                 let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : res.exerciseType, model: model });
                 setEditor(ed);
             }
@@ -202,7 +191,7 @@ function ExercisePage() {
         }
     }
 
-    const handleMoodChange = (res: EvaluationResults) => {
+    const handleMoodChange = (res: UMLClassDiagramEvaluationResults) => {
         if (exercise) {
             let progDiff = res.newProgress - res.oldProgress
             let xpDiff = res.newXP - res.oldXP
@@ -296,7 +285,7 @@ function ExercisePage() {
                 API.saveExerciseRecord(courseId, exerciseId, user.username, editor.model, true).then((res: any) => {
                     console.log(res)
                     setChecking(false)
-                    handleFeedback(res.record, true)
+                    handleFeedback(res.record, true, exercise!.exType as UMLDiagramType)
                     openResults()
                 }).catch((err) => {
                     console.error(err)
@@ -896,7 +885,7 @@ function ExercisePage() {
                     <Button variant="light" color="yellow" leftSection={<IconReload size={14} />} onClick={() => {
                         if (courseId && exerciseId && user) {
                             API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                                handleFeedback(res, false)
+                                handleFeedback(res, false, exercise!.exType as UMLDiagramType)
                                 closeReset()
                             })
                         }

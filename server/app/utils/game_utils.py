@@ -1,6 +1,6 @@
 import json
 from app.models import Exercise, StudentExerciseLog
-from app.evaluator.utils import SyntaxErrorType, SemanticErrorType
+from app.evaluator.utils.class_diagram import SyntaxErrorType, SemanticErrorType
 import sys
 from enum import Enum
 

@@ -3,10 +3,12 @@ import Levenshtein
 import app.evaluator.utils as utils
 import sys, os
 import re
-from .logger_config import get_eval_logger
 
-# Configurazione del logger per eval.py
-logger = get_eval_logger()
+from app.evaluator.evaluator_factory import get_evaluator
+
+def evaluate_uml_diagram(solutions, model, diagram_type):
+    evaluator = get_evaluator(diagram_type)
+    return evaluator.evaluate(solutions, model)
 
 def find_closest_strings(dict1, dict2):
     """
@@ -237,7 +239,7 @@ def evaluate_class_diagram(solutions, model):
         return best
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        logger.error(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        print(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
 
 def get_CD_syntax_errors_from_model(model, reference=None, report=None):
@@ -452,7 +454,7 @@ def get_CD_syntax_errors_from_model(model, reference=None, report=None):
                         })
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        logger.error(f"Error in get_syntax_errors_from_model: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        print(f"Error in get_syntax_errors_from_model: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
     return errors
 
@@ -623,6 +625,6 @@ def get_CD_semantic_errors_from_report(report, reference):
             })
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        logger.error(f"Error in get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+        print(f"Error in get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
         raise(e)
     return errors

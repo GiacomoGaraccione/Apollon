@@ -1,16 +1,14 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Notification, Stack, TextInput, NativeSelect, Textarea, Group, Loader, Avatar, RingProgress, Popover, UnstyledButton, Drawer, List, ThemeIcon, Mark, Highlight, Divider, Progress, Skeleton } from "@mantine/core";
+import { useEffect, useState, useRef, useContext } from "react";
+import { Alert, Card, Flex, Text, Modal, Fieldset, Grid } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
-import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconHelp, IconJson, IconMedal, IconMenu4, IconPdf, IconReload, IconSquareXFilled, IconSvg, IconTrophyFilled, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
+import { IconExclamationCircleFilled } from "@tabler/icons-react";
 import { Course, Exercise, Solution } from "../../Utils/Models";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ApollonMode } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
-import { EvaluationResults } from "../../Utils/EvaluationTypes";
 import "csshake/dist/csshake.css"
-import { Dropzone } from "@mantine/dropzone";
 
 const options = {
     colorEnabled: false,

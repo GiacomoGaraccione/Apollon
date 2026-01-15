@@ -1,9 +1,64 @@
 from enum import Enum
-from .logger_config import get_utils_logger
-import copy
 
-# Configurazione del logger per utils.py
-logger = get_utils_logger()
+class Multiplicity(Enum):
+    ZERO = "ZERO"
+    ONE = "ONE"
+    NUMERIC = "NUMERIC"
+    ZERO_TO_ONE = "ZERO_TO_ONE"
+    ZERO_TO_MANY = "ZERO_TO_MANY"
+    ONE_TO_ONE = "ONE_TO_ONE"
+    ONE_TO_MANY = "ONE_TO_MANY"
+    ZERO_TO_NUMERIC = "ZERO_TO_NUMERIC"
+    ONE_TO_NUMERIC = "ONE_TO_NUMERIC"
+    NUMERIC_TO_NUMERIC = "NUMERIC_TO_NUMERIC"
+    NUMERIC_TO_MANY = "NUMERIC_TO_MANY"
+
+
+class AttributeType(Enum): 
+    FLOAT = "float"
+    INT = "int"
+    STRING = "string"
+    BOOLEAN = "boolean"
+    DATE = "date"
+    CURRENCY = "currency"
+    TIME = "time"
+    DATETIME = "datetime"
+    INTEGER = "integer"
+    DOUBLE = "double"
+    NUMBER = "number"
+    LATLONG = "latlong"
+
+class SyntaxErrorType(Enum):
+    MISSING_CLASS_NAME = "missingClassName"
+    DUPLICATE_CLASS_NAME = "duplicateClassName"
+    MISSING_ATTRIBUTE_NAME = "missingAttributeName"
+    DUPLICATE_ATTRIBUTE_NAME = "duplicateAttributeName"
+    MISSING_ATTRIBUTE_TYPE = "missingAttributeType"
+    INVALID_ATTRIBUTE_TYPE = "invalidAttributeType"
+    FOREIGN_KEY_REFERENCE = "foreignKeyReference"
+    UNCONNECTED_CLASS = "unconnectedClass"
+    MISSING_ASSOCIATION_MULTIPLICITY = "missingAssociationMultiplicity"
+    INVALID_ASSOCIATION_MULTIPLICITY = "invalidAssociationMultiplicity"
+    MISSING_ASSOCIATION_NAME = "missingAssociationName"
+    MISSING_RECURSIVE_ASSOCIATION_ROLE = "missingRecursiveAssociationRole"
+    ENUMERATION_TYPE_WITH_ATTRIBUTES = "enumerationTypeWithAttributes"
+    CLASS_AS_ATTRIBUTE_TYPE = "classAsAttributeType"
+    UNCONNECTED_ENUMERATION = "unconnectedEnumeration"
+    INVALID_INTERMEDIATE_CLASS_CONNECTIONS = "invalidIntermediateClassConnections"
+
+class SemanticErrorType(Enum):
+    MISSING_CLASS = "missingClass"
+    MISSING_ATTRIBUTE = "missingAttribute"
+    ATTRIBUTE_TYPE = "attributeType"
+    FORBIDDEN_CLASS = "forbiddenClass"
+    FORBIDDEN_ATTRIBUTE = "forbiddenAttribute"
+    MISSING_ASSOCIATION = "missingAssociation"
+    ASSOCIATION_NAME = "associationName"
+    ASSOCIATION_MULTIPLICITY = "associationMultiplicity"
+    ASSOCIATION_TYPE = "associationType"
+    CLASS_TYPE = "classType"
+    FORBIDDEN_ASSOCIATION = "forbiddenAssociation"
+
 
 def create_association_endpoint(endpoint_data, element_id, reference_classes):
     """
@@ -91,7 +146,6 @@ def convert_apollon_model_to_reference(model):
             "name": rel.get("name", ""),
             "elementId": rel.get("id")
         }
-        # Logging essenziale per debug delle associazioni
         rel_id = rel.get("id", "unknown")
         rel_name = rel.get("name", "unnamed")
         source_info = rel.get("source", {})
@@ -114,69 +168,10 @@ def convert_apollon_model_to_reference(model):
         actual_target_mult = targetCls["multiplicities"][0] if targetCls["multiplicities"] else ""
         
         if actual_source_mult != source_multiplicity:
-            logger.error(f"ERRORE: sourceCls multiplicity non corrisponde! Associazione {rel_id}, Atteso: '{source_multiplicity}', Trovato: '{actual_source_mult}'")
+            print(f"ERRORE: sourceCls multiplicity non corrisponde! Associazione {rel_id}, Atteso: '{source_multiplicity}', Trovato: '{actual_source_mult}'")
         if actual_target_mult != target_multiplicity:
-            logger.error(f"ERRORE: targetCls multiplicity non corrisponde! Associazione {rel_id}, Atteso: '{target_multiplicity}', Trovato: '{actual_target_mult}'")
+            print(f"ERRORE: targetCls multiplicity non corrisponde! Associazione {rel_id}, Atteso: '{target_multiplicity}', Trovato: '{actual_target_mult}'")
         
         reference["associations"].append(newAssoc)
             
     return reference
-
-class Multiplicity(Enum):
-    ZERO = "ZERO"
-    ONE = "ONE"
-    NUMERIC = "NUMERIC"
-    ZERO_TO_ONE = "ZERO_TO_ONE"
-    ZERO_TO_MANY = "ZERO_TO_MANY"
-    ONE_TO_ONE = "ONE_TO_ONE"
-    ONE_TO_MANY = "ONE_TO_MANY"
-    ZERO_TO_NUMERIC = "ZERO_TO_NUMERIC"
-    ONE_TO_NUMERIC = "ONE_TO_NUMERIC"
-    NUMERIC_TO_NUMERIC = "NUMERIC_TO_NUMERIC"
-    NUMERIC_TO_MANY = "NUMERIC_TO_MANY"
-
-
-class AttributeType(Enum): 
-    FLOAT = "float"
-    INT = "int"
-    STRING = "string"
-    BOOLEAN = "boolean"
-    DATE = "date"
-    CURRENCY = "currency"
-    TIME = "time"
-    DATETIME = "datetime"
-    INTEGER = "integer"
-    DOUBLE = "double"
-    NUMBER = "number"
-    LATLONG = "latlong"
-
-class SyntaxErrorType(Enum):
-    MISSING_CLASS_NAME = "missingClassName"
-    DUPLICATE_CLASS_NAME = "duplicateClassName"
-    MISSING_ATTRIBUTE_NAME = "missingAttributeName"
-    DUPLICATE_ATTRIBUTE_NAME = "duplicateAttributeName"
-    MISSING_ATTRIBUTE_TYPE = "missingAttributeType"
-    INVALID_ATTRIBUTE_TYPE = "invalidAttributeType"
-    FOREIGN_KEY_REFERENCE = "foreignKeyReference"
-    UNCONNECTED_CLASS = "unconnectedClass"
-    MISSING_ASSOCIATION_MULTIPLICITY = "missingAssociationMultiplicity"
-    INVALID_ASSOCIATION_MULTIPLICITY = "invalidAssociationMultiplicity"
-    MISSING_ASSOCIATION_NAME = "missingAssociationName"
-    MISSING_RECURSIVE_ASSOCIATION_ROLE = "missingRecursiveAssociationRole"
-    ENUMERATION_TYPE_WITH_ATTRIBUTES = "enumerationTypeWithAttributes"
-    CLASS_AS_ATTRIBUTE_TYPE = "classAsAttributeType"
-    UNCONNECTED_ENUMERATION = "unconnectedEnumeration"
-    INVALID_INTERMEDIATE_CLASS_CONNECTIONS = "invalidIntermediateClassConnections"
-
-class SemanticErrorType(Enum):
-    MISSING_CLASS = "missingClass"
-    MISSING_ATTRIBUTE = "missingAttribute"
-    ATTRIBUTE_TYPE = "attributeType"
-    FORBIDDEN_CLASS = "forbiddenClass"
-    FORBIDDEN_ATTRIBUTE = "forbiddenAttribute"
-    MISSING_ASSOCIATION = "missingAssociation"
-    ASSOCIATION_NAME = "associationName"
-    ASSOCIATION_MULTIPLICITY = "associationMultiplicity"
-    ASSOCIATION_TYPE = "associationType"
-    CLASS_TYPE = "classType"
-    FORBIDDEN_ASSOCIATION = "forbiddenAssociation"

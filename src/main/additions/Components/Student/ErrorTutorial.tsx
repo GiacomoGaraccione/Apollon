@@ -1,17 +1,11 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Notification, Stack, TextInput, NativeSelect, Textarea, Group, Loader, Avatar, RingProgress, Popover, UnstyledButton, Drawer, List, ThemeIcon, Mark, Highlight, Divider, Progress, Skeleton } from "@mantine/core";
+import { useEffect, useState, useRef } from "react";
+import { Card, Center, Text, Modal, Fieldset, Grid, Skeleton } from "@mantine/core";
 import API from "../../API";
-import { UserContext } from "../Login/UserContext";
-import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconHelp, IconJson, IconMedal, IconMenu4, IconPdf, IconReload, IconSquareXFilled, IconSvg, IconTrophyFilled, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
-import { Course, Exercise } from "../../Utils/Models";
-import { useNavigate, useParams } from "react-router-dom";
 import { ApollonMode } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
-import { EvaluationResults } from "../../Utils/EvaluationTypes";
-import { SyntaxErrorType, SemanticErrorType, ErrorExample } from "../../Utils/EvaluationTypes";
+import { ErrorExample } from "../../Utils/EvaluationTypes";
 import "csshake/dist/csshake.css"
-import { Dropzone } from "@mantine/dropzone";
 import 'svg2pdf.js'
 
 const options = {

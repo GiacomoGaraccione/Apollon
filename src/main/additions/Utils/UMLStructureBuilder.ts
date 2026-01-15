@@ -6,7 +6,7 @@ import { Direction } from "../../services/uml-element/uml-element-port"
 import { Assessment, UMLAssociation, UMLClassifier, UMLDiagramType, UMLElement, UMLElementType, UMLModel, UMLRelationship, UMLRelationshipType } from "../../typings"
 import { IBoundary } from "../../utils/geometry/boundary"
 import { IPath } from "../../utils/geometry/path"
-import { ReferenceAssociation, ReferenceAttribute, ReferenceClass, ReferenceSolution } from "./UMLMatcherTypes"
+import { ReferenceAssociation, ReferenceAttribute, ReferenceClass, ClassDiagramReferenceSolution } from "./UMLMatcherTypes"
 
 export class UMLCustomClass implements UMLClassifier {
     id: string
@@ -25,7 +25,7 @@ export class UMLCustomClass implements UMLClassifier {
     constructor(id: string, name: string, type: UMLClassifier["type"], owner: string | null, bounds: IBoundary) {
         this.id = id
         this.name = name
-        this.type = type
+        this.type = type as UMLCustomClass["type"]
         this.owner = owner
         this.bounds = bounds
         this.attributes = []
@@ -165,14 +165,14 @@ class UMLRegionMap {
 
 
 class UMLStructureBuilderFromReference {
-    reference: ReferenceSolution
+    reference: ClassDiagramReferenceSolution
     associationInfo: AssociationInfo[]
     model: UMLModel
     positions: Map<string, Region> | null = null
     regionWidth: number
     totalHeight: number
 
-    constructor(reference: ReferenceSolution) {
+    constructor(reference: ClassDiagramReferenceSolution) {
         this.reference = reference
         this.associationInfo = []
         this.model = {

@@ -43,7 +43,7 @@ export class ReferenceClassInAssociation {
 }
 
 
-export class ReferenceSolution {
+export class ClassDiagramReferenceSolution {
     classes: ReferenceClass[] = []
     associations: ReferenceAssociation[] = []
     forbiddenClasses: string[] = []
@@ -51,12 +51,12 @@ export class ReferenceSolution {
 }
 
 export class ReferenceBuilder {
-    referenceSolution: ReferenceSolution
+    referenceSolution: ClassDiagramReferenceSolution
     model: UMLModel
 
     constructor(model: UMLModel) {
         this.model = model
-        this.referenceSolution = new ReferenceSolution()
+        this.referenceSolution = new ClassDiagramReferenceSolution()
     }
 
     createReferenceClass(element: UMLCustomClass): ReferenceClass {
@@ -106,7 +106,7 @@ export class ReferenceBuilder {
     }
 
 
-    buildReference(): ReferenceSolution {
+    buildReference(): ClassDiagramReferenceSolution {
         Object.keys(this.model.elements).forEach((elementId) => {
             let element = this.model.elements[elementId]
             if (element.type === "Class" ||
@@ -127,7 +127,7 @@ export class ReferenceBuilder {
         return this.referenceSolution
     }
 
-    updateReference(oldReference: ReferenceSolution): ReferenceSolution {
+    updateReference(oldReference: ClassDiagramReferenceSolution): ClassDiagramReferenceSolution {
         this.referenceSolution.classes.forEach((refClass) => {
             let oldClass = oldReference.classes.find((cl) => cl.name === refClass.name)
             if (oldClass) {

@@ -3,7 +3,7 @@ import { User } from "./Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
 import { ErrorExample } from "./Utils/EvaluationTypes"
 import { Course, Exercise, Boss, Solution } from "./Utils/Models"
-import { ReferenceSolution } from "./Utils/UMLMatcherTypes"
+import { ClassDiagramReferenceSolution } from "./Utils/UMLMatcherTypes"
 
 let baseURL = "http://localhost:5000"
 
@@ -544,7 +544,7 @@ async function createBoss(courseId: string, exerciseId: string, introDialogue: s
     }
 }
 
-async function addSolution(courseId: string, exerciseId: string, reference: ReferenceSolution, model: UMLModel, image: any) {
+async function addSolution(courseId: string, exerciseId: string, reference: ClassDiagramReferenceSolution, model: UMLModel, image: any) {
     let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/solutions", {
         method: "POST",
         credentials: "include",
@@ -565,7 +565,7 @@ async function addSolution(courseId: string, exerciseId: string, reference: Refe
     }
 }
 
-async function updateSolution(courseId: string, exerciseId: string, solutionId: string, reference: ReferenceSolution, model: UMLModel, image: any) {
+async function updateSolution(courseId: string, exerciseId: string, solutionId: string, reference: ClassDiagramReferenceSolution, model: UMLModel, image: any) {
     let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/solutions/" + solutionId, {
         method: "PUT",
         credentials: "include",

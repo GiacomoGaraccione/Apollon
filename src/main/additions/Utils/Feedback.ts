@@ -74,3 +74,18 @@ export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticError
     })
     return model
 }
+
+export const resetColorsClassDiagram = (model: any) => {
+    Object.keys(model.elements).forEach((key) => {
+        let element = model.elements[key]
+        element.strokeColor = "#000000"
+        element.textColor = "#000000"
+        element.type === "UseCaseActor" ? element.fillColor = "undefined" : element.fillColor = "#FFFFFF"
+    })
+    Object.keys(model.relationships).forEach((key) => {
+        let element = model.relationships[key]
+        element.strokeColor = "#000000"
+        element.textColor = "#000000"
+    })
+    return model
+}

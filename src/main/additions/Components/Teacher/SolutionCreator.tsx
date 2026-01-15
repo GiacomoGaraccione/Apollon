@@ -5,16 +5,13 @@ import ReactMarkdown from "react-markdown";
 import { Puff } from "@agney/react-loading"
 import { ApollonMode, UMLClassifier, UMLModel } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
-//import { UMLStructureBuilderFromLLM, UMLStructureBuilderFromReference } from "../operations/UMLStructureBuilder";
-//import { ReferenceBuilder, ReferenceSolution } from "../operations/UMLMatcherTypes";
-//import { ReferenceDisplayer, DividerLine } from "./ReferenceDisplayer";
 import JSZip from "jszip";
 import { Exercise, Solution } from "../../Utils/Models";
 import { useParams, useNavigate } from "react-router-dom";
 import { IconArrowBackUp, IconArrowLeft, IconArrowRight, IconCloudUpload, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX, IconZoomCheckFilled } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { Carousel } from "@mantine/carousel";
-import { AssociationType, ReferenceAssociation, ReferenceAttribute, ReferenceBuilder, ReferenceClass, ReferenceClassInAssociation, ReferenceSolution, Weight } from "../../Utils/UMLMatcherTypes";
+import { AssociationType, ReferenceAssociation, ReferenceAttribute, ReferenceBuilder, ReferenceClass, ReferenceClassInAssociation, ClassDiagramReferenceSolution, Weight } from "../../Utils/UMLMatcherTypes";
 import { UMLStructureBuilderFromReference } from "../../Utils/UMLStructureBuilder";
 import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 
@@ -31,7 +28,7 @@ function SolutionCreator() {
     const [editor, setEditor] = useState<ApollonEditor | undefined>()
     const [openDelete, setOpenDelete] = useState(false)
     const [currentSolution, setCurrentSolution] = useState<Solution | undefined>(undefined)
-    const [currentReference, setCurrentReference] = useState<ReferenceSolution | undefined>(undefined)
+    const [currentReference, setCurrentReference] = useState<ClassDiagramReferenceSolution | undefined>(undefined)
     const [successUpload, setSuccessUpload] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [openedModel, { open: openModel, close: closeModel }] = useDisclosure(false)
@@ -168,7 +165,7 @@ function SolutionCreator() {
     const addClass = (classes: ReferenceClass[]) => {
         if (exercise) {
             if (!currentReference) {
-                let ref = new ReferenceSolution()
+                let ref = new ClassDiagramReferenceSolution()
                 ref.classes = classes
                 ref.associations = []
                 ref.forbiddenClasses = []
@@ -542,7 +539,7 @@ function ListEditor(props: { onSave: () => void, mode: string, list: string[], o
     )
 }
 
-function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: (classes: ReferenceClass[]) => void }) {
+function ClassForm(props: { reference: ClassDiagramReferenceSolution | undefined, addClass: (classes: ReferenceClass[]) => void }) {
     const [currentClass, setCurrentClass] = useState<ReferenceClass | undefined>(undefined)
     const [classes, setClasses] = useState<ReferenceClass[]>([])
     const [forbiddenAttributes, setForbiddenAttributes] = useState<string[]>([])
@@ -703,7 +700,7 @@ function ClassForm(props: { reference: ReferenceSolution | undefined, addClass: 
     )
 }
 
-function AttributeForm(props: { reference: ReferenceSolution | undefined, addClass: (classes: ReferenceClass[]) => void }) {
+function AttributeForm(props: { reference: ClassDiagramReferenceSolution | undefined, addClass: (classes: ReferenceClass[]) => void }) {
     const [name, setName] = useState<string>("")
     const [types, setTypes] = useState<string[]>([""])
     const [weight, setWeight] = useState("")
@@ -915,7 +912,7 @@ function AttributeForm(props: { reference: ReferenceSolution | undefined, addCla
     )
 }
 
-function AssociationForm(props: { reference: ReferenceSolution | undefined, addAssociation: (associations: ReferenceAssociation[]) => void }) {
+function AssociationForm(props: { reference: ClassDiagramReferenceSolution | undefined, addAssociation: (associations: ReferenceAssociation[]) => void }) {
     const [name, setName] = useState<string>("")
     const [weight, setWeight] = useState<string>("STRONG")
     const [type, setType] = useState<string>("Default")
@@ -1129,7 +1126,7 @@ function AssociationForm(props: { reference: ReferenceSolution | undefined, addA
 }
 
 function ForbiddenElementsForm(props: {
-    reference: ReferenceSolution | undefined,
+    reference: ClassDiagramReferenceSolution | undefined,
     addForbiddenClasses: (forbiddenClasses: string[]) => void,
     addForbiddenAssociations: (forbiddenAssociations: { source: string, target: string }[]) => void
 }) {

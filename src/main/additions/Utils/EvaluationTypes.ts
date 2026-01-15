@@ -9,6 +9,9 @@ export class EvaluationResults {
     newSyntaxErrors: any[] = [];
     oldSemanticErrors: any[] = [];
     newSemanticErrors: any[] = [];
+}
+
+export class UMLClassDiagramEvaluationResults extends EvaluationResults {
     results: any = { matchingClasses: [] }
 }
 

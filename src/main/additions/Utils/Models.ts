@@ -1,7 +1,7 @@
 import { UMLModel } from "../.."
 import { User } from "../Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./AvatarUtils"
-import { ReferenceSolution } from "./UMLMatcherTypes"
+import { ClassDiagramReferenceSolution } from "./UMLMatcherTypes"
 
 class Course {
     courseId: string
@@ -60,12 +60,12 @@ class Boss {
 }
 
 class Solution {
-    reference: ReferenceSolution
+    reference: ClassDiagramReferenceSolution
     model: UMLModel
     image: any
     solutionId: string
 
-    constructor(reference: ReferenceSolution, model: UMLModel, image: any, solutionId: string) {
+    constructor(reference: ClassDiagramReferenceSolution, model: UMLModel, image: any, solutionId: string) {
         this.image = image
         this.reference = reference
         this.model = model

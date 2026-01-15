@@ -8,6 +8,7 @@ from app.utils.game_utils import update_experience_points
 from sqlalchemy.orm import joinedload
 import app.evaluator.eval as evaluator
 from datetime import datetime
+from app.evaluator.evaluator_factory import get_evaluator
 
 exercises_bp = Blueprint("exercises", __name__)
         
@@ -234,7 +235,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
             solutions = session.query(Solution).filter_by(exerciseId=exerciseId).all()
             solutions = [sol.serialize() for sol in solutions]
             model = data.get("model", None)
-            results = evaluator.evaluate_class_diagram(solutions=solutions, model=model) if exercise.exType == "ClassDiagram" else None
+            results = evaluator.evaluate_uml_diagram(solutions=solutions, model=model, diagram_type=exercise.exType) 
             completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
             if record is None:
                 record = StudentExerciseLog(
