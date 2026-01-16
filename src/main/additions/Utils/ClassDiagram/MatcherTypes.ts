@@ -50,7 +50,7 @@ export class ClassDiagramReferenceSolution {
     forbiddenAssociations: { source: string, target: string }[] = []
 }
 
-export class ReferenceBuilder {
+export class ClassDiagramReferenceBuilder {
     referenceSolution: ClassDiagramReferenceSolution
     model: UMLModel
 

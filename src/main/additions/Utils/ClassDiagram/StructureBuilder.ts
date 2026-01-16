@@ -162,7 +162,7 @@ class UMLRegionMap {
 
 
 
-class UMLStructureBuilderFromReference {
+class ClassDiagramStructureBuilderFromReference {
     reference: ClassDiagramReferenceSolution
     associationInfo: AssociationInfo[]
     model: UMLModel
@@ -401,4 +401,4 @@ class UMLStructureBuilderFromReference {
     }
 }
 
-export { UMLStructureBuilderFromReference }
+export { ClassDiagramStructureBuilderFromReference }

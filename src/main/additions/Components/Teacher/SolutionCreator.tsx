@@ -9,8 +9,8 @@ import { useParams } from "react-router-dom";
 import { IconArrowLeft, IconArrowRight, IconCloudUpload, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconSquareRoundedPlusFilled, IconTrash, IconTrashFilled, IconUpload, IconX, IconZoomCheckFilled } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { Carousel } from "@mantine/carousel";
-import { ReferenceAssociation, ReferenceBuilder, ReferenceClass, ClassDiagramReferenceSolution } from "../../Utils/ClassDiagram/MatcherTypes";
-import { UMLStructureBuilderFromReference } from "../../Utils/ClassDiagram/StructureBuilder";
+import { ReferenceAssociation, ClassDiagramReferenceBuilder, ReferenceClass, ClassDiagramReferenceSolution } from "../../Utils/ClassDiagram/MatcherTypes";
+import { ClassDiagramStructureBuilderFromReference } from "../../Utils/ClassDiagram/StructureBuilder";
 import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 import { ClassDiagramReferenceFormModal } from "./SolutionCreators/ClassDiagram/ClassDiagramCreator";
 
@@ -84,10 +84,11 @@ function SolutionCreator() {
         setCurrentReference(currentSolution?.reference)
     }, [currentSolution])
 
-    useEffect(() => {
-        if (preview) {
-            if (currentReference) {
-                let builder = new UMLStructureBuilderFromReference(currentReference)
+    const confirmPreview = () => {
+        if (currentReference && exercise) {
+            let builder
+            if (exercise.exType === "ClassDiagram") {
+                builder = new ClassDiagramStructureBuilderFromReference(currentReference)
                 let model = builder.createUMLStructure()
                 if (previewRef.current) {
                     let ed = new ApollonEditor(previewRef.current, { ...options, type: "ClassDiagram", readonly: true })
@@ -98,6 +99,12 @@ function SolutionCreator() {
                     })
                 }
             }
+        }
+    }
+
+    useEffect(() => {
+        if (preview) {
+            confirmPreview()
         }
     }, [preview])
 
@@ -118,15 +125,18 @@ function SolutionCreator() {
     }
 
     const saveModel = async () => {
-        if (editor) {
-            let builder = new ReferenceBuilder(editor.model as UMLModel)
-            let ref = builder.buildReference()
-            let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
-            if (courseId && exerciseId) {
-                if (currentSolution) {
-                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
-                } else {
-                    API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+        if (editor && exercise) {
+            let builder
+            if (exercise.exType === "ClassDiagram") {
+                builder = new ClassDiagramReferenceBuilder(editor.model as UMLModel)
+                let ref = builder.buildReference()
+                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+                if (courseId && exerciseId) {
+                    if (currentSolution) {
+                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
+                    } else {
+                        API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+                    }
                 }
             }
         }
