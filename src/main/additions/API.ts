@@ -1,9 +1,9 @@
 import { UMLModel } from "../typings"
 import { User } from "./Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
-import { ErrorExample } from "./Utils/EvaluationTypes"
+import { ClassDiagramErrorExample } from "./Utils/ClassDiagram/EvaluationTypes"
 import { Course, Exercise, Boss, Solution } from "./Utils/Models"
-import { ClassDiagramReferenceSolution } from "./Utils/UMLMatcherTypes"
+import { ClassDiagramReferenceSolution } from "./Utils/ClassDiagram/MatcherTypes"
 
 let baseURL = "http://localhost:5000"
 
@@ -782,8 +782,8 @@ async function getExampleErrors() {
     })
     if (response.ok) {
         let res = await response.json()
-        let examples: ErrorExample[] = res.map((error: any) => {
-            return new ErrorExample(error.id, error.description, error.type, error.key, JSON.parse(error.model))
+        let examples: ClassDiagramErrorExample[] = res.map((error: any) => {
+            return new ClassDiagramErrorExample(error.id, error.description, error.type, error.key, JSON.parse(error.model))
         })
         return examples
     } else {

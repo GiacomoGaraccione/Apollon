@@ -1,12 +1,10 @@
-import { UMLClassAttribute } from "../../packages/uml-class-diagram/uml-class-attribute/uml-class-attribute"
-import { UMLClass } from "../../packages/uml-class-diagram/uml-class/uml-class"
-import { UMLElements } from "../../packages/uml-elements"
-import { UMLDiagram } from "../../services/uml-diagram/uml-diagram"
-import { Direction } from "../../services/uml-element/uml-element-port"
-import { Assessment, UMLAssociation, UMLClassifier, UMLDiagramType, UMLElement, UMLElementType, UMLModel, UMLRelationship, UMLRelationshipType } from "../../typings"
-import { IBoundary } from "../../utils/geometry/boundary"
-import { IPath } from "../../utils/geometry/path"
-import { ReferenceAssociation, ReferenceAttribute, ReferenceClass, ClassDiagramReferenceSolution } from "./UMLMatcherTypes"
+import { UMLClassAttribute } from "../../../packages/uml-class-diagram/uml-class-attribute/uml-class-attribute"
+import { UMLClass } from "../../../packages/uml-class-diagram/uml-class/uml-class"
+import { Direction } from "../../../services/uml-element/uml-element-port"
+import { Assessment, UMLAssociation, UMLClassifier, UMLDiagramType, UMLElement, UMLElementType, UMLModel, UMLRelationship, UMLRelationshipType } from "../../../typings"
+import { IBoundary } from "../../../utils/geometry/boundary"
+import { IPath } from "../../../utils/geometry/path"
+import { ReferenceAssociation, ReferenceAttribute, ReferenceClass, ClassDiagramReferenceSolution } from "./MatcherTypes"
 
 export class UMLCustomClass implements UMLClassifier {
     id: string

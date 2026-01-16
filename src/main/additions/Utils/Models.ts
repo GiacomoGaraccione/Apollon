@@ -1,7 +1,7 @@
 import { UMLModel } from "../.."
 import { User } from "../Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./AvatarUtils"
-import { ClassDiagramReferenceSolution } from "./UMLMatcherTypes"
+import { ClassDiagramReferenceSolution } from "./ClassDiagram/MatcherTypes"
 
 class Course {
     courseId: string

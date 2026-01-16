@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, Center, Text, Modal, Fieldset, Grid, Skeleton } from "@mantine/core";
 import API from "../../API";
 import { ApollonMode } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
-import { ErrorExample } from "../../Utils/EvaluationTypes";
+import { ClassDiagramErrorExample } from "../../Utils/ClassDiagram/EvaluationTypes";
 import "csshake/dist/csshake.css"
 import 'svg2pdf.js'
 
@@ -17,10 +17,10 @@ const options = {
 }
 
 function ErrorTutorial() {
-    const [errorExamples, setErrorExamples] = useState<ErrorExample[]>([])
+    const [errorExamples, setErrorExamples] = useState<ClassDiagramErrorExample[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [opened, { open, close }] = useDisclosure(false)
-    const [currentExample, setCurrentExample] = useState<ErrorExample | null>(null)
+    const [currentExample, setCurrentExample] = useState<ClassDiagramErrorExample | null>(null)
     const [loadModal, setLoadModal] = useState(false)
     const apollonRef = useRef<HTMLDivElement>(null)
     const [editor, setEditor] = useState<ApollonEditor | null>(null)

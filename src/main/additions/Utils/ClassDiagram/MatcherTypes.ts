@@ -1,8 +1,8 @@
 export type Weight = "STRONG" | "MEDIUM" | "WEAK" | "NONE"
 export type AssociationType = "Default" | "Inheritance"
-import { UMLModel } from "../.."
-import { UMLCustomAssociation, UMLCustomClass } from "./UMLStructureBuilder"
-import { ClassElementType } from "../../packages/uml-class-diagram"
+import { UMLModel } from "../../.."
+import { UMLCustomAssociation, UMLCustomClass } from "./StructureBuilder"
+import { ClassElementType } from "../../../packages/uml-class-diagram"
 
 export class ReferenceClass {
     name: string = ""

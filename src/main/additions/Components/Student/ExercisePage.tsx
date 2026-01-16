@@ -10,7 +10,7 @@ import { avataaars, bottts } from "@dicebear/collection";
 import { ApollonMode, UMLDiagramType } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
-import { UMLClassDiagramEvaluationResults } from "../../Utils/EvaluationTypes";
+import { ClassDiagramEvaluationResults } from "../../Utils/ClassDiagram/EvaluationTypes";
 import "csshake/dist/csshake.css"
 import { Shake, ShakeCrazy } from "reshake"
 import { Dropzone } from "@mantine/dropzone";
@@ -48,7 +48,7 @@ function ExercisePage() {
     const [completeOpened, { open: openComplete, close: closeComplete }] = useDisclosure(false)
     const [exercise, setExercise] = useState<Exercise | null>(null)
     const [checking, setChecking] = useState<boolean>(false)
-    const [results, setResults] = useState<UMLClassDiagramEvaluationResults>(new UMLClassDiagramEvaluationResults())
+    const [results, setResults] = useState<ClassDiagramEvaluationResults>(new ClassDiagramEvaluationResults())
     const [mood, setMood] = useState<string>("Neutral")
     const [shaker, setShaker] = useState<string>("")
     const [shakeProps, setShakeProps] = useState<any>({})
@@ -134,7 +134,7 @@ function ExercisePage() {
 
     const handleFeedback = (res: any, afterCheck: boolean, exType: UMLDiagramType) => {
         try {
-            let r = new UMLClassDiagramEvaluationResults()
+            let r = new ClassDiagramEvaluationResults()
             let data = afterCheck ? res : res.data
             console.log(data, afterCheck)
             if (afterCheck) {
@@ -191,7 +191,7 @@ function ExercisePage() {
         }
     }
 
-    const handleMoodChange = (res: UMLClassDiagramEvaluationResults) => {
+    const handleMoodChange = (res: ClassDiagramEvaluationResults) => {
         if (exercise) {
             let progDiff = res.newProgress - res.oldProgress
             let xpDiff = res.newXP - res.oldXP
