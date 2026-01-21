@@ -15,6 +15,9 @@ export const UMLUseCaseExternalSystemComponent: FunctionComponent<Props> = ({ el
             {element.name}
         </Text>
         {children}
+        <Text fill={element.textColor} y={32}>
+            External System
+        </Text>
     </g>
 );
 
