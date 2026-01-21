@@ -3,6 +3,7 @@ import { Alert, Button, Card, Flex, Text, Fieldset, Grid, TextInput, Textarea, G
 import { IconArrowBackUp, IconExclamationCircle, IconSquareRoundedPlusFilled, IconTrash } from "@tabler/icons-react";
 import { ListEditor } from "../../../Teacher/SolutionCreators/ListEditor";
 import { ReferenceUseCase, ReferenceSystem, UseCaseDiagramReferenceSolution } from "../../../../Utils/UseCaseDiagram/MatcherTypes";
+import { uuid } from '../../../../../utils/uuid';
 
 export function UseCaseForm(props: { reference: UseCaseDiagramReferenceSolution | undefined, addUseCase: (useCases: ReferenceUseCase[]) => void }) {
     const [currentUseCase, setCurrentUseCase] = useState<ReferenceUseCase | undefined>(undefined)
@@ -18,7 +19,8 @@ export function UseCaseForm(props: { reference: UseCaseDiagramReferenceSolution 
         if (props.reference) {
             setUseCases(props.reference.useCases)
             setSystems(props.reference.systems)
-            setOwner(props.reference.systems.length > 0 ? props.reference.systems[0].name : "")
+            let firstInternal = props.reference.systems.find((s) => !s.isExternal)
+            setOwner(firstInternal ? firstInternal.elementId : "")
         } else {
             setUseCases([])
             setSystems([])
@@ -52,6 +54,7 @@ export function UseCaseForm(props: { reference: UseCaseDiagramReferenceSolution 
                 return
             }
             let newUC: ReferenceUseCase = new ReferenceUseCase()
+            newUC.elementId = uuid()
             newUC.name = name.trim()
             newUC.message = message.trim()
             newUC.synonyms = synonyms
@@ -99,7 +102,7 @@ export function UseCaseForm(props: { reference: UseCaseDiagramReferenceSolution 
                     <Fieldset legend="Current Use Case" style={{ width: "100%" }}>
                         <TextInput label="Name" placeholder="Use case name" value={name} onChange={(event) => setName(event.currentTarget.value)} error={nameError} required />
                         <Textarea label="Message" placeholder="Custom feedback message" value={message} onChange={(event) => setMessage(event.currentTarget.value)} minRows={3} mt="md" />
-                        <NativeSelect label="Owner System" data={systems.filter((s) => !s.isExternal).map((s) => s.name)} value={owner} onChange={(event) => setOwner(event.currentTarget.value)} mt="md" />
+                        <NativeSelect label="Owner System" data={systems.filter((s) => !s.isExternal).map((s) => s.name)} value={owner} onChange={(event) => setOwner(props.reference?.systems.find((s) => s.name === event.currentTarget.value)?.elementId ?? "")} mt="md" />
                         <ListEditor mode="synonyms" list={synonyms} onListChange={setSynonyms} onSave={() => { }} />
                         <Group justify="center" p="md">
                             {currentUseCase && <Button variant="light" color="gray" onClick={() => setCurrentUseCase(undefined)} rightSection={<IconArrowBackUp size={16} stroke={1.5} />} mt="sm">

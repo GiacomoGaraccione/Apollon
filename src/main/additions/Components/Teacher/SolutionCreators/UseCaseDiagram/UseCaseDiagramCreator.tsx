@@ -20,29 +20,67 @@ export function UseCaseDiagramReferenceFormModal(props: {
 }) {
 
     const addActor = (actors: ReferenceActor[]) => {
-        if (!props.currentReference) {
-            let ref = new UseCaseDiagramReferenceSolution()
-            ref.actors = actors
-            props.setCurrentReference(ref)
-        } else {
-            let ref = { ...props.currentReference, actors: actors }
-            props.setCurrentReference(ref)
+        const prev = props.currentReference ?? new UseCaseDiagramReferenceSolution()
+        const prevActors = prev.actors ?? []
+        const removedIds = prevActors.filter(p => !actors.some(a => a.elementId === p.elementId)).map(r => r.elementId)
+
+        // build new reference and remove any associations involving removed actor ids
+        let ref = { ...prev, actors: actors }
+
+        if (removedIds.length > 0) {
+            const idSet = new Set(removedIds)
+            ref = { ...ref, actorUseCaseAssociations: (prev.actorUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, actorAssociations: (prev.actorAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenActorAssociations: (prev.forbiddenActorAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenActorUseCaseAssociations: (prev.forbiddenActorUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
         }
+        props.setCurrentReference(ref)
     }
 
     const addSystem = (systems: ReferenceSystem[]) => {
-        if (!props.currentReference) {
-            let ref = new UseCaseDiagramReferenceSolution()
-            ref.systems = systems
-            props.setCurrentReference(ref)
+        const prev = props.currentReference ?? new UseCaseDiagramReferenceSolution()
+        const prevSystems = prev.systems ?? []
+        const removedIds = prevSystems.filter(p => !systems.some(s => s.elementId === p.elementId)).map(r => r.elementId)
+
+        let ref = { ...prev, systems: systems }
+        if (removedIds.length > 0) {
+            const idSet = new Set(removedIds)
+            // remove any associations that reference removed systems (systems may act as actors if external)
+            ref = { ...ref, actorUseCaseAssociations: (prev.actorUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, actorAssociations: (prev.actorAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, useCaseAssociations: (prev.useCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenActorUseCaseAssociations: (prev.forbiddenActorUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenActorAssociations: (prev.forbiddenActorAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenUseCaseAssociations: (prev.forbiddenUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
         } else {
-            let ref = { ...props.currentReference, systems: systems }
-            props.setCurrentReference(ref)
+            ref.actorUseCaseAssociations = prev.actorUseCaseAssociations
+            ref.actorAssociations = prev.actorAssociations
+            ref.useCaseAssociations = prev.useCaseAssociations
+            ref.forbiddenActorUseCaseAssociations = prev.forbiddenActorUseCaseAssociations
+            ref.forbiddenActorAssociations = prev.forbiddenActorAssociations
+            ref.forbiddenUseCaseAssociations = prev.forbiddenUseCaseAssociations
         }
+        props.setCurrentReference(ref)
     }
 
     const addUseCase = (useCases: ReferenceUseCase[]) => {
-        const ref = { ...props.currentReference!, useCases: useCases }
+        const prev = props.currentReference ?? new UseCaseDiagramReferenceSolution()
+        const prevUseCases = prev.useCases ?? []
+        const removedIds = prevUseCases.filter(p => !useCases.some(u => u.elementId === p.elementId)).map(r => r.elementId)
+
+        let ref = { ...prev, useCases: useCases }
+        if (removedIds.length > 0) {
+            const idSet = new Set(removedIds)
+            ref = { ...ref, actorUseCaseAssociations: (prev.actorUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, useCaseAssociations: (prev.useCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenActorUseCaseAssociations: (prev.forbiddenActorUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+            ref = { ...ref, forbiddenUseCaseAssociations: (prev.forbiddenUseCaseAssociations || []).filter(a => !idSet.has(a.sourceId) && !idSet.has(a.targetId)) }
+        } else {
+            ref.actorUseCaseAssociations = prev.actorUseCaseAssociations
+            ref.useCaseAssociations = prev.useCaseAssociations
+            ref.forbiddenActorUseCaseAssociations = prev.forbiddenActorUseCaseAssociations
+            ref.forbiddenUseCaseAssociations = prev.forbiddenUseCaseAssociations
+        }
         props.setCurrentReference(ref)
     }
 

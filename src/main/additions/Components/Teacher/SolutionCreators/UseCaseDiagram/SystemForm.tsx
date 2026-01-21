@@ -3,6 +3,7 @@ import { Alert, Button, Card, Flex, Text, Fieldset, Grid, TextInput, Textarea, G
 import { IconArrowBackUp, IconExclamationCircle, IconSquareRoundedPlusFilled, IconTrash } from "@tabler/icons-react";
 import { ListEditor } from "../../../Teacher/SolutionCreators/ListEditor";
 import { ReferenceSystem, UseCaseDiagramReferenceSolution } from "../../../../Utils/UseCaseDiagram/MatcherTypes";
+import { uuid } from '../../../../../utils/uuid';
 
 export function SystemForm(props: { reference: UseCaseDiagramReferenceSolution | undefined, addSystem: (systems: ReferenceSystem[]) => void }) {
     const [currentSystem, setCurrentSystem] = useState<ReferenceSystem | undefined>(undefined)
@@ -51,6 +52,7 @@ export function SystemForm(props: { reference: UseCaseDiagramReferenceSolution |
                 return
             }
             let newSystem: ReferenceSystem = new ReferenceSystem()
+            newSystem.elementId = uuid()
             newSystem.name = name.trim()
             newSystem.message = message.trim()
             newSystem.isExternal = isExternal

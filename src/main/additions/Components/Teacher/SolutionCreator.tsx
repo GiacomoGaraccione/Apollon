@@ -15,6 +15,7 @@ import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 import { ClassDiagramReferenceFormModal } from "./SolutionCreators/ClassDiagram/ClassDiagramCreator";
 import { ReferenceActor, ReferenceSystem, ReferenceUseCase, UseCaseDiagramReferenceBuilder, UseCaseDiagramReferenceSolution } from "../../Utils/UseCaseDiagram/MatcherTypes";
 import { UseCaseDiagramReferenceFormModal } from "./SolutionCreators/UseCaseDiagram/UseCaseDiagramCreator";
+import UseCaseDiagramStructureBuilderFromReference from "../../Utils/UseCaseDiagram/StructureBuilder";
 
 const options = {
     colorEnabled: false,
@@ -105,6 +106,17 @@ function SolutionCreator() {
                 }
             } else if (exercise.exType === "UseCaseDiagram" && currentUCReference) {
                 console.log(currentUCReference)
+                builder = new UseCaseDiagramStructureBuilderFromReference(currentUCReference)
+                let model = builder.createUMLStructure()
+                console.log(model)
+                if (previewRef.current) {
+                    let ed = new ApollonEditor(previewRef.current, { ...options, type: "UseCaseDiagram", readonly: false })
+                    ed.nextRender.then(() => {
+                        ed.model = model as UMLModel
+                        setEditor(ed)
+                        ed.nextRender.then(() => { })
+                    })
+                }
             }
         }
     }

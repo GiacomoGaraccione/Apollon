@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Button, Card, Flex, Text, Fieldset, Grid, TextInput, Textarea, Group, NativeSelect, Tabs, Checkbox } from "@mantine/core";
 import { IconArrowBackUp, IconExclamationCircle, IconSquareRoundedPlusFilled, IconTrash } from "@tabler/icons-react";
 import { ReferenceUseCase, ReferenceSystem, UseCaseDiagramReferenceSolution, ReferenceActorAssociation, ReferenceActorUseCaseAssociation, ReferenceUseCaseAssociation, ReferenceActor } from "../../../../../Utils/UseCaseDiagram/MatcherTypes";
+import { uuid } from '../../../../../../utils/uuid';
 
 export function ActorUseCaseAssociationForm(props: {
     actors: ReferenceActor[],
@@ -22,28 +23,53 @@ export function ActorUseCaseAssociationForm(props: {
 
     useEffect(() => {
         if (props.associations) {
-            setRels(props.associations)
+            // normalize associations to use elementId for source/target when possible
+            const normalized = props.associations.map(a => {
+                const copy: any = { ...a }
+                // source may be actor name or elementId, or system name/elementId
+                const actorByName = props.actors.find(x => x.name === a.sourceId)
+                const actorById = props.actors.find(x => x.elementId === a.sourceId)
+                const sysByName = props.systems.find(x => x.name === a.sourceId)
+                const sysById = props.systems.find(x => x.elementId === a.sourceId)
+                if (actorById) copy.sourceId = actorById.elementId
+                else if (actorByName) copy.sourceId = actorByName.elementId
+                else if (sysById) copy.sourceId = sysById.elementId
+                else if (sysByName) copy.sourceId = sysByName.elementId
+
+                // target should be use case
+                const ucByName = props.useCases.find(x => x.name === a.targetId)
+                const ucById = props.useCases.find(x => x.elementId === a.targetId)
+                if (ucById) copy.targetId = ucById.elementId
+                else if (ucByName) copy.targetId = ucByName.elementId
+
+                return copy as ReferenceActorUseCaseAssociation
+            })
+            setRels(normalized)
             setActors(props.actors)
             setUseCases(props.useCases)
             setSystems(props.systems)
-            setSourceId(props.actors.length > 0 ? props.actors[0].name : "")
+            setSourceId(props.actors.length > 0 ? props.actors[0].name : (props.systems.length > 0 ? props.systems[0].name : ""))
             setTargetId(props.useCases.length > 0 ? props.useCases[0].name : "")
         }
     }, [props.associations, props.actors, props.useCases])
 
     useEffect(() => {
         if (currentRel) {
-            setSourceId(currentRel.sourceId)
-            setTargetId(currentRel.targetId)
+            const srcActor = props.actors.find(a => a.elementId === currentRel.sourceId)
+            const srcSystem = props.systems.find(s => s.elementId === currentRel.sourceId)
+            const src = srcActor || srcSystem
+            setSourceId(src ? src.name : currentRel.sourceId)
+            const tgtUc = props.useCases.find((uc) => uc.elementId === currentRel.targetId)
+            setTargetId(tgtUc ? tgtUc.name : currentRel.targetId)
             setMessage(currentRel.message)
-            setIsSupportingActor(currentRel.isSupportingActor)
+            setIsSupportingActor(!!currentRel.isSupportingActor)
         } else {
             resetForm()
         }
     }, [currentRel])
 
     const resetForm = () => {
-        setSourceId(props.actors.length > 0 ? props.actors[0].name : "")
+        setSourceId(props.actors.length > 0 ? props.actors[0].name : (props.systems.length > 0 ? props.systems[0].name : ""))
         setTargetId(props.useCases.length > 0 ? props.useCases[0].name : "")
         setMessage("")
         setIsSupportingActor(false)
@@ -53,8 +79,20 @@ export function ActorUseCaseAssociationForm(props: {
     const handleSubmit = () => {
         if (!currentRel) {
             let newRel: ReferenceActorUseCaseAssociation = new ReferenceActorUseCaseAssociation()
-            newRel.sourceId = sourceId
-            newRel.targetId = targetId
+                ; (newRel as any).elementId = uuid()
+            const foundActorByName = props.actors.find(a => a.name === sourceId)
+            const foundActorById = props.actors.find(a => a.elementId === sourceId)
+            const foundSysByName = props.systems.find(s => s.name === sourceId)
+            const foundSysById = props.systems.find(s => s.elementId === sourceId)
+            if (foundActorByName) newRel.sourceId = foundActorByName.elementId
+            else if (foundActorById) newRel.sourceId = foundActorById.elementId
+            else if (foundSysByName) newRel.sourceId = foundSysByName.elementId
+            else if (foundSysById) newRel.sourceId = foundSysById.elementId
+            else newRel.sourceId = sourceId
+
+            const foundUcByName = props.useCases.find(uc => uc.name === targetId)
+            const foundUcById = props.useCases.find(uc => uc.elementId === targetId)
+            newRel.targetId = foundUcById ? foundUcById.elementId : (foundUcByName ? foundUcByName.elementId : targetId)
             newRel.message = message.trim()
             newRel.isSupportingActor = isSupportingActor
             const updatedRels = [...rels, newRel]
@@ -62,14 +100,30 @@ export function ActorUseCaseAssociationForm(props: {
             props.setAssociations(updatedRels)
             resetForm()
         } else {
-            let rel = rels.find(r => r.sourceId === currentRel.sourceId && r.targetId === currentRel.targetId)!
-            rel.sourceId = sourceId
-            rel.targetId = targetId
-            rel.message = message.trim()
-            rel.isSupportingActor = isSupportingActor
-            const updatedRels = rels.map(r => (r.sourceId === rel.sourceId && r.targetId === rel.targetId) ? rel : r)
-            setRels(updatedRels)
-            props.setAssociations(updatedRels)
+            let relIndex = rels.findIndex(r => r.sourceId === currentRel.sourceId && r.targetId === currentRel.targetId)
+            if (relIndex >= 0) {
+                const rel = { ...rels[relIndex] } as any
+                const foundActorByName = props.actors.find(a => a.name === sourceId)
+                const foundActorById = props.actors.find(a => a.elementId === sourceId)
+                const foundSysByName = props.systems.find(s => s.name === sourceId)
+                const foundSysById = props.systems.find(s => s.elementId === sourceId)
+                if (foundActorByName) rel.sourceId = foundActorByName.elementId
+                else if (foundActorById) rel.sourceId = foundActorById.elementId
+                else if (foundSysByName) rel.sourceId = foundSysByName.elementId
+                else if (foundSysById) rel.sourceId = foundSysById.elementId
+                else rel.sourceId = sourceId
+
+                const foundUcByName = props.useCases.find(uc => uc.name === targetId)
+                const foundUcById = props.useCases.find(uc => uc.elementId === targetId)
+                rel.targetId = foundUcById ? foundUcById.elementId : (foundUcByName ? foundUcByName.elementId : targetId)
+
+                rel.message = message.trim()
+                rel.isSupportingActor = isSupportingActor
+                const updatedRels = rels.slice()
+                updatedRels[relIndex] = rel
+                setRels(updatedRels)
+                props.setAssociations(updatedRels)
+            }
             resetForm()
         }
     }
@@ -120,7 +174,7 @@ export function ActorUseCaseAssociationForm(props: {
                                                 width: 'fit-content', margin: 'auto', cursor: "pointer",
                                                 border: currentRel === a ? '5px solid cyan' : undefined
                                             }}>
-                                            <Text>{a.sourceId} → {a.targetId}</Text>
+                                            <Text>{(props.actors.find((act) => act.elementId === a.sourceId) ? props.actors.find((act) => act.elementId === a.sourceId)!.name : (props.systems.find((sys) => sys.elementId === a.sourceId) ? props.systems.find((sys) => sys.elementId === a.sourceId)!.name : a.sourceId))} → {(props.useCases.find((uc) => uc.elementId === a.targetId) ? props.useCases.find((uc) => uc.elementId === a.targetId)!.name : a.targetId)}</Text>
                                         </Card>
                                     )
                                 })}

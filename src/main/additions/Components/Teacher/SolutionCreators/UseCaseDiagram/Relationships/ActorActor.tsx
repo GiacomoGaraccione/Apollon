@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Button, Card, Flex, Text, Fieldset, Grid, TextInput, Textarea, Group, NativeSelect, Tabs, Checkbox } from "@mantine/core";
 import { IconArrowBackUp, IconExclamationCircle, IconSquareRoundedPlusFilled, IconTrash } from "@tabler/icons-react";
 import { ReferenceUseCase, ReferenceSystem, UseCaseDiagramReferenceSolution, ReferenceActorAssociation, ReferenceActorUseCaseAssociation, ReferenceUseCaseAssociation, ReferenceActor } from "../../../../../Utils/UseCaseDiagram/MatcherTypes";
+import { uuid } from '../../../../../../utils/uuid';
 
 export function ActorActorAssociationForm(props: {
     actors: ReferenceActor[],
@@ -17,7 +18,21 @@ export function ActorActorAssociationForm(props: {
 
     useEffect(() => {
         if (props.associations) {
-            setRels(props.associations)
+            const normalized = props.associations.map(a => {
+                const copy: any = { ...a }
+                const byNameSrc = props.actors.find(x => x.name === a.sourceId)
+                const byIdSrc = props.actors.find(x => x.elementId === a.sourceId)
+                if (byIdSrc) copy.sourceId = byIdSrc.elementId
+                else if (byNameSrc) copy.sourceId = byNameSrc.elementId
+
+                const byNameTgt = props.actors.find(x => x.name === a.targetId)
+                const byIdTgt = props.actors.find(x => x.elementId === a.targetId)
+                if (byIdTgt) copy.targetId = byIdTgt.elementId
+                else if (byNameTgt) copy.targetId = byNameTgt.elementId
+
+                return copy as ReferenceActorAssociation
+            })
+            setRels(normalized)
             setActors(props.actors)
             setSourceId(props.actors.length > 0 ? props.actors[0].name : "")
             setTargetId(props.actors.length > 0 ? props.actors[0].name : "")
@@ -26,8 +41,10 @@ export function ActorActorAssociationForm(props: {
 
     useEffect(() => {
         if (currentRel) {
-            setSourceId(currentRel.sourceId)
-            setTargetId(currentRel.targetId)
+            const src = props.actors.find(a => a.elementId === currentRel.sourceId)
+            const tgt = props.actors.find(a => a.elementId === currentRel.targetId)
+            setSourceId(src ? src.name : currentRel.sourceId)
+            setTargetId(tgt ? tgt.name : currentRel.targetId)
             setMessage(currentRel.message)
         } else {
             resetForm()
@@ -43,22 +60,38 @@ export function ActorActorAssociationForm(props: {
 
     const handleSubmit = () => {
         if (!currentRel) {
-            let newRel: ReferenceActorUseCaseAssociation = new ReferenceActorUseCaseAssociation()
-            newRel.sourceId = sourceId
-            newRel.targetId = targetId
+            let newRel: ReferenceActorAssociation = new ReferenceActorAssociation()
+                ; (newRel as any).elementId = uuid()
+            const foundSrcByName = props.actors.find(a => a.name === sourceId)
+            const foundSrcById = props.actors.find(a => a.elementId === sourceId)
+            newRel.sourceId = foundSrcById ? foundSrcById.elementId : (foundSrcByName ? foundSrcByName.elementId : sourceId)
+
+            const foundTgtByName = props.actors.find(a => a.name === targetId)
+            const foundTgtById = props.actors.find(a => a.elementId === targetId)
+            newRel.targetId = foundTgtById ? foundTgtById.elementId : (foundTgtByName ? foundTgtByName.elementId : targetId)
             newRel.message = message.trim()
             const updatedRels = [...rels, newRel]
             setRels(updatedRels)
             props.addActorAssociations(updatedRels)
             resetForm()
         } else {
-            let rel = rels.find(r => r.sourceId === currentRel.sourceId && r.targetId === currentRel.targetId)!
-            rel.sourceId = sourceId
-            rel.targetId = targetId
-            rel.message = message.trim()
-            const updatedRels = rels.map(r => (r.sourceId === rel.sourceId && r.targetId === rel.targetId) ? rel : r)
-            setRels(updatedRels)
-            props.addActorAssociations(updatedRels)
+            const relIndex = rels.findIndex(r => r.sourceId === currentRel.sourceId && r.targetId === currentRel.targetId)
+            if (relIndex >= 0) {
+                const rel = { ...rels[relIndex] } as any
+                const foundSrcByName = props.actors.find(a => a.name === sourceId)
+                const foundSrcById = props.actors.find(a => a.elementId === sourceId)
+                rel.sourceId = foundSrcById ? foundSrcById.elementId : (foundSrcByName ? foundSrcByName.elementId : sourceId)
+
+                const foundTgtByName = props.actors.find(a => a.name === targetId)
+                const foundTgtById = props.actors.find(a => a.elementId === targetId)
+                rel.targetId = foundTgtById ? foundTgtById.elementId : (foundTgtByName ? foundTgtByName.elementId : targetId)
+
+                rel.message = message.trim()
+                const updatedRels = rels.slice()
+                updatedRels[relIndex] = rel
+                setRels(updatedRels)
+                props.addActorAssociations(updatedRels)
+            }
             resetForm()
         }
     }
@@ -108,7 +141,7 @@ export function ActorActorAssociationForm(props: {
                                                 width: 'fit-content', margin: 'auto', cursor: "pointer",
                                                 border: currentRel === a ? '5px solid cyan' : undefined
                                             }}>
-                                            <Text>{a.sourceId} <i>extends</i> {a.targetId}</Text>
+                                            <Text>{(props.actors.find(actor => actor.elementId === a.sourceId) ? props.actors.find(actor => actor.elementId === a.sourceId)!.name : a.sourceId)} <i>extends</i> {(props.actors.find(actor => actor.elementId === a.targetId) ? props.actors.find(actor => actor.elementId === a.targetId)!.name : a.targetId)}</Text>
                                         </Card>
                                     )
                                 })}

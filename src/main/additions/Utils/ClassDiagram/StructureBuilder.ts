@@ -160,8 +160,6 @@ class UMLRegionMap {
     }
 }
 
-
-
 class ClassDiagramStructureBuilderFromReference {
     reference: ClassDiagramReferenceSolution
     associationInfo: AssociationInfo[]

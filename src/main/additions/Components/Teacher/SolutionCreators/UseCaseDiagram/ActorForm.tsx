@@ -3,6 +3,7 @@ import { Alert, Button, Card, Flex, Text, Fieldset, Grid, TextInput, Textarea, G
 import { IconArrowBackUp, IconExclamationCircle, IconSquareRoundedPlusFilled, IconTrash } from "@tabler/icons-react";
 import { ListEditor } from "../../../Teacher/SolutionCreators/ListEditor";
 import { ReferenceActor, UseCaseDiagramReferenceSolution } from "../../../../Utils/UseCaseDiagram/MatcherTypes";
+import { uuid } from '../../../../../utils/uuid';
 
 export function ActorForm(props: { reference: UseCaseDiagramReferenceSolution | undefined, addActor: (actors: ReferenceActor[]) => void }) {
     const [currentActor, setCurrentActor] = useState<ReferenceActor | undefined>(undefined)
@@ -48,6 +49,7 @@ export function ActorForm(props: { reference: UseCaseDiagramReferenceSolution | 
                 return
             }
             let newActor: ReferenceActor = new ReferenceActor()
+            newActor.elementId = uuid()
             newActor.name = name.trim()
             newActor.message = message.trim()
             newActor.synonyms = synonyms

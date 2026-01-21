@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Button, Card, Flex, Text, Fieldset, Grid, Group, NativeSelect, Checkbox } from "@mantine/core";
 import { IconArrowBackUp, IconExclamationCircle, IconSquareRoundedPlusFilled, IconTrash } from "@tabler/icons-react";
 import { ReferenceUseCase, ReferenceUseCaseAssociation } from "../../../../../Utils/UseCaseDiagram/MatcherTypes";
+import { uuid } from '../../../../../../utils/uuid';
 
 export function ForbiddenUseCaseUseCaseAssociationForm(props: {
     useCases: ReferenceUseCase[],
@@ -48,6 +49,7 @@ export function ForbiddenUseCaseUseCaseAssociationForm(props: {
     const handleSubmit = () => {
         if (!currentRel) {
             let newRel: ReferenceUseCaseAssociation = new ReferenceUseCaseAssociation()
+                ; (newRel as any).elementId = uuid()
             newRel.sourceId = sourceId
             newRel.targetId = targetId
             newRel.message = message.trim()
