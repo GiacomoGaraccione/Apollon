@@ -27,6 +27,15 @@ export function ListEditor(props: { onSave: () => void, mode: string, list: stri
             case "forbiddenClasses":
                 setLegend("Forbidden Classes")
                 break;
+            case "forbiddenActors":
+                setLegend("Forbidden Actors")
+                break;
+            case "forbiddenUseCases":
+                setLegend("Forbidden Use Cases")
+                break;
+            case "forbiddenSystems":
+                setLegend("Forbidden Systems")
+                break;
             default:
                 setLegend("Attributes")
                 break;

@@ -134,57 +134,62 @@ function ExercisePage() {
 
     const handleFeedback = (res: any, afterCheck: boolean, exType: UMLDiagramType) => {
         try {
-            let r = new ClassDiagramEvaluationResults()
-            let data = afterCheck ? res : res.data
-            console.log(data, afterCheck)
-            if (afterCheck) {
-                r.oldXP = results.newXP
-                r.newXP = data.experience
-                r.oldProgress = results.newProgress
-                r.newProgress = data.correctness
-                r.oldSyntaxErrors = results.newSyntaxErrors
-                r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
-                r.oldSemanticErrors = results.newSemanticErrors
-                r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
-                r.results = JSON.parse(data.results || "{}")
-                handleMoodChange(r)
-                setCompleted(data.correctness >= 75)
-            } else {
-                r.oldXP = data.experience
-                r.newXP = data.experience
-                r.oldProgress = data.correctness
-                r.newProgress = data.correctness
-                r.oldSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
-                r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
-                r.oldSemanticErrors = JSON.parse(data.semantic_errors || "[]")
-                r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
-                r.results = JSON.parse(data.results || "{}")
+            let r = undefined
+            if (exType === UMLDiagramType.ClassDiagram) {
+                r = new ClassDiagramEvaluationResults()
             }
-            setResults(r)
-            console.log(res)
-            //console.log(r.newSyntaxErrors)
-            //console.log(r.newSemanticErrors)
-            if (exercise && exercise.exType === "ClassDiagram") setResults(r)
-            let model = JSON.parse(data.model)
-            console.log(model)
-            model = resetColorsClassDiagram(model)
-            switch (exType) {
-                case UMLDiagramType.UseCaseDiagram:
-                    console.log("Use Case Diagram coloring not implemented yet");
-                    break;
-                case UMLDiagramType.DeploymentDiagram:
-                    console.log("Deployment Diagram coloring not implemented yet");
-                    break;
-                case UMLDiagramType.ClassDiagram:
-                    model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
-                    break;
-                default:
-                    break;
-            }
-            let cont = document.getElementById("apollon");
-            if (cont) {
-                let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : res.exerciseType, model: model });
-                setEditor(ed);
+            if (r) {
+                let data = afterCheck ? res : res.data
+                console.log(data, afterCheck)
+                if (afterCheck) {
+                    r.oldXP = results.newXP
+                    r.newXP = data.experience
+                    r.oldProgress = results.newProgress
+                    r.newProgress = data.correctness
+                    r.oldSyntaxErrors = results.newSyntaxErrors
+                    r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                    r.oldSemanticErrors = results.newSemanticErrors
+                    r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                    r.results = JSON.parse(data.results || "{}")
+                    handleMoodChange(r)
+                    setCompleted(data.correctness >= 75)
+                } else {
+                    r.oldXP = data.experience
+                    r.newXP = data.experience
+                    r.oldProgress = data.correctness
+                    r.newProgress = data.correctness
+                    r.oldSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                    r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                    r.oldSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                    r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                    r.results = JSON.parse(data.results || "{}")
+                }
+                setResults(r)
+                console.log(res)
+                //console.log(r.newSyntaxErrors)
+                //console.log(r.newSemanticErrors)
+                if (exercise && exercise.exType === "ClassDiagram") setResults(r)
+                let model = JSON.parse(data.model)
+                console.log(model)
+                model = resetColorsClassDiagram(model)
+                switch (exType) {
+                    case UMLDiagramType.UseCaseDiagram:
+                        console.log("Use Case Diagram coloring not implemented yet");
+                        break;
+                    case UMLDiagramType.DeploymentDiagram:
+                        console.log("Deployment Diagram coloring not implemented yet");
+                        break;
+                    case UMLDiagramType.ClassDiagram:
+                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                        break;
+                    default:
+                        break;
+                }
+                let cont = document.getElementById("apollon");
+                if (cont) {
+                    let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : res.exerciseType, model: model });
+                    setEditor(ed);
+                }
             }
         } catch (error) {
             console.error("Error handling feedback:", error);

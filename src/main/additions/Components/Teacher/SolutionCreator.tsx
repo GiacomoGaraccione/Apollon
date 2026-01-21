@@ -13,6 +13,8 @@ import { ReferenceAssociation, ClassDiagramReferenceBuilder, ReferenceClass, Cla
 import { ClassDiagramStructureBuilderFromReference } from "../../Utils/ClassDiagram/StructureBuilder";
 import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 import { ClassDiagramReferenceFormModal } from "./SolutionCreators/ClassDiagram/ClassDiagramCreator";
+import { ReferenceActor, ReferenceSystem, ReferenceUseCase, UseCaseDiagramReferenceBuilder, UseCaseDiagramReferenceSolution } from "../../Utils/UseCaseDiagram/MatcherTypes";
+import { UseCaseDiagramReferenceFormModal } from "./SolutionCreators/UseCaseDiagram/UseCaseDiagramCreator";
 
 const options = {
     colorEnabled: false,
@@ -28,6 +30,7 @@ function SolutionCreator() {
     const [openDelete, setOpenDelete] = useState(false)
     const [currentSolution, setCurrentSolution] = useState<Solution | undefined>(undefined)
     const [currentReference, setCurrentReference] = useState<ClassDiagramReferenceSolution | undefined>(undefined)
+    const [currentUCReference, setCurrentUCReference] = useState<UseCaseDiagramReferenceSolution | undefined>(new UseCaseDiagramReferenceSolution())
     const [successUpload, setSuccessUpload] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [openedModel, { open: openModel, close: closeModel }] = useDisclosure(false)
@@ -63,13 +66,15 @@ function SolutionCreator() {
                     editor.destroy?.()
                     setEditor(undefined)
                 }
-                if (apollonRef.current) {
-                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: "ClassDiagram" })
-                    await ed.nextRender
-                    if (currentSolution?.model) {
-                        ed.model = currentSolution.model as UMLModel
+                if (exercise) {
+                    if (apollonRef.current) {
+                        let ed = new ApollonEditor(apollonRef.current, { ...options, type: exercise.exType as any })
+                        await ed.nextRender
+                        if (currentSolution?.model) {
+                            ed.model = currentSolution.model as UMLModel
+                        }
+                        setEditor(ed)
                     }
-                    setEditor(ed)
                 }
             }, 350)
 
@@ -85,9 +90,9 @@ function SolutionCreator() {
     }, [currentSolution])
 
     const confirmPreview = () => {
-        if (currentReference && exercise) {
+        if (exercise) {
             let builder
-            if (exercise.exType === "ClassDiagram") {
+            if (exercise.exType === "ClassDiagram" && currentReference) {
                 builder = new ClassDiagramStructureBuilderFromReference(currentReference)
                 let model = builder.createUMLStructure()
                 if (previewRef.current) {
@@ -98,6 +103,8 @@ function SolutionCreator() {
                         ed.nextRender.then(() => { })
                     })
                 }
+            } else if (exercise.exType === "UseCaseDiagram" && currentUCReference) {
+                console.log(currentUCReference)
             }
         }
     }
@@ -136,6 +143,17 @@ function SolutionCreator() {
                         API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
                     } else {
                         API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+                    }
+                }
+            } else {
+                builder = new UseCaseDiagramReferenceBuilder(editor.model as UMLModel)
+                let ref = builder.buildReference()
+                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+                if (courseId && exerciseId) {
+                    if (currentSolution) {
+                        //API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
+                    } else {
+                        //API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
                     }
                 }
             }
@@ -396,6 +414,9 @@ function SolutionCreator() {
             {exercise && exercise.exType === "ClassDiagram" && <ClassDiagramReferenceFormModal openedReference={openedReference} closeReference={closeReference} setPreview={setPreview} preview={preview} currentReference={currentReference!} addClass={addClass} addAssociation={addAssociation}
                 addForbiddenClasses={addForbiddenClasses} addForbiddenAssociations={addForbiddenAssociations} saveReference={saveReference} previewRef={previewRef}
             />}
+
+            {exercise && exercise.exType === "UseCaseDiagram" && <UseCaseDiagramReferenceFormModal openedReference={openedReference} closeReference={closeReference} setPreview={setPreview} preview={preview} currentReference={currentUCReference!}
+                saveReference={saveReference} previewRef={previewRef} setCurrentReference={setCurrentUCReference} />}
 
             <Modal opened={openedModel} onClose={() => {
                 if (editor) {

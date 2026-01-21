@@ -276,8 +276,6 @@ class ClassDiagramStructureBuilderFromReference {
         }
     }
 
-
-
     findSingleClasses(associations: ReferenceAssociation[]) {
         Object.keys(this.model.elements).forEach((elementId) => {
             let cl = this.model.elements[elementId] as UMLCustomClass

@@ -4,6 +4,7 @@ import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
 import { ClassDiagramErrorExample } from "./Utils/ClassDiagram/EvaluationTypes"
 import { Course, Exercise, Boss, Solution } from "./Utils/Models"
 import { ClassDiagramReferenceSolution } from "./Utils/ClassDiagram/MatcherTypes"
+import { UseCaseDiagramReferenceSolution } from "./Utils/UseCaseDiagram/MatcherTypes"
 
 let baseURL = "http://localhost:5000"
 
@@ -544,7 +545,7 @@ async function createBoss(courseId: string, exerciseId: string, introDialogue: s
     }
 }
 
-async function addSolution(courseId: string, exerciseId: string, reference: ClassDiagramReferenceSolution, model: UMLModel, image: any) {
+async function addSolution(courseId: string, exerciseId: string, reference: ClassDiagramReferenceSolution | UseCaseDiagramReferenceSolution, model: UMLModel, image: any) {
     let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/solutions", {
         method: "POST",
         credentials: "include",
