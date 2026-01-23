@@ -21,7 +21,6 @@ function StudentCourses() {
             setCourseLoad(true)
             Promise.all(user.courses.map((course: string) => API.getCourseInfo(course)))
                 .then(results => {
-                    console.log(results)
                     setCourses(results)
                 })
                 .catch(err => {

@@ -51,7 +51,6 @@ function EnrollmentView() {
                     API.getNonEnrolledStudents(courseId).then((st) => {
                         setNonEnrolledStudents(st)
                         setLoading(false)
-                        console.log(res)
                         if (res.enrolled.length > 0) {
                             setTimeout(() => {
                                 setSuccessNotif(false)

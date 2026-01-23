@@ -318,7 +318,6 @@ class ClassDiagramStructureBuilderFromReference {
         newAssoc.id = "assoc_" + class1 + "_" + class2
         newAssoc.name = name
         newAssoc.owner = null
-        console.log(newAssoc.id, type)
         let newType = type === "Inheritance" ? "ClassInheritance" : type === "Aggregation" ? "ClassAggregation" : type === "Composition" ? "ClassComposition" : "ClassBidirectional"
         newAssoc.type = newType as UMLRelationshipType
         newAssoc.isManuallyLayouted = false
@@ -387,7 +386,6 @@ class ClassDiagramStructureBuilderFromReference {
             this.associationInfo.sort((a, b) => b.count - a.count)
             this.createPositions()
             this.reference.associations.forEach((assoc: ReferenceAssociation) => {
-                console.log(assoc)
                 this.addUMLAssociations(assoc.source.referenceClass.name, assoc.target.referenceClass.name, assoc.name, assoc.source.multiplicities[0], assoc.target.multiplicities[0], assoc.type)
             })
         } catch (error) {

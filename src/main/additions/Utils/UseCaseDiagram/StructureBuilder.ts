@@ -146,7 +146,6 @@ export class UseCaseDiagramStructureBuilderFromReference {
             const height = Math.max(minSystemH, rows * cellH + (rows + 1) * systemPadding)
             systemLayouts.push({ ownerId, width, height, useCases: ucs })
         })
-        console.log(systemLayouts)
 
         // Add placeholder for global use cases if any
         if (hasGlobalUseCases) {

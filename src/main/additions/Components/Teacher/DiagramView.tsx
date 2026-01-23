@@ -10,7 +10,7 @@ import { useDisclosure } from "@mantine/hooks";
 import "csshake/dist/csshake.css"
 import 'svg2pdf.js'
 import JSZip from 'jszip'
-import { MatchingElementsList, SemanticErrorsList, SyntaxErrorsList } from "../Common/FeedbackLists";
+import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList } from "../Common/FeedbackLists";
 import { saveAs } from "file-saver"
 import * as XLSX from 'xlsx'
 
@@ -40,7 +40,6 @@ function DiagramView() {
                     setExercise(course.exercises.find((e) => e.exerciseId === exerciseId) || null)
                     API.getStudentDiagrams(courseId, exerciseId).then((d) => {
                         setLoad(false)
-                        console.log(d)
                         setDiagrams(d)
                     })
                 }
@@ -241,14 +240,14 @@ function DiagramView() {
                         </Grid.Col>
                         <Grid.Col span={3}>
                             <Center>
-                                <SyntaxErrorsList syntaxErrors={currentDiagram.syntax_errors} />
+                                <ClassDiagramSyntaxErrorsList syntaxErrors={currentDiagram.syntax_errors} />
                             </Center>
                         </Grid.Col>
                         <Grid.Col span={3}>
-                            <SemanticErrorsList semanticErrors={currentDiagram.semantic_errors} />
+                            <ClassDiagramSemanticErrorsList semanticErrors={currentDiagram.semantic_errors} />
                         </Grid.Col>
                         <Grid.Col span={3}>
-                            <MatchingElementsList results={currentDiagram.results} />
+                            <ClassDiagramMatchingElementsList results={currentDiagram.results} />
                         </Grid.Col>
                     </Grid>}
                     <div ref={apollonRef} id="apollon" className="canv" style={{ width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>

@@ -18,8 +18,12 @@ import 'svg2pdf.js'
 import jsPDF from "jspdf";
 import { Canvg } from "canvg";
 import Leaderboard from "./Leaderboard";
-import { MatchingElementsList, SemanticErrorsList, SyntaxErrorsList } from "../Common/FeedbackLists";
+import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList } from "../Common/FeedbackLists";
 import { colorClassDiagram, resetColorsClassDiagram } from "../../Utils/Feedback";
+import { MatchingElement, MatchingRelationship, UseCaseDiagramEvaluationResults } from "../../Utils/UseCaseDiagram/EvaluationTypes";
+import { ProgressBlock } from "../Common/ProgressBlock";
+import { AvatarBlock } from "../Common/AvatarBlock";
+import { FeedbackBlock } from "../Common/FeedbackBlock";
 
 const options = {
     colorEnabled: false,
@@ -49,6 +53,7 @@ function ExercisePage() {
     const [exercise, setExercise] = useState<Exercise | null>(null)
     const [checking, setChecking] = useState<boolean>(false)
     const [results, setResults] = useState<ClassDiagramEvaluationResults>(new ClassDiagramEvaluationResults())
+    const [useCaseResults, setUseCaseResults] = useState<UseCaseDiagramEvaluationResults>(new UseCaseDiagramEvaluationResults())
     const [mood, setMood] = useState<string>("Neutral")
     const [shaker, setShaker] = useState<string>("")
     const [shakeProps, setShakeProps] = useState<any>({})
@@ -74,7 +79,6 @@ function ExercisePage() {
                     setExercise(ex)
                     setGamified(ex.gamified)
                     let opts = JSON.parse(ex.boss?.bossOptions)
-                    console.log(ex.boss)
                     setBossSettings(opts)
                     setDialogue(ex.boss?.introDialogue || "")
                     let bossStr = createAvatar(bottts, opts).toString()
@@ -88,7 +92,6 @@ function ExercisePage() {
                         try {
                             let cont = document.getElementById("apollon");
                             if (cont) {
-                                console.log(ex)
                                 let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, });
                                 setEditor(ed)
                             }
@@ -137,10 +140,11 @@ function ExercisePage() {
             let r = undefined
             if (exType === UMLDiagramType.ClassDiagram) {
                 r = new ClassDiagramEvaluationResults()
+            } else {
+                r = new UseCaseDiagramEvaluationResults()
             }
             if (r) {
                 let data = afterCheck ? res : res.data
-                console.log(data, afterCheck)
                 if (afterCheck) {
                     r.oldXP = results.newXP
                     r.newXP = data.experience
@@ -164,13 +168,18 @@ function ExercisePage() {
                     r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
                     r.results = JSON.parse(data.results || "{}")
                 }
-                setResults(r)
-                console.log(res)
-                //console.log(r.newSyntaxErrors)
-                //console.log(r.newSemanticErrors)
-                if (exercise && exercise.exType === "ClassDiagram") setResults(r)
+                if (exType === UMLDiagramType.ClassDiagram) {
+                    setResults(r as ClassDiagramEvaluationResults)
+                } else if (exType === UMLDiagramType.UseCaseDiagram) {
+                    if (Object.keys(r.results).length === 0) {
+                        r.results = {
+                            matchingElements: [] as MatchingElement[],
+                            matchingRelationships: [] as MatchingRelationship[]
+                        }
+                    }
+                    setUseCaseResults(r as UseCaseDiagramEvaluationResults)
+                }
                 let model = JSON.parse(data.model)
-                console.log(model)
                 model = resetColorsClassDiagram(model)
                 switch (exType) {
                     case UMLDiagramType.UseCaseDiagram:
@@ -562,98 +571,13 @@ function ExercisePage() {
                 {gamified && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <>
                         <Grid.Col span={4}>
-                            <Skeleton visible={load} >
-                                <Grid my="md" grow justify="center" align="center">
-                                    <Grid.Col span={bossDefeated ? 12 : 6}>
-                                        <Center>
-                                            <Shake {...shakeProps}>
-                                                <Stack align="center">
-                                                    <Avatar src={avatarString} size={100} radius="md" className={shaker} />
-                                                    <Highlight
-                                                        highlight={[mood]}
-                                                        highlightStyles={{
-                                                            backgroundColor: (mood === "Happy" || mood === "Ecstatic" || mood === "Content") ? "var(--mantine-color-green-5)" : (mood === "Worried" || mood === "Upset" || mood === "Defeated") ? "var(--mantine-color-red-5)" : "var(--mantine-color-cyan-5)",
-                                                            fontWeight: 700,
-                                                            WebkitBackgroundClip: 'text',
-                                                            WebkitTextFillColor: 'transparent'
-                                                        }}>
-                                                        {`Current mood: ${mood}`}
-                                                    </Highlight>
-                                                </Stack>
-                                            </Shake>
-                                        </Center>
-                                    </Grid.Col>
-                                    {!bossDefeated && <Grid.Col span={6}>
-                                        <Center>
-                                            <Stack align="center">
-                                                <ShakeCrazy active={bossShake} fixed={true}>
-                                                    <Popover width={200} position="bottom" withArrow shadow="sm" opened={dialogue !== ""} >
-                                                        <Popover.Target>
-                                                            <Avatar src={bossString} size={100} radius="md" />
-                                                        </Popover.Target>
-                                                        <Popover.Dropdown>
-                                                            {dialogue && <Text size="md" color="orange" ta="center" >{`"${dialogue}"`}</Text>}
-                                                        </Popover.Dropdown>
-                                                    </Popover>
-                                                </ShakeCrazy>
-                                            </Stack>
-                                        </Center>
-                                    </Grid.Col>}
-                                </Grid>
-                            </Skeleton>
+                            <AvatarBlock load={load} gamified={gamified} bossDefeated={bossDefeated} avatarUrl={avatarString} mood={mood} bossUrl={bossString} dialogue={dialogue} />
                         </Grid.Col>
                         <Grid.Col span={4}>
-                            <Skeleton visible={load} >
-                                <Grid my="md" grow justify="center" align="center">
-                                    <Grid.Col span={6}>
-                                        <Center>
-                                            <Stack align="center">
-                                                <RingProgress sections={[{ value: results.newProgress, color: "green" }]} label={<Text color="green" ta="center" size="xl">{results.newProgress} %</Text>} />
-                                                <Text size="md" color="green">Exercise Completeness</Text>
-                                            </Stack>
-                                        </Center>
-                                    </Grid.Col>
-                                    <Grid.Col span={6}>
-                                        <Center>
-                                            <Stack align="center">
-                                                {!completionRecord && <>
-                                                    <RingProgress
-                                                        sections={[
-                                                            {
-                                                                value: exercise?.experience
-                                                                    ? Math.round((results.newXP) * 100 / exercise.experience)
-                                                                    : 0,
-                                                                color: "blue"
-                                                            }
-                                                        ]}
-                                                        label={<Text color="blue" ta="center" size="xl">{results.newXP} XP</Text>}
-                                                    />
-                                                    <Text size="md" color="blue">Available Experience</Text>
-                                                </>}
-                                                {completionRecord && <> <Text size="md" color="#FFD700">You already completed this exercise!</Text>
-                                                    <Text size="md" color="#FFD700">You cannot earn any more experience but you can still make changes.</Text>
-                                                    <Text size="md" color="#FFD700">Try to reach 100% completeness!</Text>
-                                                </>}
-                                            </Stack>
-                                        </Center>
-                                    </Grid.Col>
-                                </Grid>
-                            </Skeleton>
+                            <ProgressBlock load={load} results={results} completionRecord={completionRecord} exercise={exercise!} />
                         </Grid.Col>
                         <Grid.Col span={4}>
-                            <Skeleton visible={load}>
-                                <Grid my="md" grow justify="center" align="center">
-                                    <Grid.Col span={4}>
-                                        <SyntaxErrorsList syntaxErrors={results.newSyntaxErrors} />
-                                    </Grid.Col>
-                                    <Grid.Col span={4}>
-                                        <SemanticErrorsList semanticErrors={results.newSemanticErrors} />
-                                    </Grid.Col>
-                                    <Grid.Col span={4}>
-                                        <MatchingElementsList results={results.results} />
-                                    </Grid.Col>
-                                </Grid>
-                            </Skeleton>
+                            {exercise && <FeedbackBlock load={load} results={exercise.exType === UMLDiagramType.ClassDiagram ? results : useCaseResults} exerciseType={exercise.exType} />}
                         </Grid.Col>
 
                     </>
@@ -670,7 +594,6 @@ function ExercisePage() {
                             <Button variant="light" color="cyan" leftSection={<IconUpload size={14} />} onClick={() => {
                                 setSaving(true)
                                 if (courseId && exerciseId && user && editor) {
-                                    console.log(editor?.model)
                                     API.saveExerciseRecord(courseId, exerciseId, user?.username, editor?.model, false).then((res) => {
                                         setSaving(false)
                                     })
@@ -1091,4 +1014,18 @@ function ExercisePage() {
     )
 }
 
+
+/**<Skeleton visible={load}>
+                                <Grid my="md" grow justify="center" align="center">
+                                    <Grid.Col span={4}>
+                                        <SyntaxErrorsSemanticErrorsList syntaxErrors={results.newSyntaxErrors} />
+                                    </Grid.Col>
+                                    <Grid.Col span={4}>
+                                        <ClassDiagramSemanticErrorsList semanticErrors={results.newSemanticErrors} />
+                                    </Grid.Col>
+                                    <Grid.Col span={4}>
+                                        <ClassDiagramMatchingElementsList results={results.results} />
+                                    </Grid.Col>
+                                </Grid>
+                            </Skeleton> */
 export default ExercisePage

@@ -42,7 +42,6 @@ function CourseSettings() {
     useEffect(() => {
         if (courseId) {
             API.getCourse(courseId).then((course) => {
-                console.log(course)
                 let avatarOpts = generateRandomAvatar()
                 setAvatarOptions(avatarOpts)
                 let svg = createAvatar(avataaars, avatarOpts).toString()
@@ -539,14 +538,18 @@ function renderAvatarOptions<T extends object>(
         let value = valuesObj[key as keyof T]
         let avatarOpts = { ...avatarOptions, [property]: [value] }
         let avatarSvg = createAvatar(avataaars, avatarOpts).toString()
-        let unlockValue = unlockOptions?.[property]?.filter((opt) => opt.name === value)[0]?.unlockConditions[0].minLevel
+        const condition = unlockOptions?.[property as keyof AvatarUnlockOptions]?.filter((opt) => opt.name === value)[0]?.unlockConditions[0]
+        let unlockValue = condition && condition.type === "level" ? (condition as any).minLevel : 1
         if (!unlockValue) unlockValue = 1
 
         let handleValueChange = (level: number | string) => {
             if (!unlockOptions) return;
             if (typeof level === "string") level = parseInt(level)
             const newUnlockOptions: AvatarUnlockOptions = { ...unlockOptions }
-            newUnlockOptions[property].filter((opt) => opt.name === value)[0].unlockConditions[0].minLevel = level
+            const targetOption = newUnlockOptions[property as keyof AvatarUnlockOptions].find((opt) => opt.name === value)
+            if (targetOption && targetOption.unlockConditions[0].type === "level") {
+                (targetOption.unlockConditions[0] as any).minLevel = level
+            }
             setUnlockOptions(newUnlockOptions)
         }
 
