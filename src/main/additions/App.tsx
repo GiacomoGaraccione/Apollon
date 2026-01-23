@@ -35,7 +35,6 @@ function App() {
             setLoggedIn(true)
             setLoaded(true)
         }).catch((err) => {
-            console.log(err)
             setUser(undefined)
             setLoggedIn(false)
             setLoaded(true)
@@ -48,7 +47,6 @@ function App() {
             setLoggedIn(true)
             navigate("/")
         }).catch((err) => {
-            console.log(err)
             setFailed(true)
             setTimeout(() => setFailed(false), 5000)
         })

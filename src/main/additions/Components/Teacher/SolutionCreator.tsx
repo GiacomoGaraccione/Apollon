@@ -105,10 +105,8 @@ function SolutionCreator() {
                     })
                 }
             } else if (exercise.exType === "UseCaseDiagram" && currentUCReference) {
-                console.log(currentUCReference)
                 builder = new UseCaseDiagramStructureBuilderFromReference(currentUCReference)
                 let model = builder.createUMLStructure()
-                console.log(model)
                 if (previewRef.current) {
                     let ed = new ApollonEditor(previewRef.current, { ...options, type: "UseCaseDiagram", readonly: false })
                     ed.nextRender.then(() => {
@@ -165,7 +163,7 @@ function SolutionCreator() {
                     if (currentSolution) {
                         //API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
                     } else {
-                        //API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
+                        API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
                     }
                 }
             }
@@ -173,15 +171,29 @@ function SolutionCreator() {
     }
 
     const saveReference = async () => {
-        if (currentReference && editor) {
-            let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
-            if (courseId && exerciseId) {
-                if (!currentSolution) {
-                    API.addSolution(courseId, exerciseId, currentReference, editor.model, svg).then(() => updateEx())
-                } else {
-                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, editor.model, svg).then(() => updateEx())
+        if (exercise && editor) {
+            if (exercise.exType === "ClassDiagram" && currentReference) {
+                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+                if (courseId && exerciseId) {
+                    if (!currentSolution) {
+                        API.addSolution(courseId, exerciseId, currentReference, editor.model, svg).then(() => updateEx())
+                    } else {
+                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentReference, editor.model, svg).then(() => updateEx())
+                    }
+                }
+            } else if (exercise.exType === "UseCaseDiagram" && currentUCReference) {
+                let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
+                if (courseId && exerciseId) {
+                    if (!currentSolution) {
+                        API.addSolution(courseId, exerciseId, currentUCReference, editor.model, svg).then(() => updateEx())
+                    } else {
+                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, currentUCReference, editor.model, svg).then(() => updateEx())
+                    }
                 }
             }
+        }
+        if (currentReference && editor) {
+
         }
     }
 
@@ -438,7 +450,7 @@ function SolutionCreator() {
                 closeModel()
             }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Solution Creator" style={{ width: "100%" }}>
-                    <div ref={apollonRef} id="apollon"></div>
+                    <div ref={apollonRef} id="apollon" style={{ height: "80vh" }} ></div>
                     <Center mt="md">
                         <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => { saveModel() }} >
                             Save solution

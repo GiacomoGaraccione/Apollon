@@ -119,7 +119,6 @@ export function AssociationForm(props: { reference: ClassDiagramReferenceSolutio
                 resetForm()
                 setCurrentAssociation(undefined)
                 setAssociations([...associations.filter((a) => a !== currentAssociation), assoc])
-                console.log(assoc)
                 props.addAssociation([...associations.filter((a) => a !== currentAssociation), assoc])
             }
         }

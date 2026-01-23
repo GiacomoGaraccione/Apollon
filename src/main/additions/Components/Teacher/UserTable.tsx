@@ -181,7 +181,7 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
                                                         setSortedUsers(users)
                                                     })
                                                 }).catch((err: any) => {
-                                                    console.log(err)
+                                                    console.error(err)
                                                     setEditLoad(false)
                                                     setEditError(err.message ? err.message : err.error ? err.error : "Error while creating a new user. Please reload the page.")
                                                 }).finally(() => {

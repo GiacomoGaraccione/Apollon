@@ -97,7 +97,6 @@ export class ClassDiagramReferenceBuilder {
             let refAssoc = new ReferenceAssociation()
             refAssoc.source = refSource
             refAssoc.target = refTarget
-            console.log(rel)
             refAssoc.type = rel.type //=== "ClassInheritance" ? "Inheritance" : rel.type === "ClassAggregation" ? "Aggregation" : rel.type === "ClassComposition" ? "Composition" : "Default"
             refAssoc.elementId = rel.id
             return refAssoc

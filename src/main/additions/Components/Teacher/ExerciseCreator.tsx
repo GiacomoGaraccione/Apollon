@@ -87,7 +87,6 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
             <form onSubmit={form.onSubmit((values) => {
                 setLoading(true)
                 if (courseId) {
-                    console.log(values)
                     if (props.mode === "create") {
                         API.addExercise(courseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified, values.exType).then(() => {
                             setLoading(false)

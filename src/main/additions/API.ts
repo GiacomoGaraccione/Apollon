@@ -566,7 +566,7 @@ async function addSolution(courseId: string, exerciseId: string, reference: Clas
     }
 }
 
-async function updateSolution(courseId: string, exerciseId: string, solutionId: string, reference: ClassDiagramReferenceSolution, model: UMLModel, image: any) {
+async function updateSolution(courseId: string, exerciseId: string, solutionId: string, reference: ClassDiagramReferenceSolution | UseCaseDiagramReferenceSolution, model: UMLModel, image: any) {
     let response = await fetch(baseURL + "/courses/" + courseId + "/exercises/" + exerciseId + "/solutions/" + solutionId, {
         method: "PUT",
         credentials: "include",
