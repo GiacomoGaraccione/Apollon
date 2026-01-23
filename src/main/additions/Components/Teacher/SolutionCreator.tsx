@@ -149,8 +149,8 @@ function SolutionCreator() {
                 let ref = builder.buildReference()
                 let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
                 if (courseId && exerciseId) {
-                    if (currentSolution) {
-                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
+                    if (currentSolution && currentSolution.reference) {
+                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference as ClassDiagramReferenceSolution), editor.model, svg).then(() => updateEx())
                     } else {
                         API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
                     }
@@ -160,8 +160,8 @@ function SolutionCreator() {
                 let ref = builder.buildReference()
                 let svg = await editor.exportAsSVG({ margin: 5, keepOriginalSize: true })
                 if (courseId && exerciseId) {
-                    if (currentSolution) {
-                        //API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference), editor.model, svg).then(() => updateEx())
+                    if (currentSolution && currentSolution.reference) {
+                        API.updateSolution(courseId, exerciseId, currentSolution.solutionId, builder.updateReference(currentSolution.reference as unknown as UseCaseDiagramReferenceSolution), editor.model, svg).then(() => updateEx())
                     } else {
                         API.addSolution(courseId, exerciseId, ref, editor.model, svg).then(() => updateEx())
                     }

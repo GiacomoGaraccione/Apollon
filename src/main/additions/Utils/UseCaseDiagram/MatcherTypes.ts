@@ -122,7 +122,7 @@ export class UseCaseDiagramReferenceBuilder {
                 this.referenceSolution.actors.push(this.createReferenceActor(element as UMLUseCase))
             }
             if (element.type === UseCaseElementType.UseCase) {
-
+                this.referenceSolution.useCases.push(this.createReferenceUseCase(element as UMLUseCase))
             }
             if (element.type === UseCaseElementType.UseCaseSystem) {
                 this.referenceSolution.systems.push(this.createReferenceSystem(element as UMLUseCaseSystem, false))
@@ -165,6 +165,76 @@ export class UseCaseDiagramReferenceBuilder {
                 }
             }
         })
+        return this.referenceSolution
+    }
+
+    updateReference(oldReference: UseCaseDiagramReferenceSolution): UseCaseDiagramReferenceSolution {
+        // copy forbidden lists if present
+        this.referenceSolution.forbiddenActors = oldReference.forbiddenActors || []
+        this.referenceSolution.forbiddenUseCases = oldReference.forbiddenUseCases || []
+        this.referenceSolution.forbiddenSystems = oldReference.forbiddenSystems || []
+        this.referenceSolution.forbiddenActorUseCaseAssociations = oldReference.forbiddenActorUseCaseAssociations || []
+        this.referenceSolution.forbiddenActorAssociations = oldReference.forbiddenActorAssociations || []
+        this.referenceSolution.forbiddenUseCaseAssociations = oldReference.forbiddenUseCaseAssociations || []
+
+        // restore actor-level metadata
+        this.referenceSolution.actors.forEach((refAct) => {
+            const oldAct = (oldReference.actors || []).find((a) => a.name === refAct.name)
+            if (oldAct) {
+                refAct.synonyms = oldAct.synonyms || []
+                refAct.message = oldAct.message || ""
+                // keep elementId from newly built reference (do not override), but if missing take old
+                refAct.elementId = refAct.elementId || oldAct.elementId
+            }
+        })
+
+        // restore use case-level metadata
+        this.referenceSolution.useCases.forEach((refUC) => {
+            const oldUC = (oldReference.useCases || []).find((u) => u.name === refUC.name)
+            if (oldUC) {
+                refUC.synonyms = oldUC.synonyms || []
+                refUC.message = oldUC.message || ""
+                refUC.owner = refUC.owner || oldUC.owner || ""
+                refUC.elementId = refUC.elementId || oldUC.elementId
+            }
+        })
+
+        // restore system-level metadata
+        this.referenceSolution.systems.forEach((refSys) => {
+            const oldSys = (oldReference.systems || []).find((s) => s.name === refSys.name)
+            if (oldSys) {
+                refSys.synonyms = oldSys.synonyms || []
+                refSys.message = oldSys.message || ""
+                // preserve isExternal as determined by model, but fallback to old if missing
+                refSys.isExternal = typeof refSys.isExternal === 'boolean' ? refSys.isExternal : !!oldSys.isExternal
+                refSys.elementId = refSys.elementId || oldSys.elementId
+            }
+        })
+
+        // restore associations metadata
+        this.referenceSolution.actorUseCaseAssociations.forEach((refAuc) => {
+            const oldAuc = (oldReference.actorUseCaseAssociations || []).find((a) => a.sourceId === refAuc.sourceId && a.targetId === refAuc.targetId)
+            if (oldAuc) {
+                refAuc.message = oldAuc.message || ""
+                refAuc.isSupportingActor = !!oldAuc.isSupportingActor
+            }
+        })
+
+        this.referenceSolution.actorAssociations.forEach((refAa) => {
+            const oldAa = (oldReference.actorAssociations || []).find((a) => a.sourceId === refAa.sourceId && a.targetId === refAa.targetId)
+            if (oldAa) {
+                refAa.message = oldAa.message || ""
+            }
+        })
+
+        this.referenceSolution.useCaseAssociations.forEach((refUca) => {
+            const oldUca = (oldReference.useCaseAssociations || []).find((a) => a.sourceId === refUca.sourceId && a.targetId === refUca.targetId)
+            if (oldUca) {
+                refUca.message = oldUca.message || ""
+                refUca.isExtend = !!oldUca.isExtend
+            }
+        })
+
         return this.referenceSolution
     }
 }
