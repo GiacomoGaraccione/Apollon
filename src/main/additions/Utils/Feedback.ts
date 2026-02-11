@@ -1,3 +1,6 @@
+import { UMLModel } from "../.."
+import { UseCaseDiagramEvaluationResults } from "./UseCaseDiagram/EvaluationTypes"
+
 export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticErrors: any[], results: any) => {
     syntaxErrors.filter((error: any) => error.type === "missingClassName").forEach((error: any) => {
         let element = model.elements[error.element.elementId]
@@ -86,6 +89,63 @@ export const resetColorsClassDiagram = (model: any) => {
         let element = model.relationships[key]
         element.strokeColor = "#000000"
         element.textColor = "#000000"
+    })
+    return model
+}
+
+export const colorUseCaseDiagram = (model: UMLModel, syntaxErrors: any[], semanticErrors: any, results: any) => {
+    syntaxErrors.filter((error: any) => error.type === "missingActorName" ||
+        error.type === "missingUseCaseName" ||
+        error.type === "missingSystemName").forEach((error: any) => {
+            let element = model.elements[error.elementId]
+            element.textColor = "var(--mantine-color-orange-7)"
+            element.strokeColor = "var(--mantine-color-orange-7)"
+        })
+    syntaxErrors.filter((error: any) => error.type === "duplicateActorName" || error.type === "misplacedActor").forEach((error: any) => {
+        let element = model.elements[error.elementId]
+        element.fillColor = "var(--mantine-color-orange-5)"
+    })
+    syntaxErrors.filter((error: any) => error.type === "unconnectedUseCase" ||
+        error.type === "duplicateUseCaseName" ||
+        error.type === "duplicateSystemName" ||
+        error.type === "displacedUseCase" ||
+        error.type === "multipleConnectedActors").forEach((error: any) => {
+            let element = model.elements[error.elementId]
+            element.fillColor = "var(--mantine-color-orange-3)"
+        })
+    syntaxErrors.filter((error: any) => error.type === "noActorGeneralization" ||
+        error.type === "wrongUseCaseAssociation").forEach((error: any) => {
+            let element = model.relationships[error.elementId]
+            element.strokeColor = "var(--mantine-color-orange-7)"
+            element.textColor = "var(--mantine-color-orange-7)"
+        })
+    semanticErrors.filter((error: any) => error.type === "wrongIncludeExtendAssociation" ||
+        error.type === "wrongIncludeExtendAssociationDirection").forEach((error: any) => {
+            let element = model.relationships[error.elementId]
+            element.strokeColor = "var(--mantine-color-red-5)"
+            element.textColor = "var(--mantine-color-red-5)"
+        })
+    semanticErrors.filter((error: any) => error.type === "wrongUseCaseOwner").forEach((error: any) => {
+        let element = model.elements[error.elementId]
+        element.fillColor = "var(--mantine-color-red-1)"
+    })
+    results.matchingActors.forEach((match: any) => {
+        let id = match.diagramActor.elementId
+        let element = model.elements[id]
+        element.strokeColor = "var(--mantine-color-green-5)";
+        element.textColor = "var(--mantine-color-green-5)";
+    })
+    results.matchingUseCases.forEach((match: any) => {
+        let id = match.diagramUseCase.elementId
+        let element = model.elements[id]
+        element.strokeColor = "var(--mantine-color-green-5)";
+        element.textColor = "var(--mantine-color-green-5)";
+    })
+    results.matchingSystems.forEach((match: any) => {
+        let id = match.diagramSystem.elementId
+        let element = model.elements[id]
+        element.strokeColor = "var(--mantine-color-green-5)";
+        element.textColor = "var(--mantine-color-green-5)";
     })
     return model
 }

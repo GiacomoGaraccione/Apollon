@@ -1,14 +1,648 @@
 {
-  "scanSettings": {
-    "baseBranches": []
+  "reference": {
+    "classes": [
+      {
+        "name": "Plant",
+        "synonyms": [],
+        "weight": "STRONG",
+        "message": "",
+        "forbiddenAttributes": [],
+        "attributes": [
+          {
+            "name": "garden",
+            "synonyms": [],
+            "types": [
+              "boolean"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "exotic",
+            "synonyms": [],
+            "types": [
+              "boolean"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "code",
+            "synonyms": [],
+            "types": [
+              "string"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "latinName",
+            "synonyms": [],
+            "types": [
+              "string"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "commonName",
+            "synonyms": [],
+            "types": [
+              "string"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          }
+        ],
+        "type": "Class",
+        "elementId": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9"
+      },
+      {
+        "name": "Price",
+        "synonyms": [],
+        "weight": "STRONG",
+        "message": "",
+        "forbiddenAttributes": [],
+        "attributes": [
+          {
+            "name": "cost",
+            "synonyms": [],
+            "types": [
+              "float"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "startingDate",
+            "synonyms": [],
+            "types": [
+              "Date"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          }
+        ],
+        "type": "Class",
+        "elementId": "a7dad176-9e29-479e-a00d-ae6f082f1d9f"
+      },
+      {
+        "name": "Supplier",
+        "synonyms": [],
+        "weight": "STRONG",
+        "message": "",
+        "forbiddenAttributes": [],
+        "attributes": [
+          {
+            "name": "taxCode",
+            "synonyms": [],
+            "types": [
+              "string"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "name",
+            "synonyms": [],
+            "types": [
+              "string"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          },
+          {
+            "name": "address",
+            "synonyms": [],
+            "types": [
+              "string"
+            ],
+            "weight": "STRONG",
+            "message": "",
+            "allowsForeignKeyName": false
+          }
+        ],
+        "type": "Class",
+        "elementId": "fd31e19d-33ba-474f-b533-3021878a192f"
+      }
+    ],
+    "associations": [
+      {
+        "message": "",
+        "name": "",
+        "synonyms": [],
+        "weight": "STRONG",
+        "type": "ClassBidirectional",
+        "source": {
+          "role": "",
+          "multiplicities": [
+            "1"
+          ],
+          "referenceClass": {
+            "name": "Plant",
+            "synonyms": [],
+            "weight": "STRONG",
+            "message": "",
+            "forbiddenAttributes": [],
+            "attributes": [
+              {
+                "name": "garden",
+                "synonyms": [],
+                "types": [
+                  "boolean"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "exotic",
+                "synonyms": [],
+                "types": [
+                  "boolean"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "code",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "latinName",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "commonName",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              }
+            ],
+            "type": "Class",
+            "elementId": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9"
+          }
+        },
+        "target": {
+          "role": "",
+          "multiplicities": [
+            "1...*"
+          ],
+          "referenceClass": {
+            "name": "Price",
+            "synonyms": [],
+            "weight": "STRONG",
+            "message": "",
+            "forbiddenAttributes": [],
+            "attributes": [
+              {
+                "name": "cost",
+                "synonyms": [],
+                "types": [
+                  "float"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "startingDate",
+                "synonyms": [],
+                "types": [
+                  "Date"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              }
+            ],
+            "type": "Class",
+            "elementId": "a7dad176-9e29-479e-a00d-ae6f082f1d9f"
+          }
+        },
+        "elementId": "f78e66f1-e16f-4438-a0ab-e5cd4a92d802"
+      },
+      {
+        "message": "",
+        "name": "",
+        "synonyms": [],
+        "weight": "STRONG",
+        "type": "ClassBidirectional",
+        "source": {
+          "role": "",
+          "multiplicities": [
+            "1"
+          ],
+          "referenceClass": {
+            "name": "Supplier",
+            "synonyms": [],
+            "weight": "STRONG",
+            "message": "",
+            "forbiddenAttributes": [],
+            "attributes": [
+              {
+                "name": "taxCode",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "name",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "address",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              }
+            ],
+            "type": "Class",
+            "elementId": "fd31e19d-33ba-474f-b533-3021878a192f"
+          }
+        },
+        "target": {
+          "role": "",
+          "multiplicities": [
+            "0...*"
+          ],
+          "referenceClass": {
+            "name": "Plant",
+            "synonyms": [],
+            "weight": "STRONG",
+            "message": "",
+            "forbiddenAttributes": [],
+            "attributes": [
+              {
+                "name": "garden",
+                "synonyms": [],
+                "types": [
+                  "boolean"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "exotic",
+                "synonyms": [],
+                "types": [
+                  "boolean"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "code",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "latinName",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              },
+              {
+                "name": "commonName",
+                "synonyms": [],
+                "types": [
+                  "string"
+                ],
+                "weight": "STRONG",
+                "message": "",
+                "allowsForeignKeyName": false
+              }
+            ],
+            "type": "Class",
+            "elementId": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9"
+          }
+        },
+        "elementId": "e7f057c9-19bf-4984-98a9-4b51318a9fa7"
+      }
+    ],
+    "forbiddenClasses": [],
+    "forbiddenAssociations": []
   },
-  "checkRunSettings": {
-    "vulnerableCheckRunConclusionLevel": "failure",
-    "displayMode": "diff",
-    "useMendCheckNames": true
+  "model": {
+    "version": "3.0.0",
+    "type": "ClassDiagram",
+    "size": {
+      "width": 840,
+      "height": 720
+    },
+    "interactive": {
+      "elements": {},
+      "relationships": {}
+    },
+    "elements": {
+      "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9": {
+        "id": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+        "name": "Plant",
+        "type": "Class",
+        "owner": null,
+        "bounds": {
+          "x": -400,
+          "y": -340,
+          "width": 170,
+          "height": 190
+        },
+        "attributes": [
+          "ed3fcaca-7f22-4177-9d4a-bf037966e071",
+          "17a2492b-6191-4303-b70a-7c01d51d6885",
+          "6782d136-9dc6-4aba-ae79-7b75f1fe302d",
+          "eba20ee1-fd73-4160-923d-3d1b32faaaf5",
+          "7e507659-92c1-4881-ba28-7ec453cb018c"
+        ],
+        "methods": []
+      },
+      "ed3fcaca-7f22-4177-9d4a-bf037966e071": {
+        "id": "ed3fcaca-7f22-4177-9d4a-bf037966e071",
+        "name": "garden: boolean",
+        "type": "ClassAttribute",
+        "owner": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+        "bounds": {
+          "x": -399.5,
+          "y": -299.5,
+          "width": 169,
+          "height": 30
+        }
+      },
+      "17a2492b-6191-4303-b70a-7c01d51d6885": {
+        "id": "17a2492b-6191-4303-b70a-7c01d51d6885",
+        "name": "exotic: boolean",
+        "type": "ClassAttribute",
+        "owner": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+        "bounds": {
+          "x": -399.5,
+          "y": -269.5,
+          "width": 169,
+          "height": 30
+        }
+      },
+      "6782d136-9dc6-4aba-ae79-7b75f1fe302d": {
+        "id": "6782d136-9dc6-4aba-ae79-7b75f1fe302d",
+        "name": "code: string",
+        "type": "ClassAttribute",
+        "owner": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+        "bounds": {
+          "x": -399.5,
+          "y": -239.5,
+          "width": 169,
+          "height": 30
+        }
+      },
+      "eba20ee1-fd73-4160-923d-3d1b32faaaf5": {
+        "id": "eba20ee1-fd73-4160-923d-3d1b32faaaf5",
+        "name": "latinName: string",
+        "type": "ClassAttribute",
+        "owner": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+        "bounds": {
+          "x": -399.5,
+          "y": -209.5,
+          "width": 169,
+          "height": 30
+        }
+      },
+      "7e507659-92c1-4881-ba28-7ec453cb018c": {
+        "id": "7e507659-92c1-4881-ba28-7ec453cb018c",
+        "name": "commonName: string",
+        "type": "ClassAttribute",
+        "owner": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+        "bounds": {
+          "x": -399.5,
+          "y": -179.5,
+          "width": 169,
+          "height": 30
+        }
+      },
+      "a7dad176-9e29-479e-a00d-ae6f082f1d9f": {
+        "id": "a7dad176-9e29-479e-a00d-ae6f082f1d9f",
+        "name": "Price",
+        "type": "Class",
+        "owner": null,
+        "bounds": {
+          "x": -20,
+          "y": -290,
+          "width": 160,
+          "height": 100
+        },
+        "attributes": [
+          "ce497cb1-7390-4cc9-95a1-30200db3ab6a",
+          "f452c428-3e4e-4baa-84e1-efd44e37b8f2"
+        ],
+        "methods": []
+      },
+      "ce497cb1-7390-4cc9-95a1-30200db3ab6a": {
+        "id": "ce497cb1-7390-4cc9-95a1-30200db3ab6a",
+        "name": "cost: float",
+        "type": "ClassAttribute",
+        "owner": "a7dad176-9e29-479e-a00d-ae6f082f1d9f",
+        "bounds": {
+          "x": -19.5,
+          "y": -249.5,
+          "width": 159,
+          "height": 30
+        }
+      },
+      "f452c428-3e4e-4baa-84e1-efd44e37b8f2": {
+        "id": "f452c428-3e4e-4baa-84e1-efd44e37b8f2",
+        "name": "startingDate: Date",
+        "type": "ClassAttribute",
+        "owner": "a7dad176-9e29-479e-a00d-ae6f082f1d9f",
+        "bounds": {
+          "x": -19.5,
+          "y": -219.5,
+          "width": 159,
+          "height": 30
+        }
+      },
+      "fd31e19d-33ba-474f-b533-3021878a192f": {
+        "id": "fd31e19d-33ba-474f-b533-3021878a192f",
+        "name": "Supplier",
+        "type": "Class",
+        "owner": null,
+        "bounds": {
+          "x": -360,
+          "y": 60,
+          "width": 160,
+          "height": 130
+        },
+        "attributes": [
+          "798d82fe-4872-43d7-bf54-c28b46c1bf1a",
+          "88c704ad-cc51-4641-b9ca-4a9c774ab4e4",
+          "626549b9-f5e2-4bc6-969e-f842e40cb2ba"
+        ],
+        "methods": []
+      },
+      "798d82fe-4872-43d7-bf54-c28b46c1bf1a": {
+        "id": "798d82fe-4872-43d7-bf54-c28b46c1bf1a",
+        "name": "taxCode: string",
+        "type": "ClassAttribute",
+        "owner": "fd31e19d-33ba-474f-b533-3021878a192f",
+        "bounds": {
+          "x": -359.5,
+          "y": 100.5,
+          "width": 159,
+          "height": 30
+        }
+      },
+      "88c704ad-cc51-4641-b9ca-4a9c774ab4e4": {
+        "id": "88c704ad-cc51-4641-b9ca-4a9c774ab4e4",
+        "name": "name: string",
+        "type": "ClassAttribute",
+        "owner": "fd31e19d-33ba-474f-b533-3021878a192f",
+        "bounds": {
+          "x": -359.5,
+          "y": 130.5,
+          "width": 159,
+          "height": 30
+        }
+      },
+      "626549b9-f5e2-4bc6-969e-f842e40cb2ba": {
+        "id": "626549b9-f5e2-4bc6-969e-f842e40cb2ba",
+        "name": "address: string",
+        "type": "ClassAttribute",
+        "owner": "fd31e19d-33ba-474f-b533-3021878a192f",
+        "bounds": {
+          "x": -359.5,
+          "y": 160.5,
+          "width": 159,
+          "height": 30
+        }
+      }
+    },
+    "relationships": {
+      "f78e66f1-e16f-4438-a0ab-e5cd4a92d802": {
+        "id": "f78e66f1-e16f-4438-a0ab-e5cd4a92d802",
+        "name": "",
+        "type": "ClassBidirectional",
+        "owner": null,
+        "bounds": {
+          "x": -230,
+          "y": -250,
+          "width": 210,
+          "height": 49.75
+        },
+        "path": [
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 210,
+            "y": 10
+          }
+        ],
+        "source": {
+          "direction": "Right",
+          "element": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+          "multiplicity": "1",
+          "role": ""
+        },
+        "target": {
+          "direction": "Downleft",
+          "element": "a7dad176-9e29-479e-a00d-ae6f082f1d9f",
+          "multiplicity": "1...*",
+          "role": ""
+        },
+        "isManuallyLayouted": false
+      },
+      "e7f057c9-19bf-4984-98a9-4b51318a9fa7": {
+        "id": "e7f057c9-19bf-4984-98a9-4b51318a9fa7",
+        "name": "",
+        "type": "ClassBidirectional",
+        "owner": null,
+        "bounds": {
+          "x": -300,
+          "y": -150,
+          "width": 39.734344482421875,
+          "height": 220.75
+        },
+        "path": [
+          {
+            "x": 5,
+            "y": 210
+          },
+          {
+            "x": 5,
+            "y": 0
+          }
+        ],
+        "source": {
+          "direction": "Up",
+          "element": "fd31e19d-33ba-474f-b533-3021878a192f",
+          "multiplicity": "1",
+          "role": ""
+        },
+        "target": {
+          "direction": "Down",
+          "element": "a01fa58c-2adb-4ed1-85f2-ead5bb3c3fd9",
+          "multiplicity": "0...*",
+          "role": ""
+        },
+        "isManuallyLayouted": false
+      }
+    },
+    "assessments": {}
   },
-  "issueSettings": {
-    "minSeverityLevel": "LOW",
-    "issueType": "DEPENDENCY"
+  "image": {
+    "svg": "<svg width=\"551\" height=\"541.5\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" fill=\"#ffffff\"><defs><style>\n  text {\n    fill: #212529;\n    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;\n    font-size: 16px;\n  }\n\n  marker, text {\n    fill-opacity: 1;\n  }\n\n  * {\n    overflow: visible;\n  }\n</style></defs><svg x=\"5\" y=\"5\" width=\"170\" height=\"190\" class=\"Plant\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"40\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><rect y=\"40\" width=\"100%\" height=\"150\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><svg height=\"40\"><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-weight=\"bold\" pointer-events=\"none\">Plant</text></svg><svg x=\"0\" y=\"40.5\" width=\"169\" height=\"30\" class=\"garden: boolean\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">garden: boolean</text></g></svg><svg x=\"0\" y=\"70.5\" width=\"169\" height=\"30\" class=\"exotic: boolean\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">exotic: boolean</text></g></svg><svg x=\"0\" y=\"100.5\" width=\"169\" height=\"30\" class=\"code: string\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">code: string</text></g></svg><svg x=\"0\" y=\"130.5\" width=\"169\" height=\"30\" class=\"latinName: string\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">latinName: string</text></g></svg><svg x=\"0\" y=\"160.5\" width=\"169\" height=\"30\" class=\"commonName: string\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">commonName: string</text></g></svg><rect width=\"100%\" height=\"100%\" stroke=\"black\" fill=\"none\" class=\"sc-fqkvVR jRtNsY\"></rect><path d=\"M 0 40 H 170\" stroke=\"black\" fill=\"white\" class=\"sc-gEvEer fMgKSV\"></path></g></svg><svg x=\"385\" y=\"55\" width=\"160\" height=\"100\" class=\"Price\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"40\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><rect y=\"40\" width=\"100%\" height=\"60\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><svg height=\"40\"><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-weight=\"bold\" pointer-events=\"none\">Price</text></svg><svg x=\"0\" y=\"40.5\" width=\"159\" height=\"30\" class=\"cost: float\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">cost: float</text></g></svg><svg x=\"0\" y=\"70.5\" width=\"159\" height=\"30\" class=\"startingDate: Date\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">startingDate: Date</text></g></svg><rect width=\"100%\" height=\"100%\" stroke=\"black\" fill=\"none\" class=\"sc-fqkvVR jRtNsY\"></rect><path d=\"M 0 40 H 160\" stroke=\"black\" fill=\"white\" class=\"sc-gEvEer fMgKSV\"></path></g></svg><svg x=\"45\" y=\"405\" width=\"160\" height=\"130\" class=\"Supplier\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"40\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><rect y=\"40\" width=\"100%\" height=\"90\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><svg height=\"40\"><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-weight=\"bold\" pointer-events=\"none\">Supplier</text></svg><svg x=\"0\" y=\"40.5\" width=\"159\" height=\"30\" class=\"taxCode: string\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">taxCode: string</text></g></svg><svg x=\"0\" y=\"70.5\" width=\"159\" height=\"30\" class=\"name: string\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">name: string</text></g></svg><svg x=\"0\" y=\"100.5\" width=\"159\" height=\"30\" class=\"address: string\" fill=\"#ffffff\"><g><rect width=\"100%\" height=\"100%\" stroke=\"none\" fill=\"white\" class=\"sc-fqkvVR lnbwZS\"></rect><text x=\"10\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"start\" font-weight=\"normal\" pointer-events=\"none\">address: string</text></g></svg><rect width=\"100%\" height=\"100%\" stroke=\"black\" fill=\"none\" class=\"sc-fqkvVR jRtNsY\"></rect><path d=\"M 0 40 H 160\" stroke=\"black\" fill=\"white\" class=\"sc-gEvEer fMgKSV\"></path></g></svg><svg x=\"175\" y=\"95\" width=\"210\" height=\"49.75\" class=\"\" fill=\"#ffffff\"><g><polyline points=\"0 10,210 10\" stroke-width=\"1\" marker-end=\"url(#marker-f78e66f1-e16f-4438-a0ab-e5cd4a92d802)\" stroke=\"black\" fill=\"none\" class=\"sc-aXZVg OFiXI\"></polyline><text x=\"8\" y=\"10\" dy=\"21\" text-anchor=\"start\" pointer-events=\"none\">1</text><text x=\"202\" y=\"10\" dy=\"21\" text-anchor=\"end\" pointer-events=\"none\">1...*</text><text x=\"8\" y=\"10\" dy=\"-10\" text-anchor=\"start\" pointer-events=\"none\"></text><text x=\"202\" y=\"10\" dy=\"-10\" text-anchor=\"end\" pointer-events=\"none\"></text><text x=\"105\" y=\"10\" dy=\"-5\" dominant-baseline=\"text-after-edge\" text-anchor=\"middle\" pointer-events=\"none\"> </text></g></svg><svg x=\"105\" y=\"195\" width=\"39.734344482421875\" height=\"220.75\" class=\"\" fill=\"#ffffff\"><g><polyline points=\"5 210,5 0\" stroke-width=\"1\" marker-end=\"url(#marker-e7f057c9-19bf-4984-98a9-4b51318a9fa7)\" stroke=\"black\" fill=\"none\" class=\"sc-aXZVg OFiXI\"></polyline><text x=\"5\" y=\"202\" dx=\"5\" text-anchor=\"start\" pointer-events=\"none\">1</text><text x=\"5\" y=\"8\" dx=\"5\" dy=\"10\" text-anchor=\"start\" pointer-events=\"none\">0...*</text><text x=\"5\" y=\"202\" dx=\"-5\" text-anchor=\"end\" pointer-events=\"none\"></text><text x=\"5\" y=\"8\" dx=\"-5\" dy=\"10\" text-anchor=\"end\" pointer-events=\"none\"></text><text x=\"5\" y=\"105\" dx=\"5\" dominant-baseline=\"middle\" text-anchor=\"start\" pointer-events=\"none\"> </text></g></svg></svg>",
+    "clip": {
+      "x": -405,
+      "y": -345,
+      "width": 550,
+      "height": 540.5
+    }
   }
 }

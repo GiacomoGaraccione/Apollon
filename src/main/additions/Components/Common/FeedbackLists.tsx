@@ -178,130 +178,131 @@ export function ClassDiagramMatchingElementsList(props: { results: any }) {
     )
 }
 
-export function OldClassDiagramMatchingElementsList(props: { results: any }) {
-    return (
-        <Center >
-            <Popover width={500} position="left" withArrow shadow="md">
-                <Popover.Target>
-                    <Button variant={props.results.matchingClasses.length > 0 ? "light" : "default"} color="green" leftSection={props.results.matchingClasses.length > 0 && <IconCheck size={14} />} >Found Elements</Button>
-                </Popover.Target>
-                <Popover.Dropdown>
-                    {props.results.matchingClasses.length === 0 ? <Text>There are no matching elements in your diagram, keep trying!</Text> : <>
-                        <List style={{ maxHeight: "70vh", overflowY: "auto" }}>
-                            {props.results.matchingClasses.map((match: any, id: number) => {
-                                return (
-                                    <>
-                                        <List.Item key={id} icon={<IconCheck size={16} color="green" />} >
-                                            <Highlight
-                                                highlight={[match.referenceClass, match.diagramClass.name]}
-                                                highlightStyles={{
-                                                    backgroundColor: "var(--mantine-color-green-5)",
-                                                    fontWeight: 700,
-                                                    WebkitBackgroundClip: 'text',
-                                                    WebkitTextFillColor: 'transparent'
-                                                }}
-                                            >
-                                                {`Your class ${match.diagramClass.name} matches the required concept ${match.referenceClass}.`}
-                                            </Highlight>
-                                            {match.matchingAttributes.length > 0 && (
-                                                <List>
-                                                    {match.matchingAttributes.map((attr: any, attrId: number) => (
-                                                        <>
-                                                            <Divider my="xs" />
-                                                            <List.Item key={attrId} icon={<IconCheck size={16} color="green" />} >
-                                                                <Highlight
-                                                                    highlight={[attr.referenceAttribute]} highlightStyles={{
-                                                                        backgroundColor: "var(--mantine-color-green-5)",
-                                                                        fontWeight: 700,
-                                                                        WebkitBackgroundClip: 'text',
-                                                                        WebkitTextFillColor: 'transparent'
-                                                                    }}>
-                                                                    {`Its attribute ${attr.diagramAttribute.name} matches the required attribute ${attr.referenceAttribute}.`}
-                                                                </Highlight>
-                                                            </List.Item>
-                                                        </>
-                                                    ))}
-                                                </List>
-                                            )}
-                                        </List.Item>
-                                        <Divider my="xs" />
-                                    </>
-                                )
-                            })}
-                            {props.results.matchingAssociations.map((match: any, id: number) => {
-                                return (
-                                    <>
-                                        <List.Item key={id} icon={<IconCheck size={16} color="green" />} >
-                                            <Highlight
-                                                highlight={[match.referenceAssociation.source.referenceClass.name, match.referenceAssociation.target.referenceClass.name, match.source_pair.diagramInfo.name, match.target_pair.diagramInfo.name]}
-                                                highlightStyles={{
-                                                    backgroundColor: "var(--mantine-color-green-5)",
-                                                    fontWeight: 700,
-                                                    WebkitBackgroundClip: 'text',
-                                                    WebkitTextFillColor: 'transparent'
-                                                }}>
-                                                {`Your association between ${match.source_pair.diagramInfo.name} and ${match.target_pair.diagramInfo.name} matches the required association between ${match.referenceAssociation.target.referenceClass.name} and ${match.referenceAssociation.source.referenceClass.name}.`}
-                                            </Highlight>
-                                        </List.Item>
-                                        <Divider my="xs" />
-                                    </>
-                                )
-                            })}
-                        </List>
-                    </>}
-                </Popover.Dropdown>
-            </Popover>
-        </Center>
-    )
-}
-
 export function UseCaseDiagramSyntaxErrorsList(props: { syntaxErrors: any[] }) {
+    const errors = props.syntaxErrors ?? []
     return (
         <>
-            <Center>
-                <Popover width={500} position="left" withArrow shadow="md">
-                    <Popover.Target>
-                        <Button variant={props.syntaxErrors.length > 0 ? "light" : "default"} color="orange" leftSection={props.syntaxErrors.length > 0 && <IconExclamationCircleFilled size={14} />} >Syntax Errors</Button>
-                    </Popover.Target>
-                    <Popover.Dropdown>
-                        {props.syntaxErrors.length === 0 ? <Text>There are no syntax errors in your diagram, very good!</Text> : <></>}
-                    </Popover.Dropdown>
-                </Popover>
-            </Center>
+            <FeedbackPopover title="Syntax Errors" count={errors.length} color="orange"
+                emptyMessage="There are no syntax errors in your diagram, very good!">
+                {errors.filter((e) => e.type === "missingActorName").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-actor-name-${index}`} divider={true} variant="syntax" highlights={["actor", "missing a name"]} highlightColor="orange-5" error={e
+                    } message={`At least one actor in the diagram is missing a name.`} />
+                ))}
+                {errors.filter((e) => e.type === "missingUseCaseName").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-usecase-name-${index}`} divider={true} variant="syntax" highlights={["use case", "missing a name"]} highlightColor="orange-5" error={e
+                    } message={`At least one use case in the diagram is missing a name.`} />
+                ))}
+                {errors.filter((e) => e.type === "missingSystemName").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-system-name-${index}`} divider={true} variant="syntax" highlights={["system", "missing a name"]} highlightColor="orange-5" error={e
+                    } message={`At least one system in the diagram is missing a name.`} />
+                ))}
+                {errors.filter((e) => e.type === "duplicateActorName").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `duplicate-actor-name-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`There are two or more actors in the diagram with the same name: ${e.name}.`} />
+                ))}
+                {errors.filter((e) => e.type === "duplicateUseCaseName").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `duplicate-usecase-name-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`There are two or more use cases in the diagram with the same name: ${e.name}.`} />
+                ))}
+                {errors.filter((e) => e.type === "duplicateSystemName").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `duplicate-system-name-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`There are two or more systems in the diagram with the same name: ${e.name}.`} />
+                ))}
+                {errors.filter((e) => e.type === "unconnectedUseCase").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `unconnected-usecase-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`The use case ${e.name} is not connected to any actor in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "noActorGeneralization").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `no-actor-generalization-${index}`} divider={true} variant="syntax" highlights={[e.source, e.target]} highlightColor="orange-5" error={e
+                    } message={`The association between actors ${e.source} and ${e.target} should be a generalization but is not.`} />
+                ))}
+                {errors.filter((e) => e.type === "wrongUseCaseAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `wrong-use-case-association-${index}`} divider={true} variant="syntax" highlights={[e.source, e.target, "Include", "Extend"]} highlightColor="orange-5" error={e
+                    } message={`The association between ${e.source} and ${e.target} is neither Include nor Extend.`} />
+                ))}
+                {errors.filter((e) => e.type === "displacedUseCase").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `displaced-use-case-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`The use case ${e.name} is not placed inside one of the existing systems in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "misplacedActor").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `misplaced-actor-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`The actor ${e.name} is placed inside a system in the diagram, but it should be outside of all systems.`} />
+                ))}
+                {errors.filter((e) => e.type === "multipleConnectedActors").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `multiple-connected-actors-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e
+                    } message={`The use case ${e.name} is connected to multiple actors with no explicit Support relationship.`} />
+                ))}
+            </FeedbackPopover>
         </>
     )
 }
 
 export function UseCaseDiagramSemanticErrorsList(props: { semanticErrors: any[] }) {
+    const errors = props.semanticErrors ?? []
     return (
         <>
-            <Center>
-                <Popover width={500} position="left" withArrow shadow="md">
-                    <Popover.Target>
-                        <Button variant={props.semanticErrors.length > 0 ? "light" : "default"} color="red" leftSection={props.semanticErrors.length > 0 && <IconExclamationCircleFilled size={14} />}  >Semantic Errors</Button>
-                    </Popover.Target>
-                    <Popover.Dropdown>
-                        {props.semanticErrors.length === 0 ? <Text>There are no semantic errors in your diagram, very good!</Text> : <></>}
-                    </Popover.Dropdown>
-                </Popover>
-            </Center>
+            <FeedbackPopover title="Semantic Errors" count={errors.length} color="red"
+                emptyMessage="There are no semantic errors in your diagram, very good!">
+                {errors.filter((e) => e.type === "missingActor").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-actor-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e
+                    } message={`The required actor ${e.name} is missing from your diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "missingUseCase").length > 0 && (
+                    <FeedbackListItem key={"missing-usecase"} divider={true} variant="semantic" highlights={["missing"]} highlightColor="red-5"
+                        message={`At least one required use case is missing from your diagram.`} />
+                )}
+                {errors.filter((e) => e.type === "missingSystem").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-system-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e
+                    } message={`The required system ${e.name} is missing from your diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "missingActorUseCaseAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-actor-use-case-association-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target]} highlightColor="red-5" error={e
+                    } message={`The required association between ${e.source} and ${e.target} is missing from your diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "missingUseCaseAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-use-case-association-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target]} highlightColor="red-5" error={e
+                    } message={`An association between ${e.source} and ${e.target} is required but missing from your diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "wrongIncludeExtendAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `wrong-include-extend-association-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target, e.expectedAssociationType]} highlightColor="red-5" error={e
+                    } message={`The association between ${e.source} and ${e.target} should be an ${e.expectedAssociationType} one.`} />
+                ))}
+                {errors.filter((e) => e.type === "wrongIncludeExtendAssociationDirection").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `wrong-include-extend-association-direction-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target, e.associationType]} highlightColor="red-5" error={e
+                    } message={`The use cases ${e.source} and ${e.target} have an ${e.associationType} association with the wrong direction.`} />
+                ))}
+                {errors.filter((e) => e.type === "wrongUseCaseOwner").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `wrong-use-case-owner-${index}`} divider={true} variant="semantic" highlights={[e.useCase]} highlightColor="red-5" error={e
+                    } message={`The use case ${e.useCase} belongs to the wrong system.`} />
+                ))}
+            </FeedbackPopover>
         </>
     )
 }
 
 export function UseCaseDiagramMatchingElementsList(props: { results: UseCaseDiagramEvaluationResults }) {
+    let matchingElements: any = []
+    matchingElements = matchingElements.concat(props.results.results.matchingActors)
+    matchingElements = matchingElements.concat(props.results.results.matchingUseCases)
+    matchingElements = matchingElements.concat(props.results.results.matchingSystems)
+    matchingElements = matchingElements.concat(props.results.results.matchingAssociations)
     return (
         <>
-            <Center >
-                <Popover width={500} position="left" withArrow shadow="md">
-                    <Popover.Target>
-                        <Button variant={props.results.results.matchingElements.length > 0 ? "light" : "default"} color="green" leftSection={props.results.results.matchingElements.length > 0 && <IconCheck size={14} />} >Found Elements</Button>
-                    </Popover.Target>
-                    <Popover.Dropdown>
-                        {props.results.results.matchingElements.length === 0 ? <Text>There are no matching elements in your diagram, keep trying!</Text> : <></>}
-                    </Popover.Dropdown>
-                </Popover>
-            </Center>
+            <FeedbackPopover title="Found Elements" count={matchingElements.length} color="green"
+                emptyMessage="There are no matching elements in your diagram, keep trying!">
+                {props.results.results.matchingActors?.map((match: any, id: number) => (
+                    <FeedbackListItem key={match.id ?? `matching-actor-${id}`} divider={true} variant="success" highlights={[match.referenceActor, match.diagramActor.name]} highlightColor="green-5"
+                        message={`Your actor ${match.diagramActor.name} matches the required actor ${match.referenceActor}.`} />
+                ))}
+                {props.results.results.matchingSystems?.map((match: any, id: number) => (
+                    <FeedbackListItem key={match.id ?? `matching-system-${id}`} divider={true} variant="success" highlights={[match.referenceSystem, match.diagramSystem.name]} highlightColor="green-5"
+                        message={`Your system ${match.diagramSystem.name} matches the required system ${match.referenceSystem}.`} />
+                ))}
+                {props.results.results.matchingUseCases?.map((match: any, id: number) => (
+                    <FeedbackListItem key={match.id ?? `matching-usecase-${id}`} divider={true} variant="success" highlights={[match.diagramUseCase.name]} highlightColor="green-5"
+                        message={`Your use case ${match.diagramUseCase.name} matches a required use case.`} />
+                ))}
+            </FeedbackPopover>
         </>
     )
 }

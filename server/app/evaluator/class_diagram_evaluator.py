@@ -219,7 +219,7 @@ class ClassDiagramEvaluator(BaseEvaluator):
             return best
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-            print(f"Error in evaluate_student_diagram: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+            print(f"Error in class_diagram_evaluator.evaluate: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
             raise(e)
 
     def _get_syntax_errors_from_model(self, model, reference=None, report=None):

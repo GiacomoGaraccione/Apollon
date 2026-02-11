@@ -19,7 +19,7 @@ import jsPDF from "jspdf";
 import { Canvg } from "canvg";
 import Leaderboard from "./Leaderboard";
 import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList } from "../Common/FeedbackLists";
-import { colorClassDiagram, resetColorsClassDiagram } from "../../Utils/Feedback";
+import { colorClassDiagram, colorUseCaseDiagram, resetColorsClassDiagram } from "../../Utils/Feedback";
 import { MatchingElement, MatchingRelationship, UseCaseDiagramEvaluationResults } from "../../Utils/UseCaseDiagram/EvaluationTypes";
 import { ProgressBlock } from "../Common/ProgressBlock";
 import { AvatarBlock } from "../Common/AvatarBlock";
@@ -145,6 +145,7 @@ function ExercisePage() {
             }
             if (r) {
                 let data = afterCheck ? res : res.data
+                console.log(data)
                 if (afterCheck) {
                     r.oldXP = results.newXP
                     r.newXP = data.experience
@@ -183,13 +184,13 @@ function ExercisePage() {
                 model = resetColorsClassDiagram(model)
                 switch (exType) {
                     case UMLDiagramType.UseCaseDiagram:
-                        console.log("Use Case Diagram coloring not implemented yet");
+                        model = colorUseCaseDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
                         break;
                     case UMLDiagramType.DeploymentDiagram:
                         console.log("Deployment Diagram coloring not implemented yet");
                         break;
                     case UMLDiagramType.ClassDiagram:
-                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r)
                         break;
                     default:
                         break;
@@ -574,7 +575,8 @@ function ExercisePage() {
                             <AvatarBlock load={load} gamified={gamified} bossDefeated={bossDefeated} avatarUrl={avatarString} mood={mood} bossUrl={bossString} dialogue={dialogue} />
                         </Grid.Col>
                         <Grid.Col span={4}>
-                            <ProgressBlock load={load} results={results} completionRecord={completionRecord} exercise={exercise!} />
+                            {exercise && exercise.exType === UMLDiagramType.ClassDiagram && <ProgressBlock load={load} results={results} completionRecord={completionRecord} exercise={exercise!} />}
+                            {exercise && exercise.exType === UMLDiagramType.UseCaseDiagram && <ProgressBlock load={load} results={useCaseResults} completionRecord={completionRecord} exercise={exercise!} />}
                         </Grid.Col>
                         <Grid.Col span={4}>
                             {exercise && <FeedbackBlock load={load} results={exercise.exType === UMLDiagramType.ClassDiagram ? results : useCaseResults} exerciseType={exercise.exType} />}

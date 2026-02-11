@@ -1,4 +1,5 @@
 import json
+import sys
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
 from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog, StudentExerciseCompletion
@@ -272,7 +273,8 @@ def update_student_exercise(courseId, exerciseId, studentId):
                 session.commit()
                 return jsonify({"record": record.serialize(), "results": results}), 201
         except Exception as e:
-            print(e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            print(f"Error in exercises route: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
             return jsonify({"message": "Invalid JSON"}), 400
         
 @exercises_bp.route("/<courseId>/exercises/<exerciseId>/students/<studentId>/complete", methods=["GET"])
