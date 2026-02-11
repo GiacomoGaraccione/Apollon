@@ -2,7 +2,7 @@ import { UMLModel } from "../typings"
 import { User } from "./Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
 import { ClassDiagramErrorExample } from "./Utils/ClassDiagram/EvaluationTypes"
-import { Course, Exercise, Boss, Solution } from "./Utils/Models"
+import { Course, Exercise, Boss, Solution, SandboxDiagram } from "./Utils/Models"
 import { ClassDiagramReferenceSolution } from "./Utils/ClassDiagram/MatcherTypes"
 import { UseCaseDiagramReferenceSolution } from "./Utils/UseCaseDiagram/MatcherTypes"
 
@@ -795,13 +795,101 @@ async function getExampleErrors() {
     }
 }
 
+// ----------------- Sandbox APIs -----------------
+
+async function getSandboxDiagrams(userId: string) {
+    let response = await fetch(baseURL + "/sandbox/" + userId, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        let diagrams = res.map((diagram: any) => {
+            return new SandboxDiagram(JSON.parse(diagram.model) as UMLModel, userId, diagram.diagramId, diagram.lastUpdated, diagram.exerciseType, diagram.filename)
+        })
+        return diagrams
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function saveSandboxDiagram(model: any, exerciseType: string, filename: string, userId: string) {
+    let response = await fetch(baseURL + "/sandbox/" + userId, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ model, exerciseType, filename })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateSandboxDiagram(userId: string, diagramId: string, model: any, exerciseType: string, filename: string) {
+    let response = await fetch(baseURL + "/sandbox/" + userId + "/" + diagramId, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ model, exerciseType, filename })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    }
+    else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function deleteSandboxDiagram(userId: string, diagramId: string) {
+    let response = await fetch(baseURL + "/sandbox/" + userId + "/" + diagramId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    }
+    else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 const API = {
     login, getUserInfo, logout,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo, getStudentCompletedExercises,
     addExercise, deleteExercise, updateExercise, createBoss, addSolution, updateSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise, getStudentDiagrams,
     getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises,
-    getExampleErrors
+    getExampleErrors,
+    getSandboxDiagrams, saveSandboxDiagram, updateSandboxDiagram, deleteSandboxDiagram
 }
-
 export default API

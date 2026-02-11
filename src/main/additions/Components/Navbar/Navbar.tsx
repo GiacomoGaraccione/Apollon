@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react'
-import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconDeviceDesktopAnalytics, IconFingerprint, IconGauge, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
+import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconPencilCancel, IconPencilCheck, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
 import { ActionIcon, Center, Stack, Tooltip, UnstyledButton, Text, Group } from '@mantine/core';
 import { Roles, UserContext } from '../Login/UserContext';
 import "./style.css"
@@ -38,7 +38,9 @@ function Navbar(props: any) {
 
 
     useEffect(() => {
-        switch (window.location.pathname) {
+        console.log(window.location.pathname)
+        let loc = window.location.pathname.replace("/umlegend", "")
+        switch (loc) {
             case "/teacher":
                 setActive("Home")
                 break
@@ -58,10 +60,14 @@ function Navbar(props: any) {
             case "/student/examples":
                 setActive("Examples")
                 break
+            case "/sandbox":
+                setActive("Sandbox")
+                break
             default:
                 setActive("")
         }
-        if (window.location.pathname.includes("/teacher/courses/") || window.location.pathname.includes("/student/courses/")) {
+        if (loc.includes("/teacher/courses/") ||
+            loc.includes("/student/courses/")) {
             setActive("Courses")
         }
     }, [])
@@ -95,6 +101,10 @@ function Navbar(props: any) {
                                     setActive("Examples")
                                 }} />
                             </>}
+                            <NavbarLink icon={IconPencilCheck} label="Sandbox" key={"Sandbox"} active={active === "Sandbox"} onClick={() => {
+                                navigate("/sandbox")
+                                setActive("Sandbox")
+                            }} />
                         </Stack>
                     </div>
 

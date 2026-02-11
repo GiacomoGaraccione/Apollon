@@ -73,4 +73,22 @@ class Solution {
     }
 }
 
-export { Course, Exercise, Boss, Solution }
+class SandboxDiagram {
+    model: UMLModel
+    userId: string
+    diagramId: string
+    lastUpdated: string
+    exerciseType: string
+    filename: string
+
+    constructor(model: UMLModel, userId: string, diagramId: string, lastUpdated: string, exerciseType: string, filename: string) {
+        this.model = model
+        this.userId = userId
+        this.diagramId = diagramId
+        this.lastUpdated = lastUpdated
+        this.exerciseType = exerciseType
+        this.filename = filename
+    }
+}
+
+export { Course, Exercise, Boss, Solution, SandboxDiagram }

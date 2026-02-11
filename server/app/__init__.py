@@ -12,6 +12,7 @@ from app.routes.courses import courses_bp
 from app.routes.exercises import exercises_bp
 from app.routes.rankings import rankings_bp
 from app.routes.errors import errors_bp
+from app.routes.sandbox import sandbox_bp
 import os
 
 db = SQLAlchemy()
@@ -40,7 +41,7 @@ def create_app():
     app.register_blueprint(exercises_bp, url_prefix='/courses')
     app.register_blueprint(rankings_bp, url_prefix='/courses')
     app.register_blueprint(errors_bp, url_prefix='/errors')
-
+    app.register_blueprint(sandbox_bp, url_prefix='/sandbox')
     # Swagger
     SWAGGER_URL = app.config['SWAGGER_URL']
     API_URL = app.config['API_URL']

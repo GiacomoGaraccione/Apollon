@@ -225,3 +225,13 @@ class ErrorExample(Base):
             "model": self.model,
             "description": self.description 
         }
+
+class SandboxDiagram(Base):
+    __tablename__ = "sandbox_diagrams"
+    username = Column(String, ForeignKey("users.username", ondelete="CASCADE"), primary_key=True)
+    counter = Column(Integer, nullable=False)
+    diagramId = Column(String, nullable=False, primary_key=True)
+    model = Column(String, nullable=True)
+    exerciseType = Column(String, nullable=True)
+    lastUpdated = Column(String, nullable=False, default=datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
+    filename = Column(String, nullable=True)
