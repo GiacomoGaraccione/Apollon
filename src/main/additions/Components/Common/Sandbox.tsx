@@ -16,6 +16,15 @@ import 'svg2pdf.js'
 import jsPDF from "jspdf";
 import { Canvg } from "canvg";
 import ErrorMessage from "./ErrorMessage";
+import Modeler from "bpmn-js/lib/Modeler"
+import lintModule from "bpmn-js-bpmnlint"
+import resizeAllModule from "bpmn-js-nyan/lib/resize-all-rules"
+import "bpmn-js/dist/assets/diagram-js.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
+import 'bpmn-js-bpmnlint/dist/assets/css/bpmn-js-bpmnlint.css'
+import * as bpmnlintConfig from './bundled-config'
+
 
 const options = {
     colorEnabled: false,
@@ -40,6 +49,15 @@ export function Sandbox() {
     const [errorOpened, { open: openError, close: closeError }] = useDisclosure(false)
     const [errorInfo, setErrorInfo] = useState<string>("")
     const apollonRef = useRef<HTMLDivElement>(null)
+    const startingDiagram = `<?xml version="1.0" encoding="UTF-8"?>
+    <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" id="Definitions_0pkl0yz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="12.0.0">
+      <bpmn:process id="Process_10owelu" isExecutable="true" />
+      <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_10owelu" />
+      </bpmndi:BPMNDiagram>
+    </bpmn:definitions>
+    `
+    const [modeler, setModeler] = useState<Modeler>()
 
     useEffect(() => {
         if (user) API.getSandboxDiagrams(user.username).then((diagrams) => {
@@ -51,20 +69,42 @@ export function Sandbox() {
         if (openedModel) {
             const timer = setTimeout(async () => {
                 try {
-                    if (editor) {
-                        editor.destroy?.()
-                        setEditor(undefined)
-                    }
-                    if (apollonRef.current) {
-                        let ed = new ApollonEditor(apollonRef.current, { ...options, type: diagramType })
+                    console.log(openedModel, diagramType)
+                    if (diagramType !== "BPMN") {
+                        if (editor) {
+                            editor.destroy?.()
+                            setEditor(undefined)
+                        }
+                        if (apollonRef.current) {
+                            let ed = new ApollonEditor(apollonRef.current, { ...options, type: diagramType })
+                            if (uploadedModel) {
+                                ed = new ApollonEditor(apollonRef.current, { ...options, type: diagramType, model: JSON.parse(uploadedModel) as UMLModel })
+                                setUploadedModel("")
+                            }
+                            if (currentDiagram)
+                                ed = new ApollonEditor(apollonRef.current, { ...options, type: currentDiagram.exerciseType as UMLDiagramType, model: currentDiagram.model as UMLModel })
+                            await ed.nextRender
+                            setEditor(ed)
+                        }
+                    } else {
+                        let cont = document.getElementById("apollon")
+                        let mod = new Modeler({
+                            container: cont ? cont : undefined,
+                            additionalModules: [lintModule, resizeAllModule],
+                        })
+                        let modelToLoad = startingDiagram
                         if (uploadedModel) {
-                            ed = new ApollonEditor(apollonRef.current, { ...options, type: diagramType, model: JSON.parse(uploadedModel) as UMLModel })
+                            modelToLoad = uploadedModel
                             setUploadedModel("")
                         }
-                        if (currentDiagram)
-                            ed = new ApollonEditor(apollonRef.current, { ...options, type: currentDiagram.exerciseType as UMLDiagramType, model: currentDiagram.model })
-                        await ed.nextRender
-                        setEditor(ed)
+                        if (currentDiagram) {
+                            modelToLoad = typeof currentDiagram.model === "string" ? currentDiagram.model : startingDiagram
+                        }
+                        await mod.importXML(modelToLoad)
+                        let linter: any = mod.get("linting")
+                        linter.setLinterConfig(bpmnlintConfig)
+                        linter.toggle(false)
+                        setModeler(mod)
                     }
                 } catch (error) {
                     console.error("Error initializing Apollon Editor:", error)
@@ -88,23 +128,45 @@ export function Sandbox() {
     }, [currentDiagram])
 
     const saveDiagram = () => {
-        if (editor && user) {
+        if (user) {
             let defaultName = `${diagramType}_${new Date().toLocaleString().replace(", ", "_")}`
-            if (!currentDiagram) {
-                API.saveSandboxDiagram(editor.model, diagramType, filename.trim() === "" ? defaultName : filename, user.username).then((res) => {
-                    API.getSandboxDiagrams(user.username).then((diagrams) => {
-                        setSavedDiagrams(diagrams)
-                        closeModel()
-                    })
+            if (diagramType === "BPMN" && modeler) {
+                modeler.saveXML({ format: true }).then((res) => {
+                    let xml: string = res.xml ?? startingDiagram
+                    if (!currentDiagram) {
+                        API.saveSandboxDiagram(xml, diagramType, filename.trim() === "" ? defaultName : filename, user.username).then((res) => {
+                            API.getSandboxDiagrams(user.username).then((diagrams) => {
+                                setSavedDiagrams(diagrams)
+                                closeModel()
+                            })
+                        })
+                    } else {
+                        API.updateSandboxDiagram(user.username, currentDiagram.diagramId, xml, diagramType, filename.trim() === "" ? currentDiagram.filename : filename).then(() => {
+                            API.getSandboxDiagrams(user.username).then((diagrams) => {
+                                setSavedDiagrams(diagrams)
+                                closeModel()
+                                setCurrentDiagram(null)
+                            })
+                        })
+                    }
                 })
-            } else {
-                API.updateSandboxDiagram(user.username, currentDiagram.diagramId, editor.model, diagramType, filename.trim() === "" ? currentDiagram.filename : filename).then(() => {
-                    API.getSandboxDiagrams(user.username).then((diagrams) => {
-                        setSavedDiagrams(diagrams)
-                        closeModel()
-                        setCurrentDiagram(null)
+            } else if (editor) {
+                if (!currentDiagram) {
+                    API.saveSandboxDiagram(editor.model, diagramType, filename.trim() === "" ? defaultName : filename, user.username).then((res) => {
+                        API.getSandboxDiagrams(user.username).then((diagrams) => {
+                            setSavedDiagrams(diagrams)
+                            closeModel()
+                        })
                     })
-                })
+                } else {
+                    API.updateSandboxDiagram(user.username, currentDiagram.diagramId, editor.model, diagramType, filename.trim() === "" ? currentDiagram.filename : filename).then(() => {
+                        API.getSandboxDiagrams(user.username).then((diagrams) => {
+                            setSavedDiagrams(diagrams)
+                            closeModel()
+                            setCurrentDiagram(null)
+                        })
+                    })
+                }
             }
         }
     }
@@ -122,7 +184,19 @@ export function Sandbox() {
     }
 
     const exportJSON = () => {
-        if (editor) {
+        if (diagramType === "BPMN" && modeler) {
+            modeler.saveXML({ format: true }).then((res) => {
+                let xml: string = res.xml ?? startingDiagram
+                const dataStr = "data:text/xml;charset=utf-8," + encodeURIComponent(xml);
+                const link = document.createElement('a');
+                link.href = dataStr
+                let defaultName = `${diagramType}_${new Date().toLocaleString().replace(", ", "_")}`
+                let fn = filename || defaultName
+                link.download = `${fn}.xml`;
+                link.click();
+                link.remove()
+            })
+        } else if (editor) {
             let model = { ...editor.model }
             Object.keys(model.elements).forEach((key) => {
                 let element = model.elements[key]
@@ -147,7 +221,21 @@ export function Sandbox() {
     }
 
     const exportSVG = () => {
-        if (editor) {
+        if (diagramType === "BPMN" && modeler) {
+            modeler.saveSVG().then((res) => {
+                const svg = res.svg
+                const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+                const svgBlobURL = URL.createObjectURL(svgBlob);
+                const link = document.createElement('a');
+                link.href = svgBlobURL
+                let defaultName = `${diagramType}_${new Date().toLocaleString().replace(", ", "_")}`
+                let fn = filename || defaultName
+                link.download = `${fn}.svg`;
+                link.click();
+                link.remove()
+                URL.revokeObjectURL(svgBlobURL)
+            })
+        } else if (editor) {
             const download = async () => {
                 let model = { ...editor.model }
                 Object.keys(model.elements).forEach((key) => {
@@ -183,8 +271,39 @@ export function Sandbox() {
     }
 
     const exportPDF = () => {
-        if (editor) {
-            const download = async () => {
+        const download = async () => {
+            if (diagramType === "BPMN" && modeler) {
+                modeler.saveSVG().then((res) => {
+                    const svg = res.svg
+                    const img = new Image()
+                    const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(svgBlob);
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas')
+                        canvas.width = img.width
+                        canvas.height = img.height
+                        const ctx = canvas.getContext('2d')
+                        ctx?.drawImage(img, 0, 0)
+                        const pndDataUrl = canvas.toDataURL('image/png')
+                        const doc = new jsPDF({
+                            orientation: img.width > img.height ? 'landscape' : 'portrait',
+                            unit: 'pt',
+                            format: [img.width, img.height],
+                        })
+                        doc.addImage(pndDataUrl, 'PNG', 0, 0, img.width, img.height);
+                        let defaultName = `${diagramType}_${new Date().toLocaleString().replace(", ", "_")}`;
+                        let fn = filename || defaultName;
+                        doc.save(`${fn}.pdf`);
+                        URL.revokeObjectURL(url)
+                        canvas.remove()
+                    }
+                    img.onerror = (err) => {
+                        console.error("Error loading SVG image:", err)
+                        URL.revokeObjectURL(url)
+                    }
+                    img.src = url
+                })
+            } else if (editor) {
                 let model = { ...editor.model }
                 Object.keys(model.elements).forEach((key) => {
                     let element = model.elements[key]
@@ -234,17 +353,35 @@ export function Sandbox() {
                 }
                 img.src = url
             }
-            download()
+
         }
+        download()
     }
 
     const handleDrop = (files: File[]) => {
         if (files.length !== 1) {
             return
         } else {
+            let nameLower = files[0]?.name?.toLowerCase() || ''
             const fileReader = new FileReader()
             fileReader.onload = (e) => {
                 try {
+                    if (nameLower.endsWith(".json")) {
+                        let model = JSON.parse(e.target?.result as string) as UMLModel
+                        if (model.type) {
+                            setDiagramType(model.type)
+                        } else {
+                            setDiagramType("ClassDiagram")
+                        }
+                        setUploadedModel(e.target?.result as string)
+                        closeUpload()
+                        openModel()
+                    } else if (nameLower.endsWith(".xml")) {
+                        setDiagramType("BPMN")
+                        setUploadedModel(e.target?.result as string)
+                        closeUpload()
+                        openModel()
+                    }
                     setUploadedModel(e.target?.result as string)
                     closeUpload()
                     openModel()
@@ -273,9 +410,13 @@ export function Sandbox() {
                     setDiagramType("DeploymentDiagram")
                     openModel()
                 }} >Create new UML Deployment Diagram</Button>
+                <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => {
+                    setDiagramType("BPMN")
+                    openModel()
+                }} >Create new BPMN Diagram</Button>
                 <Button variant="light" color="pink" rightSection={<IconUpload size={16} />} mt="sm" onClick={() => {
                     openUpload()
-                }}>Upload JSON source</Button>
+                }}>Upload source file</Button>
             </Center>
 
             <Fieldset legend="Saved diagrams" mt="md" style={{ width: "100%" }}>
@@ -299,6 +440,7 @@ export function Sandbox() {
                                         <Center>
                                             <Button variant="light" color="green" rightSection={<IconEdit size={16} stroke={1.5} />} onClick={() => {
                                                 setCurrentDiagram(diagram)
+                                                setDiagramType(diagram.exerciseType as UMLDiagramType)
                                                 openModel()
                                             }} >Edit</Button>
                                             <Button variant="light" color="red" rightSection={<IconTrashFilled size={16} stroke={1.5} />} onClick={() => {
@@ -338,9 +480,9 @@ export function Sandbox() {
             </Modal>
 
             <Modal opened={openedUpload} onClose={() => closeUpload()} transitionProps={{ transition: "fade", duration: 300 }}>
-                <Dropzone onDrop={(files) => handleDrop(files)} accept={["application/json"]} className="dropzone" radius="md" maxSize={30 * 1024 ** 2}>
+                <Dropzone onDrop={(files) => handleDrop(files)} accept={["application/json", "application/xml", "text/bpmn", "text/xml"]} className="dropzone" radius="md" maxSize={30 * 1024 ** 2}>
                     <div style={{ pointerEvents: "none" }}>
-                        <Fieldset legend="Import JSON file" style={{ pointerEvents: "none" }}>
+                        <Fieldset legend="Import source file" style={{ pointerEvents: "none" }}>
                             <Group justify='center' align='center'>
                                 <Dropzone.Accept>
                                     <IconDownload size={50} color="blue" stroke={1.5} />
@@ -358,7 +500,7 @@ export function Sandbox() {
                                 <Dropzone.Idle>Upload source file</Dropzone.Idle>
                             </Text>
                             <Text ta="center" fz="sm" mt="xs" c="dimmed">
-                                Drag&apos;n&apos;drop a JSON file here to load a diagram into the editor.
+                                Drag&apos;n&apos;drop a JSON or XML file here to load a diagram into the editor.
                             </Text>
                         </Fieldset>
                     </div>
@@ -383,7 +525,7 @@ export function Sandbox() {
                                 <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} onClick={saveDiagram} >
                                     Save diagram
                                 </Button>
-                                <Button variant="light" color="yellow" onClick={exportJSON} leftSection={<IconDownload size={14} />} >Download JSON source file</Button>
+                                <Button variant="light" color="yellow" onClick={exportJSON} leftSection={<IconDownload size={14} />} >Download source file</Button>
                                 <Button variant="light" color="cyan" onClick={exportSVG} leftSection={<IconDownload size={14} />}>Download diagram as SVG image</Button>
                                 <Button variant="light" color="pink" onClick={exportPDF} leftSection={<IconDownload size={14} />}>Download diagram as PDF file</Button>
                             </Center>

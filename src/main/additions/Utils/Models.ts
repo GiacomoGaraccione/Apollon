@@ -74,7 +74,7 @@ class Solution {
 }
 
 class SandboxDiagram {
-    model: UMLModel
+    model: UMLModel | string
     userId: string
     diagramId: string
     lastUpdated: string
