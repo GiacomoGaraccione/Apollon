@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import "./style.scss"
 import { createAvatar } from "@dicebear/core"
 import { avataaars, bottts } from '@dicebear/collection';
+import { useDisclosure } from "@mantine/hooks";
 import Leaderboard from "./Leaderboard";
 import ErrorTutorial from "./ErrorTutorial";
 import SolutionViewer from "./SolutionViewer";
@@ -32,6 +33,8 @@ function CourseHome() {
     const [load, setLoad] = useState<boolean>(true)
     const [completedExercises, setCompletedExercises] = useState<any[]>([])
     const [maxLevel, setMaxLevel] = useState<boolean>(false)
+    const [errorOpened, { open: openError, close: closeError }] = useDisclosure(false)
+    const [errorInfo, setErrorInfo] = useState<string>("")
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -85,7 +88,9 @@ function CourseHome() {
                     })
                 })
             } catch (error) {
-                console.error("Error fetching course info:", error);
+                console.error("Error fetching course info:", error)
+                openError()
+                setErrorInfo("There was an error while fetching the course information.")
             }
         }
     }, [])

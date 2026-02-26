@@ -20,7 +20,6 @@ def create_course_exercise(courseId):
     with get_session() as session:
         try:
             data = request.json
-            print(data)
             course = session.query(Course).filter_by(courseId=courseId).first()
             if course is None:
                 return jsonify({"message": "Course not found"}), 404
@@ -238,6 +237,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
             model = data.get("model", None)
             results = evaluator.evaluate_uml_diagram(solutions=solutions, model=model, diagram_type=exercise.exType) 
             completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
+            evaluation = data.get("evaluation", False)
             if record is None:
                 record = StudentExerciseLog(
                     exerciseId=exerciseId,
@@ -251,7 +251,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                     semantic_errors=json.dumps([]),
                     results=json.dumps(results) if results else None
                 )
-                if data.get("evaluation", False) and results is not None:
+                if evaluation and results is not None:
                     record.correctness = results.get("completeness", 0)
                     record.checks = 1
                     record.experience = update_experience_points(exercise, results, record) if completed is None else completed.experience
@@ -261,7 +261,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                 session.commit()
                 return jsonify({"record": record.serialize(), "results": results}), 201
             else:
-                if data.get("evaluation", False):
+                if evaluation:
                     record.experience = update_experience_points(exercise, results, record) if completed is None else completed.experience
                     record.correctness = results.get("completeness", record.correctness)
                     record.checks = record.checks + 1

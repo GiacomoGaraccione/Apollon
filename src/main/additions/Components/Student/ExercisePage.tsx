@@ -24,6 +24,7 @@ import { MatchingElement, MatchingRelationship, UseCaseDiagramEvaluationResults 
 import { ProgressBlock } from "../Common/ProgressBlock";
 import { AvatarBlock } from "../Common/AvatarBlock";
 import { FeedbackBlock } from "../Common/FeedbackBlock";
+import ErrorMessage from "../Common/ErrorMessage";
 
 const options = {
     colorEnabled: false,
@@ -68,6 +69,8 @@ function ExercisePage() {
     const [completionRecord, setCompletionRecord] = useState<any>(null)
     const [load, setLoad] = useState<boolean>(true)
     const [dialogue, setDialogue] = useState<string>("")
+    const [errorOpened, { open: openError, close: closeError }] = useDisclosure(false)
+    const [errorInfo, setErrorInfo] = useState<string>("")
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -96,35 +99,45 @@ function ExercisePage() {
                                 setEditor(ed)
                             }
                         } catch (error) {
-                            console.error("Error creating Apollon editor:", error);
+                            console.error("Error creating Apollon editor:", error)
+                            openError()
+                            setErrorInfo("There was an error while creating the diagram editor.")
                         }
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                            handleFeedback(res, false, ex.exType as UMLDiagramType)
-                            API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
-                                setCompletionRecord(comp.log)
-                                if (comp.log) {
-                                    setBossShake(true)
-                                    setDialogue(ex.boss?.victoryDialogue || "")
-                                    setTimeout(() => {
-                                        setDialogue("")
-                                        setBossDefeated(true)
-                                        setBossShake(false)
-                                    }, 10000)
-                                } else {
+                            if (ex.gamified) {
+                                handleFeedback(res, false, ex.exType as UMLDiagramType)
+                                API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
+                                    setCompletionRecord(comp.log)
+                                    if (comp.log) {
+                                        setBossShake(true)
+                                        setDialogue(ex.boss?.victoryDialogue || "")
+                                        setTimeout(() => {
+                                            setDialogue("")
+                                            setBossDefeated(true)
+                                            setBossShake(false)
+                                        }, 10000)
+                                    } else {
+                                        setDialogue(ex.boss?.introDialogue || "")
+                                        setTimeout(() => {
+                                            setDialogue("")
+                                            setBossDefeated(false)
+                                        }, 10000)
+                                    }
+                                }).catch((err) => {
                                     setDialogue(ex.boss?.introDialogue || "")
                                     setTimeout(() => {
                                         setDialogue("")
                                         setBossDefeated(false)
                                     }, 10000)
+                                    setCompletionRecord(null)
+                                })
+                            } else {
+                                let cont = document.getElementById("apollon");
+                                if (cont) {
+                                    let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, model: JSON.parse(res.data.model) });
+                                    setEditor(ed);
                                 }
-                            }).catch((err) => {
-                                setDialogue(ex.boss?.introDialogue || "")
-                                setTimeout(() => {
-                                    setDialogue("")
-                                    setBossDefeated(false)
-                                }, 10000)
-                                setCompletionRecord(null)
-                            })
+                            }
                         }).catch((err) => {
                             setResults({ ...results, oldXP: ex.experience, newXP: ex.experience, oldProgress: 0, newProgress: 0 });
                         })
@@ -190,7 +203,8 @@ function ExercisePage() {
                         console.log("Deployment Diagram coloring not implemented yet");
                         break;
                     case UMLDiagramType.ClassDiagram:
-                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r)
+                        console.log(r)
+                        model = colorClassDiagram(model, r.newSyntaxErrors, r.newSemanticErrors, r.results)
                         break;
                     default:
                         break;
@@ -202,7 +216,9 @@ function ExercisePage() {
                 }
             }
         } catch (error) {
-            console.error("Error handling feedback:", error);
+            console.error("Error handling feedback:", error)
+            openError()
+            setErrorInfo("There was an error while handling the feedback on the diagram.")
         }
     }
 
@@ -304,10 +320,15 @@ function ExercisePage() {
                     openResults()
                 }).catch((err) => {
                     console.error(err)
+                    setChecking(false)
+                    openError()
+                    setErrorInfo("There was an error while evaluating the exercise.")
                 })
             }
         } catch (error) {
-            console.error("Error evaluating exercise:", error);
+            console.error("Error evaluating exercise:", error)
+            openError()
+            setErrorInfo("There was an error while evaluating the exercise.")
         }
     }
 
@@ -424,7 +445,9 @@ function ExercisePage() {
                 })
             }
         } catch (error) {
-            console.error("Error checking completion:", error);
+            console.error("Error checking completion:", error)
+            openError()
+            setErrorInfo("There was an error while checking for exercise completion.")
         }
     }
 
@@ -560,6 +583,8 @@ function ExercisePage() {
                     }
                 } catch (error) {
                     console.error("Error reading file:", error)
+                    openError()
+                    setErrorInfo("There was an error while reading the uploaded file. Please make sure it is a valid JSON file exported from the diagram editor.")
                 }
             }
             fileReader.readAsText(files[0])
@@ -601,7 +626,7 @@ function ExercisePage() {
                                     })
                                 }
                             }} >Save</Button>
-                            <Button variant="light" color="green" onClick={evaluate} leftSection={<IconCircleDashedCheck size={14} />} >Check</Button>
+                            {exercise && exercise.gamified && <Button variant="light" color="green" onClick={evaluate} leftSection={<IconCircleDashedCheck size={14} />} >Check</Button>}
                             <Button variant="light" color="red" onClick={openExit} leftSection={<IconSquareXFilled size={14} />}>Exit</Button>
                         </Center>
                     </Grid.Col>
@@ -620,7 +645,7 @@ function ExercisePage() {
                     <Tabs defaultValue={"Description"}>
                         <Tabs.List >
                             <Tabs.Tab value="Description" leftSection={<IconFileDescriptionFilled size={15} />} >Description</Tabs.Tab>
-                            <Tabs.Tab value="Leaderboard" leftSection={<IconMedal size={15} />}  >Leaderboard</Tabs.Tab>
+                            {exercise && exercise.gamified && <Tabs.Tab value="Leaderboard" leftSection={<IconMedal size={15} />}  >Leaderboard</Tabs.Tab>}
                         </Tabs.List>
                         <Tabs.Panel value="Description" pt="xs">
                             <Text fw={700} fs="italic" td="underline" >{exercise.title}</Text>
@@ -665,15 +690,22 @@ function ExercisePage() {
                                 </div>
                             </Dropzone>
                         </Tabs.Panel>
-                        <Tabs.Panel value="Leaderboard" pt="xs">
+                        {exercise && exercise.gamified && <Tabs.Panel value="Leaderboard" pt="xs">
                             <Fieldset legend="Ranking by Exercise Completeness">
                                 <Leaderboard ranking={"exercise"} />
 
                             </Fieldset>
-                        </Tabs.Panel>
+                        </Tabs.Panel>}
                     </Tabs>
                 )}
             </Drawer>
+
+            <ErrorMessage open={errorOpened} onClose={() => {
+                closeError()
+                setErrorInfo("")
+            }} details={errorInfo} />
+
+
 
             <Modal opened={resultsOpened} onClose={() => {
                 closeResults()

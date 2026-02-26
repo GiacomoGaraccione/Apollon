@@ -15,6 +15,7 @@ import { Dropzone } from "@mantine/dropzone";
 import 'svg2pdf.js'
 import jsPDF from "jspdf";
 import { Canvg } from "canvg";
+import ErrorMessage from "./ErrorMessage";
 
 const options = {
     colorEnabled: false,
@@ -36,6 +37,8 @@ export function Sandbox() {
     const [filename, setFilename] = useState("")
     const [savedDiagrams, setSavedDiagrams] = useState<SandboxDiagram[]>([])
     const [currentDiagram, setCurrentDiagram] = useState<SandboxDiagram | null>(null)
+    const [errorOpened, { open: openError, close: closeError }] = useDisclosure(false)
+    const [errorInfo, setErrorInfo] = useState<string>("")
     const apollonRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -65,6 +68,8 @@ export function Sandbox() {
                     }
                 } catch (error) {
                     console.error("Error initializing Apollon Editor:", error)
+                    openError()
+                    setErrorInfo("There was an error while initializing the diagram editor.")
                 }
             }, 350)
 
@@ -245,6 +250,8 @@ export function Sandbox() {
                     openModel()
                 } catch (error) {
                     console.error("Error reading file:", error)
+                    openError()
+                    setErrorInfo("There was an error while reading the uploaded file. Please make sure it is a valid JSON file exported from the diagram editor.")
                 }
             }
             fileReader.readAsText(files[0])
@@ -305,6 +312,8 @@ export function Sandbox() {
                         </Table.Tbody>
                     </Table>}
             </Fieldset>
+
+            <ErrorMessage open={errorOpened} onClose={closeError} details={errorInfo} />
 
             <Modal opened={openedDelete} onClose={() => {
                 closeDelete()

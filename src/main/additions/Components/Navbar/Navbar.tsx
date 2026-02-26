@@ -38,7 +38,6 @@ function Navbar(props: any) {
 
 
     useEffect(() => {
-        console.log(window.location.pathname)
         let loc = window.location.pathname.replace("/umlegend", "")
         switch (loc) {
             case "/teacher":

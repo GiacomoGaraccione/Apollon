@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { Alert, AppShell, Burger, Group, Loader, Text, useMantineTheme } from '@mantine/core'
+import { AppShell, Loader } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks';
 import Login from './Components/Login/Login'
 import { User, UserContext, Roles } from "./Components/Login/UserContext"
@@ -22,7 +22,6 @@ import { Sandbox } from './Components/Common/Sandbox';
 
 
 function App() {
-    const theme = useMantineTheme()
     const [user, setUser] = useState<User | undefined>(undefined)
     const [loggedIn, setLoggedIn] = useState(false)
     const [loaded, setLoaded] = useState(false)
