@@ -69,7 +69,6 @@ export function Sandbox() {
         if (openedModel) {
             const timer = setTimeout(async () => {
                 try {
-                    console.log(openedModel, diagramType)
                     if (diagramType !== "BPMN") {
                         if (editor) {
                             editor.destroy?.()
@@ -512,6 +511,7 @@ export function Sandbox() {
                     editor.destroy?.()
                     setEditor(undefined)
                 }
+                setCurrentDiagram(null)
                 closeModel()
             }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Sandbox" style={{ width: "100%" }}>

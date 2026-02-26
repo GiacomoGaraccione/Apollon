@@ -233,5 +233,5 @@ class SandboxDiagram(Base):
     diagramId = Column(String, nullable=False, primary_key=True)
     model = Column(String, nullable=True)
     exerciseType = Column(String, nullable=True)
-    lastUpdated = Column(String, nullable=False, default=datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
+    lastUpdated = Column(String, nullable=False, default=lambda: datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
     filename = Column(String, nullable=True)
