@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
-import { Alert, Button, Center, Text, Modal, Fieldset, Tabs, Grid, Notification, Stack, TextInput, Group, Avatar, RingProgress, Drawer, List, ThemeIcon, Highlight, Divider, Progress, Skeleton, Popover, Table } from "@mantine/core";
+import React, { useEffect, useState, useRef, useContext, useMemo } from "react";
+import { Alert, Button, Center, Text, Modal, Fieldset, Tabs, Grid, Notification, Select, Stack, TextInput, Group, Avatar, RingProgress, Drawer, List, ThemeIcon, Highlight, Divider, Progress, Skeleton, Popover, Table, ActionIcon, MultiSelect, Badge } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
-import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconMedal, IconMenu4, IconReload, IconSquareRoundedPlusFilled, IconSquareXFilled, IconTrash, IconTrashFilled, IconTrophyFilled, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
+import { IconCheck, IconCircleDashedCheck, IconCloudUpload, IconDownload, IconEdit, IconExclamationCircle, IconExclamationCircleFilled, IconFileDescriptionFilled, IconMedal, IconMenu4, IconReload, IconSortAscending, IconSortDescending, IconSquareRoundedPlusFilled, IconSquareXFilled, IconTrash, IconTrashFilled, IconTrophyFilled, IconUpload, IconUserUp, IconX } from "@tabler/icons-react";
 import { Exercise, SandboxDiagram } from "../../Utils/Models";
 import { useNavigate, useParams } from "react-router-dom";
 import { ApollonMode, UMLDiagramType, UMLModel } from "../../../typings"
@@ -58,6 +58,10 @@ export function Sandbox() {
     </bpmn:definitions>
     `
     const [modeler, setModeler] = useState<Modeler>()
+    const [sortBy, setSortBy] = useState<"filename" | "exerciseType" | "lastUpdated">("lastUpdated")
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+    const [filterTypes, setFilterTypes] = useState<string[]>([])
+    const [filterMode, setFilterMode] = useState<"include" | "exclude">("include")
 
     useEffect(() => {
         if (user) API.getSandboxDiagrams(user.username).then((diagrams) => {
@@ -394,6 +398,30 @@ export function Sandbox() {
         }
     }
 
+    const sortedAndFilteredDiagrams = useMemo(() => {
+        let diagrams = [...savedDiagrams]
+        if (filterTypes.length > 0) {
+            diagrams = diagrams.filter((d) => filterMode === "include" ? filterTypes.includes(d.exerciseType) : !filterTypes.includes(d.exerciseType))
+        }
+        diagrams.sort((a, b) => {
+            let compareA: string | number = a[sortBy]
+            let compareB: string | number = b[sortBy]
+            if (sortBy === "lastUpdated") {
+                const parseDate = (str: string) => {
+                    const [date, time] = str.split(" ")
+                    const [day, month, year] = date.split("-")
+                    return new Date(`${year}-${month}-${day} ${time}`).getTime()
+                }
+                compareA = parseDate(a.lastUpdated as string)
+                compareB = parseDate(b.lastUpdated as string)
+            }
+            if (compareA < compareB) return sortOrder === "asc" ? -1 : 1
+            if (compareA > compareB) return sortOrder === "asc" ? 1 : -1
+            return 0
+        })
+        return diagrams
+    }, [savedDiagrams, sortBy, sortOrder, filterTypes, filterMode])
+
     return (
         <>
             <Center mt="md">
@@ -420,38 +448,62 @@ export function Sandbox() {
 
             <Fieldset legend="Saved diagrams" mt="md" style={{ width: "100%" }}>
                 {savedDiagrams.length === 0 ? <Alert title="No diagrams found" color="yellow">You have no saved diagrams.</Alert> :
-                    <Table horizontalSpacing="md" verticalSpacing="xs" miw={700} layout='fixed'>
-                        <Table.Thead>
-                            <tr>
-                                <th>Filename</th>
-                                <th>Type</th>
-                                <th>Last Updated</th>
-                                <th>Actions</th>
-                            </tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                            {savedDiagrams.map((diagram) => (
-                                <tr key={diagram.diagramId}>
-                                    <td>{diagram.filename}</td>
-                                    <td>{diagram.exerciseType}</td>
-                                    <td>{diagram.lastUpdated}</td>
-                                    <td>
-                                        <Center>
-                                            <Button variant="light" color="green" rightSection={<IconEdit size={16} stroke={1.5} />} onClick={() => {
-                                                setCurrentDiagram(diagram)
-                                                setDiagramType(diagram.exerciseType as UMLDiagramType)
-                                                openModel()
-                                            }} >Edit</Button>
-                                            <Button variant="light" color="red" rightSection={<IconTrashFilled size={16} stroke={1.5} />} onClick={() => {
-                                                setCurrentDiagram(diagram)
-                                                openDelete()
-                                            }} ml="sm" >Delete</Button>
-                                        </Center>
-                                    </td>
+                    <>
+                        <Group mb="md">
+                            <Select label="Sort by" value={sortBy} onChange={(value: any) => setSortBy(value as "filename" | "exerciseType" | "lastUpdated")}
+                                data={[
+                                    { value: "filename", label: "Filename" },
+                                    { value: "exerciseType", label: "Diagram type" },
+                                    { value: "lastUpdated", label: "Last updated" },
+                                ]} />
+                            <ActionIcon variant="light" color="blue" onClick={() => (setSortOrder(o => o === "asc" ? "desc" : "asc"))} size="lg" mt={24}>
+                                {sortOrder === "asc" ? <IconSortAscending size={16} stroke={1.5} /> : <IconSortDescending size={16} stroke={1.5} />}
+                            </ActionIcon>
+                            <MultiSelect label="Filter by diagram type" value={filterTypes} onChange={setFilterTypes} style={{ flexGrow: 1 }}
+                                data={Array.from(new Set(savedDiagrams.map(d => d.exerciseType))).map(type => ({ value: type, label: type }))} />
+                            <Select label="Filter mode" value={filterMode} onChange={(value) => setFilterMode(value as any)}
+                                data={[
+                                    { value: "include", label: "Include selected types" },
+                                    { value: "exclude", label: "Exclude selected types" },
+                                ]} disabled={filterTypes.length === 0} />
+                        </Group>
+                        <Table horizontalSpacing="md" verticalSpacing="xs" miw={700} layout='fixed'>
+                            <Table.Thead>
+                                <tr>
+                                    <th>Filename</th>
+                                    <th>Type</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </Table.Tbody>
-                    </Table>}
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {sortedAndFilteredDiagrams.map((diagram) => (
+                                    <tr key={diagram.diagramId}>
+                                        <td>{diagram.filename}</td>
+                                        <td><Badge variant="light"
+                                            color={diagram.exerciseType === "BPMN" ? "blue" :
+                                                diagram.exerciseType === "ClassDiagram" ? "green" :
+                                                    diagram.exerciseType === "UseCaseDiagram" ? "cyan" : "red"
+                                            } >  {diagram.exerciseType}</Badge></td>
+                                        <td>{diagram.lastUpdated}</td>
+                                        <td>
+                                            <Center>
+                                                <Button variant="light" color="green" rightSection={<IconEdit size={16} stroke={1.5} />} onClick={() => {
+                                                    setCurrentDiagram(diagram)
+                                                    setDiagramType(diagram.exerciseType as UMLDiagramType)
+                                                    openModel()
+                                                }} >Edit</Button>
+                                                <Button variant="light" color="red" rightSection={<IconTrashFilled size={16} stroke={1.5} />} onClick={() => {
+                                                    setCurrentDiagram(diagram)
+                                                    openDelete()
+                                                }} ml="sm" >Delete</Button>
+                                            </Center>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </Table.Tbody>
+                        </Table>
+                    </>}
             </Fieldset>
 
             <ErrorMessage open={errorOpened} onClose={closeError} details={errorInfo} />
