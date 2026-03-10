@@ -38,7 +38,7 @@ function Navbar(props: any) {
 
 
     useEffect(() => {
-        let loc = window.location.pathname.replace("/umlegend", "")
+        let loc = window.location.pathname.replace("/uml-modeler", "")
         switch (loc) {
             case "/teacher":
                 setActive("Home")
@@ -61,6 +61,9 @@ function Navbar(props: any) {
                 break
             case "/sandbox":
                 setActive("Sandbox")
+                break
+            case "/settings":
+                setActive("Settings")
                 break
             default:
                 setActive("")
@@ -104,6 +107,10 @@ function Navbar(props: any) {
                                 navigate("/sandbox")
                                 setActive("Sandbox")
                             }} />
+                            <NavbarLink icon={IconSettings} label="Settings" key={"Settings"} active={active === "Settings"} onClick={() => {
+                                navigate("/settings")
+                                setActive("Settings")
+                            }} />
                         </Stack>
                     </div>
 
@@ -118,7 +125,7 @@ function Navbar(props: any) {
                 </div>
 
             </nav>
-            <ActionIcon onClick={props.toggleOpen} size="md" radius="xl" variant="filled" color="blue" style={{ position: "absolute", top: "50%", right: -12, transform: "translateY(-50%)", zIndex: 1000, boxShadow: "0 2px 8èx rgba(0, 0, 0, 0.2)" }}>
+            <ActionIcon onClick={props.toggleOpen} size="md" radius="xl" variant="filled" color="blue" style={{ position: "absolute", top: "50%", right: -12, transform: "translateY(-50%)", zIndex: 1000, boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)" }}>
                 {props.open ? <IconChevronLeft size={20} /> : <IconChevronRight size={20} />}
             </ActionIcon>
         </div>

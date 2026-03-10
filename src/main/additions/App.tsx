@@ -19,6 +19,7 @@ import ExercisePage from './Components/Student/ExercisePage';
 import DiagramView from './Components/Teacher/DiagramView';
 import ErrorTutorial from './Components/Student/ErrorTutorial';
 import { Sandbox } from './Components/Common/Sandbox';
+import UserSettings from './Components/Login/UserSettings';
 
 
 function App() {
@@ -77,6 +78,10 @@ function App() {
                         <Route path="/sandbox" element={
                             !loaded ? <Loading /> : (loggedIn ? <Sandbox /> : <Navigate to="/login" />)
                         } />
+                        <Route path="/settings"
+                            element={
+                                !loaded ? <Loading /> : (loggedIn ? <UserSettings /> : <Navigate to="/login" />)
+                            } />
                         <Route path="/student/examples" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ErrorTutorial /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
                         } />

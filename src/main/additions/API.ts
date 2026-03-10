@@ -9,7 +9,7 @@ import { UseCaseDiagramReferenceSolution } from "./Utils/UseCaseDiagram/MatcherT
 let baseURL = "http://localhost:5000"
 
 if (process.env.NODE_ENV === "production") {
-    baseURL = "/umlegend/api"
+    baseURL = "/uml-modeler-server"
 }
 
 // ----------------- Auth APIs -----------------
@@ -69,6 +69,26 @@ async function logout() {
     })
     if (response.ok) {
         localStorage.removeItem("csrf-token")
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function changePassword(oldPassword: string, newPassword: string) {
+    let response = await fetch(baseURL + "/auth/change-password", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ oldPassword, newPassword })
+    })
+    if (response.ok) {
         return
     } else {
         let errDetail = await response.json()
@@ -884,7 +904,7 @@ async function deleteSandboxDiagram(userId: string, diagramId: string) {
 }
 
 const API = {
-    login, getUserInfo, logout,
+    login, getUserInfo, logout, changePassword,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo, getStudentCompletedExercises,
     addExercise, deleteExercise, updateExercise, createBoss, addSolution, updateSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise, getStudentDiagrams,
