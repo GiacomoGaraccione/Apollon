@@ -98,7 +98,7 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <BrowserRouter basename='/se-modeler'>
+  <BrowserRouter basename='/uml-modeler'>
     <MantineProvider defaultColorScheme='auto' >
       <App />
     </MantineProvider>

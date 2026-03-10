@@ -8,7 +8,7 @@ COPY . .
 
 # Install dependencies & build
 RUN npm install
-ARG PUBLIC_URL=/umlegend
+ARG PUBLIC_URL=/uml-modeler
 ENV PUBLIC_URL=$PUBLIC_URL
 
 RUN npm run build

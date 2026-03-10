@@ -9,7 +9,7 @@ module.exports = merge(common, {
   devtool: false,
   output: {
     filename: '[name].[contenthash].js',
-    publicPath: "/umlegend/",
+    publicPath: "/uml-modeler/",
   },
 
   plugins: [

@@ -29,7 +29,7 @@ def create_app():
         if not key.startswith('__'):
             print(f"{key}: {value}")
     print(f"Starting app in {env_name} environment.")
-    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8888", "http://127.0.0.1:5000", "http://se-fall25.noyce.calpoly.io"])
+    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8888", "http://127.0.0.1:5000", "http://se-fall25.noyce.calpoly.io", "https://assistants.polito.it"])
 
     # Initialize extensions
     jwt.init_app(app)

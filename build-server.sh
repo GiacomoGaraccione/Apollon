@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-IMAGE_NAME="giacomogaraccione/umlegend-new-server"
+IMAGE_NAME="giacomogaraccione/se-modeler-server"
 TAG="latest"
 
 echo "🚀 Building Docker image: $IMAGE_NAME:$TAG"
