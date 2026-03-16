@@ -201,17 +201,6 @@ export function Sandbox() {
             })
         } else if (editor) {
             let model = { ...editor.model }
-            Object.keys(model.elements).forEach((key) => {
-                let element = model.elements[key]
-                element.strokeColor = "#000000"
-                element.textColor = "#000000"
-                element.fillColor = "#FFFFFF"
-            })
-            Object.keys(model.relationships).forEach((key) => {
-                let element = model.relationships[key]
-                element.strokeColor = "#000000"
-                element.textColor = "#000000"
-            })
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(model, null, 2));
             const link = document.createElement('a');
             link.href = dataStr
@@ -241,17 +230,6 @@ export function Sandbox() {
         } else if (editor) {
             const download = async () => {
                 let model = { ...editor.model }
-                Object.keys(model.elements).forEach((key) => {
-                    let element = model.elements[key]
-                    element.strokeColor = "#000000"
-                    element.textColor = "#000000"
-                    element.fillColor = "#FFFFFF"
-                })
-                Object.keys(model.relationships).forEach((key) => {
-                    let element = model.relationships[key]
-                    element.strokeColor = "#000000"
-                    element.textColor = "#000000"
-                })
                 let newDiv = document.createElement("div");
                 let ed = new ApollonEditor(newDiv, { ...options, type: diagramType as UMLDiagramType, model: model })
                 await ed.nextRender
@@ -308,17 +286,6 @@ export function Sandbox() {
                 })
             } else if (editor) {
                 let model = { ...editor.model }
-                Object.keys(model.elements).forEach((key) => {
-                    let element = model.elements[key]
-                    element.strokeColor = "#000000"
-                    element.textColor = "#000000"
-                    element.fillColor = "#FFFFFF"
-                })
-                Object.keys(model.relationships).forEach((key) => {
-                    let element = model.relationships[key]
-                    element.strokeColor = "#000000"
-                    element.textColor = "#000000"
-                })
                 let newDiv = document.createElement("div");
                 let ed = new ApollonEditor(newDiv, { ...options, type: diagramType as UMLDiagramType, model: model })
                 await ed.nextRender

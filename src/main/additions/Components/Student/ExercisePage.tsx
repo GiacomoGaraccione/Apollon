@@ -458,7 +458,9 @@ function ExercisePage() {
                 let element = model.elements[key]
                 element.strokeColor = "#000000"
                 element.textColor = "#000000"
-                element.fillColor = "#FFFFFF"
+                if (element.type !== "UseCaseActor") {
+                    element.fillColor = "#FFFFFF"
+                }
             })
             Object.keys(model.relationships).forEach((key) => {
                 let element = model.relationships[key]
@@ -483,7 +485,9 @@ function ExercisePage() {
                     let element = model.elements[key]
                     element.strokeColor = "#000000"
                     element.textColor = "#000000"
-                    element.fillColor = "#FFFFFF"
+                    if (element.type !== "UseCaseActor") {
+                        element.fillColor = "#FFFFFF"
+                    }
                 })
                 Object.keys(model.relationships).forEach((key) => {
                     let element = model.relationships[key]
@@ -518,7 +522,9 @@ function ExercisePage() {
                     let element = model.elements[key]
                     element.strokeColor = "#000000"
                     element.textColor = "#000000"
-                    element.fillColor = "#FFFFFF"
+                    if (element.type !== "UseCaseActor") {
+                        element.fillColor = "#FFFFFF"
+                    }
                 })
                 Object.keys(model.relationships).forEach((key) => {
                     let element = model.relationships[key]
