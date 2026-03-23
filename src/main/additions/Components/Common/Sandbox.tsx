@@ -62,12 +62,25 @@ export function Sandbox() {
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
     const [filterTypes, setFilterTypes] = useState<string[]>([])
     const [filterMode, setFilterMode] = useState<"include" | "exclude">("include")
+    const [isSaving, setIsSaving] = useState(false)
+
+    const editorRef = useRef<ApollonEditor | undefined>(editor)
+    const modelerRef = useRef<Modeler | undefined>(modeler)
+    const filenameRef = useRef(filename)
+    const diagramTypeRef = useRef(diagramType)
+    const currentDiagramRef = useRef<SandboxDiagram | null>(currentDiagram)
 
     useEffect(() => {
         if (user) API.getSandboxDiagrams(user.username).then((diagrams) => {
             setSavedDiagrams(diagrams)
         })
     }, [])
+
+    useEffect(() => { editorRef.current = editor }, [editor])
+    useEffect(() => { modelerRef.current = modeler }, [modeler])
+    useEffect(() => { filenameRef.current = filename }, [filename])
+    useEffect(() => { diagramTypeRef.current = diagramType }, [diagramType])
+    useEffect(() => { currentDiagramRef.current = currentDiagram }, [currentDiagram])
 
     useEffect(() => {
         if (openedModel) {
@@ -129,6 +142,63 @@ export function Sandbox() {
             setFilename("")
         }
     }, [currentDiagram])
+
+    const autoSaveDiagram = () => {
+        if (!user) return
+        setIsSaving(true)
+        let defaultName = `${diagramTypeRef.current}_${new Date().toLocaleString().replace(", ", "_")}`
+
+        if (diagramTypeRef.current === "BPMN" && modelerRef.current) {
+            modelerRef.current.saveXML({ format: true }).then((res) => {
+                let xml: string = res.xml ?? startingDiagram
+                if (currentDiagramRef.current) {
+                    API.updateSandboxDiagram(user.username, currentDiagramRef.current.diagramId, xml, diagramTypeRef.current, filenameRef.current)
+                        .then(() => setIsSaving(false))
+                        .catch(err => setIsSaving(false))
+                } else {
+                    API.saveSandboxDiagram(xml, diagramTypeRef.current, filenameRef.current || defaultName, user.username)
+                        .then((res) => {
+                            API.getSandboxDiagrams(user.username).then((diagrams: SandboxDiagram[]) => {
+                                const newDiagram = diagrams.find((d: SandboxDiagram) => d.filename === (filenameRef.current || defaultName))
+                                if (newDiagram) {
+                                    setCurrentDiagram(newDiagram)
+                                }
+                                setIsSaving(false)
+                            })
+                        })
+                        .catch(err => setIsSaving(false))
+                }
+            })
+        } else if (editorRef.current) {
+            if (currentDiagramRef.current) {
+                API.updateSandboxDiagram(user.username, currentDiagramRef.current.diagramId, editorRef.current.model, diagramTypeRef.current, filenameRef.current)
+                    .then(() => setIsSaving(false))
+                    .catch(err => setIsSaving(false))
+            } else {
+                API.saveSandboxDiagram(editorRef.current.model, diagramTypeRef.current, filenameRef.current || defaultName, user.username)
+                    .then((res) => {
+                        API.getSandboxDiagrams(user.username).then((diagrams: SandboxDiagram[]) => {
+                            const newDiagram = diagrams.find((d: SandboxDiagram) => d.filename === (filenameRef.current || defaultName))
+                            if (newDiagram) {
+                                setCurrentDiagram(newDiagram)
+                            }
+                            setIsSaving(false)
+                        })
+                    })
+                    .catch(err => setIsSaving(false))
+            }
+        }
+    }
+
+    useEffect(() => {
+        if (openedModel && user) {
+            const interval = setInterval(() => {
+                autoSaveDiagram()
+            }, 30000)
+
+            return () => clearInterval(interval)
+        }
+    }, [openedModel, user])
 
     const saveDiagram = () => {
         if (user) {
@@ -526,12 +596,17 @@ export function Sandbox() {
             </Modal>
 
             <Modal opened={openedModel} closeOnEscape={false} onClose={() => {
-                if (editor) {
-                    editor.destroy?.()
-                    setEditor(undefined)
+                if (user) {
+                    API.getSandboxDiagrams(user.username).then((diagrams) => {
+                        if (editor) {
+                            editor.destroy?.()
+                            setEditor(undefined)
+                        }
+                        setSavedDiagrams(diagrams)
+                        setCurrentDiagram(null)
+                        closeModel()
+                    })
                 }
-                setCurrentDiagram(null)
-                closeModel()
             }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Sandbox" style={{ width: "100%" }}>
                     <div ref={apollonRef} id="apollon" style={{ height: "80vh" }} ></div>
@@ -544,6 +619,7 @@ export function Sandbox() {
                                 <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} onClick={saveDiagram} >
                                     Save diagram
                                 </Button>
+                                {isSaving && <Text color="gray" fz="sm">Autosave...</Text>}
                                 <Button variant="light" color="yellow" onClick={exportJSON} leftSection={<IconDownload size={14} />} >Download source file</Button>
                                 <Button variant="light" color="cyan" onClick={exportSVG} leftSection={<IconDownload size={14} />}>Download diagram as SVG image</Button>
                                 <Button variant="light" color="pink" onClick={exportPDF} leftSection={<IconDownload size={14} />}>Download diagram as PDF file</Button>
