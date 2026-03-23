@@ -134,7 +134,7 @@ export function UseCaseDiagramReferenceFormModal(props: {
             <Modal opened={props.openedReference} onClose={() => {
                 props.closeReference()
                 props.setPreview(false)
-            }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
+            }} closeOnEscape={false} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
                 <Fieldset legend="Solution Creator" style={{ width: "100%" }}>
                     {!props.preview && <>
                         <Tabs defaultValue="actors" color="cyan">

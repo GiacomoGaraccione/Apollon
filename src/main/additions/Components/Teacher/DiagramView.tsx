@@ -226,7 +226,7 @@ function DiagramView() {
                 </Alert>)}
             </Fieldset>
         </Skeleton>
-        {exercise && currentDiagram && <Modal opened={showDiagram} onClose={closeDiagram} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
+        {exercise && currentDiagram && <Modal closeOnEscape={false} opened={showDiagram} onClose={closeDiagram} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
             <Skeleton visible={loadModal} height="100%" >
                 <Stack align="center" justify="center">
                     {exercise.gamified && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>

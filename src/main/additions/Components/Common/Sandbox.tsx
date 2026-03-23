@@ -475,7 +475,7 @@ export function Sandbox() {
 
             <ErrorMessage open={errorOpened} onClose={closeError} details={errorInfo} />
 
-            <Modal opened={openedDelete} onClose={() => {
+            <Modal opened={openedDelete} closeOnEscape={false} onClose={() => {
                 closeDelete()
                 setCurrentDiagram(null)
             }} transitionProps={{ transition: "fade", duration: 300 }}>
@@ -497,7 +497,7 @@ export function Sandbox() {
                 </Stack>
             </Modal>
 
-            <Modal opened={openedUpload} onClose={() => closeUpload()} transitionProps={{ transition: "fade", duration: 300 }}>
+            <Modal opened={openedUpload} closeOnEscape={false} onClose={() => closeUpload()} transitionProps={{ transition: "fade", duration: 300 }}>
                 <Dropzone onDrop={(files) => handleDrop(files)} accept={["application/json", "application/xml", "text/bpmn", "text/xml"]} className="dropzone" radius="md" maxSize={30 * 1024 ** 2}>
                     <div style={{ pointerEvents: "none" }}>
                         <Fieldset legend="Import source file" style={{ pointerEvents: "none" }}>
@@ -525,7 +525,7 @@ export function Sandbox() {
                 </Dropzone>
             </Modal>
 
-            <Modal opened={openedModel} onClose={() => {
+            <Modal opened={openedModel} closeOnEscape={false} onClose={() => {
                 if (editor) {
                     editor.destroy?.()
                     setEditor(undefined)

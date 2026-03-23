@@ -96,7 +96,7 @@ function ErrorTutorial() {
                 </Grid>
             </Fieldset>
 
-            {errorExamples && currentExample && <Modal opened={opened} onClose={close} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
+            {errorExamples && currentExample && <Modal closeOnEscape={false} opened={opened} onClose={close} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Center>
                     <Text fw={500} mb="md" style={{ marginTop: "1rem" }}>{currentExample.id} </Text>
                 </Center>

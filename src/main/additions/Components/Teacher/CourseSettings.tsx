@@ -459,7 +459,7 @@ function CourseSettings() {
                 </Grid.Col>
             </Grid >
 
-            <Modal opened={openedUnlock} onClose={closeUnlock} title="Upload Unlock Settings">
+            <Modal closeOnEscape={false} opened={openedUnlock} onClose={closeUnlock} title="Upload Unlock Settings">
                 <Modal.Body>
                     <Dropzone onDrop={handleUnlockDrop} accept={["application/json"]} className="dropzone" radius="md" >
                         <div style={{ pointerEvents: "none", cursor: "pointer" }}>
@@ -489,7 +489,7 @@ function CourseSettings() {
                 </Modal.Body>
             </Modal>
 
-            <Modal opened={openedSettings} onClose={closeSettings} title="Upload Game Settings">
+            <Modal closeOnEscape={false} opened={openedSettings} onClose={closeSettings} title="Upload Game Settings">
                 <Modal.Body>
                     <Dropzone onDrop={handleSettingsDrop} accept={["application/json"]} className="dropzone" radius="md" >
                         <div style={{ pointerEvents: "none", cursor: "pointer" }}>

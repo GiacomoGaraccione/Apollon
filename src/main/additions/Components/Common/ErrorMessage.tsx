@@ -16,7 +16,7 @@ export default function ErrorMessage({
 }: ErrorMessageProps) {
 
     return (
-        <Modal opened={open} onClose={onClose} centered size="lg" title="Error" >
+        <Modal closeOnEscape={false} opened={open} onClose={onClose} centered size="lg" title="Error" >
             <Stack align="flex-start" >
                 <Text fz="xl">Sorry! An error has occurred 😢</Text>
                 <Text fz="sm">Please reload the page. If the problem persists, please contact the course's teacher.</Text>

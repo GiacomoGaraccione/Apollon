@@ -114,7 +114,7 @@ function SolutionViewer() {
                 </Grid>
             </Fieldset>
 
-            {completedExercises && currentSolution && <Modal opened={opened} onClose={close} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
+            {completedExercises && currentSolution && <Modal closeOnEscape={false} opened={opened} onClose={close} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <div ref={apollonRef} id="apollon" className="canv" style={{ width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
             </Modal>}
         </>
