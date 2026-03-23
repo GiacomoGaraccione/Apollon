@@ -3,6 +3,7 @@ from app.models import User
 from app.database.db import get_session
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_csrf_token, unset_jwt_cookies
 from datetime import timedelta
+from app.utils.auth_utils import role_required
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -40,7 +41,21 @@ def logout():
     response = jsonify({'message': 'Logged out successfully'})
     unset_jwt_cookies(response)
     return response, 200
-    
+
+@auth_bp.route("/restore-password", methods=["POST"])
+@jwt_required()
+@role_required("Teacher")
+def restore_password():
+    data = request.json
+    with get_session() as session:
+        username = data.get("username")
+        user = session.query(User).filter_by(username=username).first()
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+        user.set_password(f"!!{username}!!")
+        session.commit()
+        return jsonify({'message': 'Password restored successfully'}), 200
+
 @auth_bp.route("/change-password", methods=["POST"])
 @jwt_required()
 def change_password():

@@ -78,6 +78,26 @@ async function logout() {
     }
 }
 
+async function restorePassword(username: string) {
+    let response = await fetch(baseURL + "/auth/restore-password", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ username })
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 async function changePassword(oldPassword: string, newPassword: string) {
     let response = await fetch(baseURL + "/auth/change-password", {
         method: "POST",
@@ -904,7 +924,7 @@ async function deleteSandboxDiagram(userId: string, diagramId: string) {
 }
 
 const API = {
-    login, getUserInfo, logout, changePassword,
+    login, getUserInfo, logout, restorePassword, changePassword,
     getAllUsers, createUser, deleteUser, updateStudentId,
     getAllCourses, getCourse, createCourse, updateCourseSettings, updateCourseGameOptions, deleteCourse, getNonEnrolledStudents, enrollStudents, unenrollStudent, getCourseInfo, getStudentCourseInfo, updateStudentCourseInfo, getStudentCompletedExercises,
     addExercise, deleteExercise, updateExercise, createBoss, addSolution, updateSolution, deleteSolution, getStudentExerciseRecord, saveExerciseRecord, getStudentExerciseCompletion, completeStudentExercise, getStudentDiagrams,

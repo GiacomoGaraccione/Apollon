@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { IconCheck, IconChevronDown, IconChevronUp, IconEdit, IconExclamationCircleFilled, IconSearch, IconSelector, IconSquareRoundedPlus, IconSquareRoundedPlusFilled, IconTrashXFilled } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconChevronUp, IconEdit, IconExclamationCircleFilled, IconRestore, IconSearch, IconSelector, IconSquareRoundedPlus, IconSquareRoundedPlusFilled, IconTrashXFilled } from '@tabler/icons-react';
 import { Alert, Badge, Button, Center, Fieldset, Group, keys, Modal, Notification, ScrollArea, Stack, Table, Tabs, Text, TextInput, Tooltip, UnstyledButton, } from '@mantine/core';
 import cx from 'clsx';
 import API from '../../API';
@@ -77,6 +77,7 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
     const [editError, setEditError] = useState("")
     const [editLoad, setEditLoad] = useState(false)
     const [deleteLoad, setDeleteLoad] = useState(false)
+    const [restoreNotif, setRestoreNotif] = useState(false)
 
     useEffect(() => {
         setSortedUsers(props.users)
@@ -153,12 +154,12 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
             <Modal opened={modalOpened} onClose={() => {
                 close()
                 setEditError("")
-            }} title="User Operations" centered>
+            }} title="User Operations" centered size="auto">
                 <Tabs defaultValue={"edit"}>
                     <Tabs.List>
                         <Tabs.Tab value="edit" leftSection={<IconEdit size={16} stroke={1.5} />}>Edit student ID</Tabs.Tab>
                         <Tabs.Tab value="delete" leftSection={<IconTrashXFilled size={16} stroke={1.5} />}>Delete</Tabs.Tab>
-                        <Tabs.Tab value="enroll" leftSection={<IconSquareRoundedPlus size={16} stroke={1.5} />}>Enroll</Tabs.Tab>
+                        <Tabs.Tab value="enroll" leftSection={<IconRestore size={16} stroke={1.5} />}>Restore Password</Tabs.Tab>
                     </Tabs.List>
                     <Tabs.Panel value="edit">
                         <Fieldset >
@@ -227,13 +228,34 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
                         </Stack>
                     </Tabs.Panel>
                     <Tabs.Panel value="enroll">
-                        <Text>Enrolling student</Text>
+                        <Stack gap="sm" align='center' justify="center">
+                            <Alert variant="light" color="yellow" title="Warning!" icon={<IconExclamationCircleFilled size={24} stroke={1.5} />}>
+                                Are you sure you want to restore the password for student <b>{currentStudent?.username}</b>?
+                                This action will reset the student's password and cannot be undone.
+                            </Alert>
+                            <Group mt="md" justify='flex-end'>
+                                <Button variant="light" color="yellow" rightSection={<IconRestore size={16} stroke={1.5} />} onClick={() => {
+                                    if (currentStudent) {
+                                        API.restorePassword(currentStudent.username).then(() => {
+                                            close()
+                                            setRestoreNotif(true)
+                                            setTimeout(() => setRestoreNotif(false), 3000)
+                                        })
+                                    }
+                                }} >Restore Password</Button>
+                                <Button variant="light" color="gray" onClick={close}>Cancel</Button>
+                            </Group>
+                        </Stack>
                     </Tabs.Panel>
                 </Tabs>
             </Modal>
 
             {deleteNotif && <Notification icon={<IconCheck size={20} />} color="teal" title="Success!" mt="md" className='notif' withCloseButton={false} >
                 <Text>User cancellation successful!</Text>
+            </Notification>}
+
+            {restoreNotif && <Notification icon={<IconCheck size={20} />} color="teal" title="Success!" mt="md" className='notif' withCloseButton={false} >
+                <Text>Password restoration successful! The student's password has been reset to the default one.</Text>
             </Notification>}
         </>
     )
