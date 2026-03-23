@@ -612,10 +612,10 @@ export function Sandbox() {
                     <div ref={apollonRef} id="apollon" style={{ height: "80vh" }} ></div>
                     <Grid mt="md" justify="center">
                         <Grid.Col span={6}>
-                            <TextInput label="Filename" placeholder="Filename" value={filename} onChange={(e) => setFilename(e.currentTarget.value)} style={{ width: "30%" }} />
+                            <TextInput label="Filename" placeholder="Filename" value={filename} onChange={(e) => setFilename(e.currentTarget.value)} style={{ width: "100%", maxWidth: 480 }} />
                         </Grid.Col>
                         <Grid.Col span={6}>
-                            <Center mt="md">
+                            <Center mt="md" style={{ flexWrap: "wrap", gap: 8 }}>
                                 <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} onClick={saveDiagram} >
                                     Save diagram
                                 </Button>

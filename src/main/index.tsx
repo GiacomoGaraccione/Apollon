@@ -3,6 +3,7 @@ import * as themings from '../../public/themings.json';
 //import './styles.css'
 //require("./styles.css")
 import "./additions/Components/Teacher/style.scss";
+import "./additions/responsive.css";
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, BrowserRouter as Router } from 'react-router-dom';

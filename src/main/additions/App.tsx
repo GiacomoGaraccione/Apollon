@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { AppShell, Loader } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Burger, Group, Loader, Text } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks';
 import Login from './Components/Login/Login'
 import { User, UserContext, Roles } from "./Components/Login/UserContext"
 import API from './API'
@@ -28,7 +28,14 @@ function App() {
     const [loaded, setLoaded] = useState(false)
     const [failed, setFailed] = useState(false)
     const navigate = useNavigate()
-    const [open, { toggle: toggleOpen }] = useDisclosure(true)
+    const isMobile = useMediaQuery('(max-width: 62em)')
+    const [open, setOpen] = useState(true)
+
+    useEffect(() => {
+        setOpen(!isMobile)
+    }, [isMobile])
+
+    const toggleOpen = () => setOpen((prev) => !prev)
 
     useEffect(() => {
         API.getUserInfo().then((user) => {
@@ -62,13 +69,28 @@ function App() {
     }
 
     return (
-        <AppShell disabled={!loggedIn} navbar={{ width: 200, breakpoint: "md", collapsed: { desktop: !open } }} >
+        <AppShell
+            disabled={!loggedIn}
+            navbar={{ width: 220, breakpoint: "md", collapsed: { desktop: !open, mobile: !open } }}
+            header={loggedIn ? { height: 56, collapsed: !isMobile } : undefined}
+        >
             <UserContext.Provider value={user}>
 
+                {loggedIn &&
+                    <AppShell.Header withBorder>
+                        <Group h="100%" px="md" justify="space-between">
+                            <Group>
+                                <Burger opened={open} onClick={toggleOpen} hiddenFrom="md" size="sm" />
+                                <Text fw={600}>Apollon</Text>
+                            </Group>
+                            <Text size="sm" c="dimmed">{user?.username}</Text>
+                        </Group>
+                    </AppShell.Header>}
+
                 {loggedIn && <AppShell.Navbar >
-                    <Navbar logout={doLogout} open={open} toggleOpen={toggleOpen} />
+                    <Navbar logout={doLogout} open={open} toggleOpen={toggleOpen} isMobile={!!isMobile} />
                 </AppShell.Navbar>}
-                <AppShell.Main style={{ paddingTop: "2vh" }}>
+                <AppShell.Main className="app-main" style={{ paddingTop: loggedIn ? undefined : "2vh" }}>
                     <Routes>
                         <Route path="/"
                             element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)} />

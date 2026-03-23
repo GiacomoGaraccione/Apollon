@@ -1,0 +1,48 @@
+.app-main {
+    padding-top: 12px !important;
+    padding-bottom: 24px !important;
+}
+
+.app-main .mantine-Fieldset-root,
+.app-main .mantine-Paper-root,
+.app-main .mantine-Card-root {
+    max-width: 100%;
+}
+
+.app-main .mantine-Table-root {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-main .mantine-Tabs-list {
+    flex-wrap: wrap;
+    row-gap: 6px;
+}
+
+@media (max-width: 992px) {
+    .app-main .mantine-Grid-col {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .app-main .mantine-Group-root {
+        flex-wrap: wrap;
+    }
+
+    .app-main .mantine-Notification-root {
+        width: min(92vw, 520px);
+    }
+}
+
+@media (max-width: 576px) {
+    .app-main {
+        padding-top: 10px !important;
+        padding-bottom: 20px !important;
+    }
+
+    .app-main .mantine-Button-root {
+        max-width: 100%;
+    }
+}

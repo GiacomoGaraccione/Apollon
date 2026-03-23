@@ -13,6 +13,18 @@
     margin-top: 50px;
 }
 
+.navbar-shell {
+    position: relative;
+    height: 100%;
+}
+
+.navbar-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
 .link {
     width: 50px;
     height: 50px;
@@ -33,5 +45,20 @@
             background-color: var(--mantine-color-blue-light);
             color: var(--mantine-color-blue-light-color);
         }
+    }
+}
+
+@media (max-width: 992px) {
+    .desktop-navbar-toggle {
+        display: none;
+    }
+
+    .navbar-layout {
+        border-right: 0;
+    }
+
+    .link {
+        width: 44px;
+        height: 44px;
     }
 }
