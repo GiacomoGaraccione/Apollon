@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { IconCheck, IconCloudUpload, IconDownload, IconInfoCircle, IconSquareRoundedPlusFilled, IconUpload, IconX } from '@tabler/icons-react';
-import { Avatar, Badge, Button, Card, Center, Divider, Fieldset, Flex, Grid, Group, Image, Modal, NativeSelect, Notification, NumberInput, Progress, RangeSlider, ScrollArea, Slider, Stack, Table, Tabs, Text, TextInput, } from '@mantine/core';
+import { IconCheck, IconCloudUpload, IconDeviceGamepad2, IconDownload, IconExclamationCircleFilled, IconInfoCircle, IconSquareRoundedPlusFilled, IconUpload, IconX } from '@tabler/icons-react';
+import { Alert, Avatar, Badge, Button, Card, Center, Checkbox, Divider, Fieldset, Flex, Grid, Group, Image, Modal, NativeSelect, Notification, NumberInput, Progress, RangeSlider, ScrollArea, SimpleGrid, Slider, Stack, Table, Tabs, Text, TextInput, } from '@mantine/core';
 import { useForm, } from "@mantine/form"
 import cx from 'clsx';
 import API from '../../API';
@@ -37,11 +37,14 @@ function CourseSettings() {
     const [openedUnlock, { open: openUnlock, close: closeUnlock }] = useDisclosure(false)
     const [openedSettings, { open: openSettings, close: closeSettings }] = useDisclosure(false)
     const [uploadNotif, setUploadNotif] = useState<Boolean>(false)
+    const [gamified, setGamified] = useState<boolean>(true)
+    const [gamifiedNotif, setGamifiedNotif] = useState<boolean>(false)
     const navigate = useNavigate()
 
     useEffect(() => {
         if (courseId) {
             API.getCourse(courseId).then((course) => {
+                setGamified(course.gamified)
                 let avatarOpts = generateRandomAvatar()
                 setAvatarOptions(avatarOpts)
                 let svg = createAvatar(avataaars, avatarOpts).toString()
@@ -194,6 +197,34 @@ function CourseSettings() {
             <Badge color="cyan" size="xl" leftSection={<IconInfoCircle size={16} />} >Course ID: {courseId}</Badge>
             <Grid justify='center' align='center'>
                 <Grid.Col span={12}>
+                    <Fieldset legend="Course Type">
+                        <SimpleGrid cols={1}>
+                            <Checkbox.Card className='checkbox-root' radius="md" checked={gamified} onChange={setGamified} >
+                                <Group wrap="nowrap" align="center">
+                                    <IconDeviceGamepad2 size={32} />
+                                    <div>
+                                        <Text className='checkbox-label'>Gamified</Text>
+                                        <Text className='checkbox-description'>Is this course gamified? Non-gamified courses only show exercises with feedback coloring and error lists - no avatars, bosses, leaderboards, or XP/leveling.</Text>
+                                    </div>
+                                </Group>
+                            </Checkbox.Card>
+                        </SimpleGrid>
+                        <Center mt="md">
+                            <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} />} onClick={() => {
+                                if (courseId) {
+                                    API.updateCourseGamified(courseId, gamified).then(() => {
+                                        setGamifiedNotif(true)
+                                        setTimeout(() => {
+                                            setGamifiedNotif(false)
+                                        }, 3000)
+                                    })
+                                }
+                            }}>Save course type</Button>
+                        </Center>
+                    </Fieldset>
+                </Grid.Col>
+                <Grid.Col span={12}>
+                    {gamified ? (
                     <Tabs defaultValue={"avatar"} variant="pills" color="cyan">
                         <Tabs.List>
                             <Tabs.Tab value="avatar">Avatar Piece Unlock</Tabs.Tab>
@@ -455,7 +486,11 @@ function CourseSettings() {
                             </Stack>
                         </Tabs.Panel>
                     </Tabs>
-
+                    ) : (
+                        <Alert icon={<IconExclamationCircleFilled size={16} />} title="Gamification disabled" color="yellow">
+                            This course is not gamified, so avatar unlocks and XP/leveling settings do not apply. Enable "Gamified" above to configure them.
+                        </Alert>
+                    )}
                 </Grid.Col>
             </Grid >
 
@@ -522,6 +557,9 @@ function CourseSettings() {
 
             {uploadNotif && <Notification icon={<IconCheck size={20} />} color="teal" title="Success!" mt="md" className='notif' withCloseButton={false} >
                 <Text>Settings updated successfully!</Text>
+            </Notification>}
+            {gamifiedNotif && <Notification icon={<IconCheck size={20} />} color="teal" title="Success!" mt="md" className='notif' withCloseButton={false} >
+                <Text>Course type updated successfully!</Text>
             </Notification>}
         </>
     )

@@ -42,6 +42,10 @@ function CourseHome() {
             try {
                 API.getCourseInfo(courseId).then((c) => {
                     setCourse(c)
+                    if (!c.gamified) {
+                        setLoad(false)
+                        return
+                    }
                     API.getStudentCourseInfo(courseId, user.username).then((studentCourse) => {
                         setCourseInfo(studentCourse.info)
                         let settings = c.settings as AvatarUnlockOptions
@@ -127,6 +131,29 @@ function CourseHome() {
     return (
         <>
             <Badge color="cyan" size="xl" leftSection={<IconInfoCircle size={16} />} >Course ID: {courseId}</Badge>
+            {!course ? (
+                <Center mt="xl"><Loader size={100} type={"bars"} color="cyan" /></Center>
+            ) : !course.gamified ? (
+                <Grid my="md" grow justify="center" align="center">
+                    <Grid.Col span={12}>
+                        <Fieldset legend="Exercises" style={{ width: "100%" }}>
+                            {course.exercises.filter((ex) => ex.visible).length === 0 && <Alert icon={<IconExclamationCircle size={16} />} title="No exercises available" color="yellow">
+                                There are no exercises available for this course yet.
+                            </Alert>}
+                            <Flex direction="column" gap={10} style={{ width: "100%" }}>
+                                {course.exercises.filter((ex) => ex.visible).map((exercise) => (
+                                    <Card key={exercise.exerciseId} shadow="sm" padding="lg" radius="md" withBorder
+                                        style={{ width: '100%', margin: 'auto', cursor: 'pointer' }}
+                                        onClick={() => navigate(`/student/courses/${courseId}/exercises/${exercise.exerciseId}`)}>
+                                        <Text color="green">{exercise.title}</Text>
+                                        <Text size="sm" color="dimmed">Type: {exercise.exType}</Text>
+                                    </Card>
+                                ))}
+                            </Flex>
+                        </Fieldset>
+                    </Grid.Col>
+                </Grid>
+            ) : (
             <Grid my="md" grow justify="center" align="center">
                 <Grid.Col span={12}>
                     <Tabs defaultValue="avatar" variant="pills" color="cyan" style={{ width: "100%" }}>
@@ -874,6 +901,7 @@ function CourseHome() {
                     </Tabs>
                 </Grid.Col>
             </Grid>
+            )}
 
             {notif && <Notification color="yellow" mt="md" className='notif' withCloseButton={false} >
                 <Alert variant="light" color="yellow" icon={<IconExclamationCircle size={16} />} title="Warning!" >

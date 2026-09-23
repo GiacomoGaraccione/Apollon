@@ -133,9 +133,9 @@ function DiagramView() {
                 ["Username", "ReferenceElement", "MatchingElement", "Type"],
             ]
             diagrams.forEach((diagram: any) => {
-                let results = JSON.parse(diagram.results)
-                let syntaxErrors = JSON.parse(diagram.syntax_errors);
-                let semanticErrors = JSON.parse(diagram.semantic_errors);
+                let results = JSON.parse(diagram.results || "{}")
+                let syntaxErrors = JSON.parse(diagram.syntax_errors || "[]");
+                let semanticErrors = JSON.parse(diagram.semantic_errors || "[]");
                 statsData.push([
                     diagram.username,
                     diagram.correctness,
@@ -148,14 +148,14 @@ function DiagramView() {
                     syntaxErrors.length,
                     semanticErrors.length
                 ])
-                results.matchingClasses.forEach((cls: any) => {
+                ;(results.matchingClasses || []).forEach((cls: any) => {
                     resultsData.push([
                         diagram.username,
                         cls.referenceClass,
                         cls.diagramClass.name,
                         "Class"
                     ])
-                    cls.matchingAttributes.forEach((attr: any) => {
+                    ;(cls.matchingAttributes || []).forEach((attr: any) => {
                         resultsData.push([
                             diagram.username,
                             `${cls.referenceClass}.${attr.referenceAttribute}`,
@@ -164,7 +164,7 @@ function DiagramView() {
                         ])
                     })
                 })
-                results.matchingAssociations.forEach((assoc: any) => {
+                ;(results.matchingAssociations || []).forEach((assoc: any) => {
                     resultsData.push([
                         diagram.username,
                         `${assoc.source_pair.referenceInfo.referenceClass.name} - ${assoc.target_pair.referenceInfo.referenceClass.name}`,
@@ -229,7 +229,7 @@ function DiagramView() {
         {exercise && currentDiagram && <Modal closeOnEscape={false} opened={showDiagram} onClose={closeDiagram} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
             <Skeleton visible={loadModal} height="100%" >
                 <Stack align="center" justify="center">
-                    {exercise.gamified && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
+                    <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                         <Grid.Col span={3}>
                             <Center>
                                 <Stack align="center">
@@ -249,7 +249,7 @@ function DiagramView() {
                         <Grid.Col span={3}>
                             <ClassDiagramMatchingElementsList results={currentDiagram.results} />
                         </Grid.Col>
-                    </Grid>}
+                    </Grid>
                     <div ref={apollonRef} id="apollon" className="canv" style={{ width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
                 </Stack>
             </Skeleton>

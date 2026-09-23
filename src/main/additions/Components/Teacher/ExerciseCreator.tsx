@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { IconCheck, IconDeviceGamepad2, IconEye, IconInfoCircle, IconSquareRoundedPlusFilled } from '@tabler/icons-react';
+import { IconCheck, IconEye, IconInfoCircle, IconSquareRoundedPlusFilled } from '@tabler/icons-react';
 import { Badge, Button, Center, Checkbox, Fieldset, Group, NativeSelect, Notification, NumberInput, SimpleGrid, Text, Textarea, TextInput, } from '@mantine/core';
 import { useForm, } from "@mantine/form"
 import API from '../../API';
@@ -15,7 +15,7 @@ function ExerciseCreator() {
 
     useEffect(() => {
         if (courseId) {
-            let ex = new Exercise("", "", "", 1, 0, true, false, UMLDiagramType.ClassDiagram, null, [])
+            let ex = new Exercise("", "", "", 1, 0, true, true, UMLDiagramType.ClassDiagram, null, [])
             setExercise(ex)
         }
     }, [])
@@ -69,7 +69,6 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
             level: exercise.level,
             experience: exercise.experience,
             visible: exercise.visible,
-            gamified: exercise.gamified,
             exType: exercise.exType
         },
         validate: (values) => ({
@@ -88,7 +87,9 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                 setLoading(true)
                 if (courseId) {
                     if (props.mode === "create") {
-                        API.addExercise(courseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified, values.exType).then(() => {
+                        // Gamification is now a course-level setting (see CourseSettings); this exercise-level
+                        // flag is passed as vestigial until the student-facing pages read course.gamified instead.
+                        API.addExercise(courseId, values.title, values.description, values.level, values.experience, values.visible, true, values.exType).then(() => {
                             setLoading(false)
                             setSuccessNotif(true)
                             navigate(`/teacher/courses/${courseId}`)
@@ -103,7 +104,7 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                             }, 3000)
                         })
                     } else {
-                        API.updateExercise(courseId, props.exercise.exerciseId, values.title, values.description, values.level, values.experience, values.visible, values.gamified, values.exType).then(() => {
+                        API.updateExercise(courseId, props.exercise.exerciseId, values.title, values.description, values.level, values.experience, values.visible, true, values.exType).then(() => {
                             setLoading(false)
                             setSuccessNotif(true)
                             navigate(`/teacher/courses/${courseId}`)
@@ -124,22 +125,13 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                 <Textarea label="Description" placeholder="Description" {...form.getInputProps("description")} />
                 <NumberInput label="Level" placeholder="Level must be between 1 and 10" {...form.getInputProps("level")} min={1} max={10} />
                 <NumberInput label="Experience" placeholder="Experience" {...form.getInputProps("experience")} min={1} />
-                <SimpleGrid cols={3} mt="md">
+                <SimpleGrid cols={2} mt="md">
                     <Checkbox.Card className='checkbox-root' radius="md"  {...form.getInputProps("visible", { type: "checkbox" })} >
                         <Group wrap="nowrap" align="center">
                             <IconEye size={32} />
                             <div>
                                 <Text className='checkbox-label'>Visible</Text>
                                 <Text className='checkbox-description'>Can the exercise be attempted by students?</Text>
-                            </div>
-                        </Group>
-                    </Checkbox.Card>
-                    <Checkbox.Card className='checkbox-root' radius="md"  {...form.getInputProps("gamified", { type: "checkbox" })} >
-                        <Group wrap="nowrap" align="center">
-                            <IconDeviceGamepad2 size={32} />
-                            <div>
-                                <Text className='checkbox-label'>Gamified</Text>
-                                <Text className='checkbox-description'>Is the exercise gamified?</Text>
                             </div>
                         </Group>
                     </Checkbox.Card>

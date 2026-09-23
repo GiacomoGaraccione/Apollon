@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { IconCheck, IconCloudUpload, IconDownload, IconExclamationCircleFilled, IconSettingsFilled, IconSquareRoundedPlusFilled, IconTrashFilled, IconTrashXFilled, IconX } from '@tabler/icons-react';
-import { Alert, Badge, Button, Fieldset, Flex, Grid, Group, Modal, Notification, ScrollArea, Stack, Table, Text, TextInput, Tooltip, } from '@mantine/core';
+import { IconCheck, IconCloudUpload, IconDeviceGamepad2, IconDownload, IconExclamationCircleFilled, IconSettingsFilled, IconSquareRoundedPlusFilled, IconTrashFilled, IconTrashXFilled, IconX } from '@tabler/icons-react';
+import { Alert, Badge, Button, Checkbox, Fieldset, Flex, Grid, Group, Modal, Notification, ScrollArea, SimpleGrid, Stack, Table, Text, TextInput, Tooltip, } from '@mantine/core';
 import { useForm, } from "@mantine/form"
 import cx from 'clsx';
 import API from '../../API';
@@ -28,7 +28,8 @@ function CourseView() {
         mode: "uncontrolled",
         initialValues: {
             courseId: "",
-            courseName: ""
+            courseName: "",
+            gamified: true
         },
         validate: (values) => ({
             courseId: (values.courseId.length < 1) ? "Course ID is required" : undefined,
@@ -162,7 +163,7 @@ function CourseView() {
                     <Fieldset legend="Create Course">
                         <form onSubmit={form.onSubmit((values) => {
                             setLoading(true)
-                            API.createCourse(values.courseId, values.courseName).then(() => {
+                            API.createCourse(values.courseId, values.courseName, values.gamified).then(() => {
                                 API.getAllCourses().then((cs) => {
                                     setCourses(cs)
                                     setLoading(false)
@@ -188,6 +189,17 @@ function CourseView() {
                         })} >
                             <TextInput label="Course ID" id="courseId"  {...form.getInputProps("courseId")} />
                             <TextInput label="Course Name" id="courseName"  {...form.getInputProps("courseName")} />
+                            <SimpleGrid cols={1} mt="md">
+                                <Checkbox.Card className='checkbox-root' radius="md" {...form.getInputProps("gamified", { type: "checkbox" })} >
+                                    <Group wrap="nowrap" align="center">
+                                        <IconDeviceGamepad2 size={32} />
+                                        <div>
+                                            <Text className='checkbox-label'>Gamified</Text>
+                                            <Text className='checkbox-description'>Is this course gamified? Non-gamified courses only show exercises with feedback coloring and error lists - no avatars, bosses, leaderboards, or XP/leveling.</Text>
+                                        </div>
+                                    </Group>
+                                </Checkbox.Card>
+                            </SimpleGrid>
                             <Button variant="light" color="green" type='submit' rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" >Add Course</Button>
                         </form>
                     </Fieldset>

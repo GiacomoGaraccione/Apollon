@@ -4,6 +4,7 @@ import { UseCaseDiagramEvaluationResults } from "./UseCaseDiagram/EvaluationType
 export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticErrors: any[], results: any) => {
     syntaxErrors.filter((error: any) => error.type === "missingClassName").forEach((error: any) => {
         let element = model.elements[error.element.elementId]
+        if (!element) return
         element.textColor = "var(--mantine-color-orange-7)"
         element.strokeColor = "var(--mantine-color-orange-7)"
     })
@@ -11,6 +12,7 @@ export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticError
         error.type === "unconnectedClass" ||
         error.type === "invalidIntermediateClassConnections").forEach((error: any) => {
             let element = model.elements[error.element.elementId]
+            if (!element) return
             element.fillColor = "var(--mantine-color-orange-1)"
         })
     syntaxErrors.filter((error: any) => error.type === "missingAttributeName" ||
@@ -22,6 +24,7 @@ export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticError
         error.type === "classAsAttributeType" ||
         error.type === "unconnectedEnumeration").forEach((error: any) => {
             let element = model.elements[error.attribute.elementId]
+            if (!element) return
             element.fillColor = "var(--mantine-color-orange-1)"
         })
     syntaxErrors.filter((error: any) => error.type === "missingAssociationName" ||
@@ -29,6 +32,7 @@ export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticError
         error.type === "invalidAssociationMultiplicity" ||
         error.type === "missingRecursiveAssociationRole").forEach((error: any) => {
             let element = model.relationships[error.association.elementId]
+            if (!element) return
             element.strokeColor = "var(--mantine-color-orange-7)"
             element.textColor = "var(--mantine-color-orange-7)"
         })
@@ -37,41 +41,49 @@ export const colorClassDiagram = (model: any, syntaxErrors: any[], semanticError
         error.type === "associationType" ||
         error.type === "forbiddenAssociation").forEach((error: any) => {
             let element = model.relationships[error.elementId]
+            if (!element) return
             element.strokeColor = "var(--mantine-color-red-5)"
             element.textColor = "var(--mantine-color-red-5)"
         })
     semanticErrors.filter((error: any) => error.type === "attributeType").forEach((error: any) => {
         let element = model.elements[error.id]
+        if (!element) return
         element.textColor = "var(--mantine-color-red-5)"
     })
     semanticErrors.filter((error: any) => error.type === "forbiddenClass").forEach((error: any) => {
         let element = model.elements[error.id]
+        if (!element) return
         element.textColor = "var(--mantine-color-red-5)"
         element.strokeColor = "var(--mantine-color-red-5)"
     })
     semanticErrors.filter((error: any) => error.type === "classType").forEach((error: any) => {
         let element = model.elements[error.id]
+        if (!element) return
         element.fillColor = "var(--mantine-color-red-5)"
     })
     semanticErrors.filter((error: any) => error.type === "forbiddenAttribute").forEach((error: any) => {
         let element = model.elements[error.id]
+        if (!element) return
         element.textColor = "var(--mantine-color-red-5)"
         element.strokeColor = "var(--mantine-color-red-5)"
     })
-    results.matchingClasses.forEach((match: any) => {
+    ;(results.matchingClasses || []).forEach((match: any) => {
         let id = match.diagramClass.elementId
         let element = model.elements[id]
+        if (!element) return
         element.strokeColor = "var(--mantine-color-green-5)";
         element.textColor = "var(--mantine-color-green-5)";
         match.matchingAttributes.forEach((attr: any) => {
             let attrId = attr.diagramAttribute.elementId
             let attrElement = model.elements[attrId]
+            if (!attrElement) return
             attrElement.fillColor = "var(--mantine-color-green-1)"
         })
     })
-    results.matchingAssociations.forEach((match: any) => {
+    ;(results.matchingAssociations || []).forEach((match: any) => {
         let id = match.diagramAssociation.id
         let element = model.relationships[id]
+        if (!element) return
         element.strokeColor = "var(--mantine-color-green-5)";
         element.textColor = "var(--mantine-color-green-5)";
     })
@@ -98,11 +110,13 @@ export const colorUseCaseDiagram = (model: UMLModel, syntaxErrors: any[], semant
         error.type === "missingUseCaseName" ||
         error.type === "missingSystemName").forEach((error: any) => {
             let element = model.elements[error.elementId]
+            if (!element) return
             element.textColor = "var(--mantine-color-orange-7)"
             element.strokeColor = "var(--mantine-color-orange-7)"
         })
     syntaxErrors.filter((error: any) => error.type === "duplicateActorName" || error.type === "misplacedActor").forEach((error: any) => {
         let element = model.elements[error.elementId]
+        if (!element) return
         element.fillColor = "var(--mantine-color-orange-5)"
     })
     syntaxErrors.filter((error: any) => error.type === "unconnectedUseCase" ||
@@ -111,39 +125,46 @@ export const colorUseCaseDiagram = (model: UMLModel, syntaxErrors: any[], semant
         error.type === "displacedUseCase" ||
         error.type === "multipleConnectedActors").forEach((error: any) => {
             let element = model.elements[error.elementId]
+            if (!element) return
             element.fillColor = "var(--mantine-color-orange-3)"
         })
     syntaxErrors.filter((error: any) => error.type === "noActorGeneralization" ||
         error.type === "wrongUseCaseAssociation").forEach((error: any) => {
             let element = model.relationships[error.elementId]
+            if (!element) return
             element.strokeColor = "var(--mantine-color-orange-7)"
             element.textColor = "var(--mantine-color-orange-7)"
         })
     semanticErrors.filter((error: any) => error.type === "wrongIncludeExtendAssociation" ||
         error.type === "wrongIncludeExtendAssociationDirection").forEach((error: any) => {
             let element = model.relationships[error.elementId]
+            if (!element) return
             element.strokeColor = "var(--mantine-color-red-5)"
             element.textColor = "var(--mantine-color-red-5)"
         })
     semanticErrors.filter((error: any) => error.type === "wrongUseCaseOwner").forEach((error: any) => {
         let element = model.elements[error.elementId]
+        if (!element) return
         element.fillColor = "var(--mantine-color-red-1)"
     })
-    results.matchingActors.forEach((match: any) => {
+    ;(results.matchingActors || []).forEach((match: any) => {
         let id = match.diagramActor.elementId
         let element = model.elements[id]
+        if (!element) return
         element.strokeColor = "var(--mantine-color-green-5)";
         element.textColor = "var(--mantine-color-green-5)";
     })
-    results.matchingUseCases.forEach((match: any) => {
+    ;(results.matchingUseCases || []).forEach((match: any) => {
         let id = match.diagramUseCase.elementId
         let element = model.elements[id]
+        if (!element) return
         element.strokeColor = "var(--mantine-color-green-5)";
         element.textColor = "var(--mantine-color-green-5)";
     })
-    results.matchingSystems.forEach((match: any) => {
+    ;(results.matchingSystems || []).forEach((match: any) => {
         let id = match.diagramSystem.elementId
         let element = model.elements[id]
+        if (!element) return
         element.strokeColor = "var(--mantine-color-green-5)";
         element.textColor = "var(--mantine-color-green-5)";
     })

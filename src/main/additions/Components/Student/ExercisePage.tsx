@@ -80,12 +80,14 @@ function ExercisePage() {
                 let ex = course.exercises.find((ex) => ex.exerciseId === exerciseId)
                 if (ex) {
                     setExercise(ex)
-                    setGamified(ex.gamified)
-                    let opts = JSON.parse(ex.boss?.bossOptions)
-                    setBossSettings(opts)
-                    setDialogue(ex.boss?.introDialogue || "")
-                    let bossStr = createAvatar(bottts, opts).toString()
-                    setBossString(`data:image/svg+xml;utf8,${encodeURIComponent(bossStr)}`)
+                    setGamified(course.gamified)
+                    if (course.gamified) {
+                        let opts = JSON.parse(ex.boss?.bossOptions)
+                        setBossSettings(opts)
+                        setDialogue(ex.boss?.introDialogue || "")
+                        let bossStr = createAvatar(bottts, opts).toString()
+                        setBossString(`data:image/svg+xml;utf8,${encodeURIComponent(bossStr)}`)
+                    }
                     API.getStudentCourseInfo(courseId, user.username).then(async (studentCourse) => {
                         setStudentInfo(studentCourse.info)
                         let avatarOpts = JSON.parse(studentCourse.info.avatar)
@@ -104,8 +106,8 @@ function ExercisePage() {
                             setErrorInfo("There was an error while creating the diagram editor.")
                         }
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                            if (ex.gamified) {
-                                handleFeedback(res, false, ex.exType as UMLDiagramType)
+                            handleFeedback(res, false, ex.exType as UMLDiagramType)
+                            if (course.gamified) {
                                 API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
                                     setCompletionRecord(comp.log)
                                     if (comp.log) {
@@ -131,12 +133,6 @@ function ExercisePage() {
                                     }, 10000)
                                     setCompletionRecord(null)
                                 })
-                            } else {
-                                let cont = document.getElementById("apollon");
-                                if (cont) {
-                                    let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, model: JSON.parse(res.data.model) });
-                                    setEditor(ed);
-                                }
                             }
                         }).catch((err) => {
                             setResults({ ...results, oldXP: ex.experience, newXP: ex.experience, oldProgress: 0, newProgress: 0 });
@@ -169,8 +165,10 @@ function ExercisePage() {
                     r.oldSemanticErrors = results.newSemanticErrors
                     r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
                     r.results = JSON.parse(data.results || "{}")
-                    handleMoodChange(r)
-                    setCompleted(data.correctness >= 75)
+                    if (gamified) {
+                        handleMoodChange(r)
+                        setCompleted(data.correctness >= 75)
+                    }
                 } else {
                     r.oldXP = data.experience
                     r.newXP = data.experience
@@ -334,6 +332,7 @@ function ExercisePage() {
 
     const checkCompleted = () => {
         try {
+            if (!gamified) return
             if (!completed) return
             if (courseId && exerciseId && user && exercise) {
                 API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((res: any) => {
@@ -615,6 +614,11 @@ function ExercisePage() {
 
                     </>
                 </Grid>}
+                {!gamified && exercise && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
+                    <Grid.Col span={12}>
+                        <FeedbackBlock load={load} results={exercise.exType === UMLDiagramType.ClassDiagram ? results : useCaseResults} exerciseType={exercise.exType} />
+                    </Grid.Col>
+                </Grid>}
                 <div id="apollon" className="canv" style={{ height: "80vh", width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
                 <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <Grid.Col span={4}>
@@ -632,7 +636,7 @@ function ExercisePage() {
                                     })
                                 }
                             }} >Save</Button>
-                            {exercise && exercise.gamified && <Button variant="light" color="green" onClick={evaluate} leftSection={<IconCircleDashedCheck size={14} />} >Check</Button>}
+                            {exercise && <Button variant="light" color="green" onClick={evaluate} leftSection={<IconCircleDashedCheck size={14} />} >Check</Button>}
                             <Button variant="light" color="red" onClick={openExit} leftSection={<IconSquareXFilled size={14} />}>Exit</Button>
                         </Center>
                     </Grid.Col>
@@ -651,7 +655,7 @@ function ExercisePage() {
                     <Tabs defaultValue={"Description"}>
                         <Tabs.List >
                             <Tabs.Tab value="Description" leftSection={<IconFileDescriptionFilled size={15} />} >Description</Tabs.Tab>
-                            {exercise && exercise.gamified && <Tabs.Tab value="Leaderboard" leftSection={<IconMedal size={15} />}  >Leaderboard</Tabs.Tab>}
+                            {gamified && <Tabs.Tab value="Leaderboard" leftSection={<IconMedal size={15} />}  >Leaderboard</Tabs.Tab>}
                         </Tabs.List>
                         <Tabs.Panel value="Description" pt="xs">
                             <Text fw={700} fs="italic" td="underline" >{exercise.title}</Text>
@@ -696,7 +700,7 @@ function ExercisePage() {
                                 </div>
                             </Dropzone>
                         </Tabs.Panel>
-                        {exercise && exercise.gamified && <Tabs.Panel value="Leaderboard" pt="xs">
+                        {gamified && <Tabs.Panel value="Leaderboard" pt="xs">
                             <Fieldset legend="Ranking by Exercise Completeness">
                                 <Leaderboard ranking={"exercise"} />
 
@@ -718,7 +722,7 @@ function ExercisePage() {
                 checkCompleted()
             }} size={"lg"} radius={"md"} title="Exercise Results">
                 <List spacing={"md"} size="lg" center>
-                    <List.Item icon={<ThemeIcon size="lg" color="green">
+                    {gamified && <List.Item icon={<ThemeIcon size="lg" color="green">
                         <IconCircleDashedCheck size={24} />
                     </ThemeIcon>}>
                         <Highlight highlight={["changed", "increased", "reduced", results.newProgress.toString(), results.oldProgress.toString()]} highlightStyles={{
@@ -731,8 +735,8 @@ function ExercisePage() {
                                 `Exercise correctness ${results.newProgress > results.oldProgress ? "increased" : "reduced"} from ${results.oldProgress.toString()} to ${results.newProgress.toString()}`
                                 : "There are no changes in the correctness of your diagram since the last evaluation."}
                         </Highlight>
-                    </List.Item>
-                    <List.Item icon={<ThemeIcon size="lg" color="blue">
+                    </List.Item>}
+                    {gamified && <List.Item icon={<ThemeIcon size="lg" color="blue">
                         <IconUserUp size={24} />
                     </ThemeIcon>} >
                         <Highlight highlight={["changed", "increased", "reduced", results.newXP.toString(), results.oldXP.toString()]} highlightStyles={{
@@ -745,7 +749,7 @@ function ExercisePage() {
                                 `Available experience ${results.newXP > results.oldXP ? "increased" : "reduced"} from ${results.oldXP.toString()} to ${results.newXP.toString()}`
                                 : "There are no changes in the available experience since the last evaluation."}
                         </Highlight>
-                    </List.Item>
+                    </List.Item>}
                     <List.Item icon={<ThemeIcon size="lg" color="red">
                         <IconExclamationCircle size={24} />
                     </ThemeIcon>}>
@@ -805,34 +809,36 @@ function ExercisePage() {
                             </Highlight> : <Text>You did not fix any semantic error that was found in the previous evaluation.</Text>}
                     </List.Item>
                 </List>
-                <Divider my="md" />
-                {mood === "Neutral" && <Highlight highlight={["neutral"]}
-                    highlightStyles={{
-                        backgroundColor: "var(--mantine-color-cyan-5)",
-                        fontWeight: 700,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}>
-                    {`There have been no significant changes since the last evaluation, your mood is Neutral.`}
-                </Highlight>}
-                {(mood === "Happy" || mood === "Ecstatic" || mood === "Content") && <Highlight highlight={[mood]}
-                    highlightStyles={{
-                        backgroundColor: "var(--mantine-color-green-5)",
-                        fontWeight: 700,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}>
-                    {`The changes you made since the last evaluation ${mood === "Content" ? "slightly" : mood === "Ecstatic" ? "vastly" : ""} improved the quality of your diagram, your mood is now ${mood}.`}
-                </Highlight>}
-                {(mood === "Worried" || mood === "Upset" || mood === "Defeated") && <Highlight highlight={[mood]}
-                    highlightStyles={{
-                        backgroundColor: "var(--mantine-color-red-5)",
-                        fontWeight: 700,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}>
-                    {`The changes you made since the last evaluation ${mood === "Worried" ? "slightly" : mood === "Defeated" ? "vastly" : ""} lowered the quality of your diagram, your mood is now ${mood}.`}
-                </Highlight>}
+                {gamified && <>
+                    <Divider my="md" />
+                    {mood === "Neutral" && <Highlight highlight={["neutral"]}
+                        highlightStyles={{
+                            backgroundColor: "var(--mantine-color-cyan-5)",
+                            fontWeight: 700,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                        {`There have been no significant changes since the last evaluation, your mood is Neutral.`}
+                    </Highlight>}
+                    {(mood === "Happy" || mood === "Ecstatic" || mood === "Content") && <Highlight highlight={[mood]}
+                        highlightStyles={{
+                            backgroundColor: "var(--mantine-color-green-5)",
+                            fontWeight: 700,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                        {`The changes you made since the last evaluation ${mood === "Content" ? "slightly" : mood === "Ecstatic" ? "vastly" : ""} improved the quality of your diagram, your mood is now ${mood}.`}
+                    </Highlight>}
+                    {(mood === "Worried" || mood === "Upset" || mood === "Defeated") && <Highlight highlight={[mood]}
+                        highlightStyles={{
+                            backgroundColor: "var(--mantine-color-red-5)",
+                            fontWeight: 700,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                        {`The changes you made since the last evaluation ${mood === "Worried" ? "slightly" : mood === "Defeated" ? "vastly" : ""} lowered the quality of your diagram, your mood is now ${mood}.`}
+                    </Highlight>}
+                </>}
             </Modal>
 
             <Modal opened={exitOpened} onClose={closeExit} size="md" radius="md" title="Exit Exercise">

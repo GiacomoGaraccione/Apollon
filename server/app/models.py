@@ -6,10 +6,16 @@ from datetime import datetime
 Base = declarative_base()
 from werkzeug.security import generate_password_hash, check_password_hash
 
-student_courses = Table("student_courses", 
+student_courses = Table("student_courses",
     Base.metadata,
     Column("username", String, ForeignKey("users.username", ondelete="CASCADE")),
     Column("courseId", String, ForeignKey("courses.courseId", ondelete="CASCADE"))
+)
+
+exam_call_students = Table("exam_call_students",
+    Base.metadata,
+    Column("username", String, ForeignKey("users.username", ondelete="CASCADE")),
+    Column("examId", String, ForeignKey("exam_calls.examId", ondelete="CASCADE"))
 )
 
 class User(Base):
@@ -20,11 +26,14 @@ class User(Base):
     surname = Column(String, nullable=False)
     password = Column(String, nullable=False)
     role = Column(String, nullable=False, default="Student")
-    courses = relationship("Course", secondary=student_courses, back_populates="students", cascade="all, delete")
+    courses = relationship("Course", secondary=student_courses, back_populates="students")
     student_course_info = relationship("StudentCourseInfo", back_populates="user", cascade="all, delete-orphan")
 
     exercises = relationship("StudentExerciseLog", back_populates="user", cascade="all, delete-orphan")
     exercise_completions = relationship("StudentExerciseCompletion", back_populates="user", cascade="all, delete-orphan")
+
+    exam_calls = relationship("ExamCall", secondary=exam_call_students, back_populates="students")
+    exam_submissions = relationship("StudentExamSubmission", back_populates="user", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -48,10 +57,12 @@ class Course(Base):
     name = Column(String, nullable=False)
     settings = Column(String, nullable=True)
     gameOptions = Column(String, nullable=True)
+    gamified = Column(Boolean, nullable=False, default=True)
 
-    students = relationship("User", secondary=student_courses, back_populates="courses", cascade="all, delete")
+    students = relationship("User", secondary=student_courses, back_populates="courses")
     exercises = relationship("Exercise", back_populates="course", cascade="all, delete-orphan")
     student_course_info = relationship("StudentCourseInfo", back_populates="course", cascade="all, delete-orphan")
+    exam_calls = relationship("ExamCall", back_populates="course", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -61,6 +72,7 @@ class Course(Base):
             "exercises": [exercise.serialize() for exercise in self.exercises],
             "settings": self.settings,
             "gameOptions": self.gameOptions,
+            "gamified": self.gamified,
         }
   
 class Exercise(Base):
@@ -80,6 +92,7 @@ class Exercise(Base):
     boss = relationship("Boss", back_populates="exercise", uselist=False, cascade="all, delete-orphan")
     student_exercises = relationship("StudentExerciseLog", back_populates="exercise", cascade="all, delete-orphan")
     exercise_completions = relationship("StudentExerciseCompletion", back_populates="exercise", cascade="all, delete-orphan")
+    teacher_evaluations = relationship("TeacherEvaluation", back_populates="exercise", cascade="all, delete-orphan")
 
     def serialize(self):
         return{
@@ -209,6 +222,39 @@ class StudentExerciseCompletion(Base):
         }
 
 
+
+class TeacherEvaluation(Base):
+    __tablename__ = "teacher_evaluations"
+    exerciseId = Column(String, ForeignKey("exercises.exerciseId", ondelete="CASCADE"), primary_key=True)
+    studentId = Column(String, primary_key=True)
+    originalModel = Column(String, nullable=True)
+    staticResult = Column(String, nullable=True)
+    staticModel = Column(String, nullable=True)
+    staticTime = Column(Float, nullable=True)
+    llmResult = Column(String, nullable=True)
+    llmModel = Column(String, nullable=True)
+    llmTime = Column(Float, nullable=True)
+    llmTokens = Column(Integer, nullable=True)
+    timestamp = Column(String, nullable=False, default=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+
+    exercise = relationship("Exercise", back_populates="teacher_evaluations")
+
+    def serialize(self):
+        return {
+            "exerciseId": self.exerciseId,
+            "studentId": self.studentId,
+            "originalModel": self.originalModel,
+            "staticResult": self.staticResult,
+            "staticModel": self.staticModel,
+            "staticTime": self.staticTime,
+            "llmResult": self.llmResult,
+            "llmModel": self.llmModel,
+            "llmTime": self.llmTime,
+            "llmTokens": self.llmTokens,
+            "timestamp": self.timestamp
+        }
+
+
 class ErrorExample(Base):
     __tablename__ = "error_examples"
     id = Column(String, primary_key=True)
@@ -235,3 +281,68 @@ class SandboxDiagram(Base):
     exerciseType = Column(String, nullable=True)
     lastUpdated = Column(String, nullable=False, default=lambda: datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
     filename = Column(String, nullable=True)
+
+class ExamCall(Base):
+    __tablename__ = "exam_calls"
+    examId = Column(String, primary_key=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    startDate = Column(String, nullable=False)
+    endDate = Column(String, nullable=False)
+    courseId = Column(String, ForeignKey("courses.courseId", ondelete="CASCADE"), nullable=False)
+
+    course = relationship("Course", back_populates="exam_calls")
+    exercises = relationship("ExamExercise", back_populates="exam", cascade="all, delete-orphan")
+    students = relationship("User", secondary=exam_call_students, back_populates="exam_calls")
+
+    def serialize(self):
+        return {
+            "examId": self.examId,
+            "title": self.title,
+            "description": self.description,
+            "startDate": self.startDate,
+            "endDate": self.endDate,
+            "courseId": self.courseId,
+            "exercises": [exercise.serialize() for exercise in self.exercises],
+            "students": [student.serialize() for student in self.students],
+        }
+
+class ExamExercise(Base):
+    __tablename__ = "exam_exercises"
+    exerciseId = Column(String, primary_key=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    exType = Column(String, nullable=False, default="ClassDiagram")
+    examId = Column(String, ForeignKey("exam_calls.examId", ondelete="CASCADE"), nullable=False)
+
+    exam = relationship("ExamCall", back_populates="exercises")
+    submissions = relationship("StudentExamSubmission", back_populates="exercise", cascade="all, delete-orphan")
+
+    def serialize(self):
+        return {
+            "exerciseId": self.exerciseId,
+            "title": self.title,
+            "description": self.description,
+            "exType": self.exType,
+            "examId": self.examId,
+        }
+
+class StudentExamSubmission(Base):
+    __tablename__ = "student_exam_submissions"
+    username = Column(String, ForeignKey("users.username", ondelete="CASCADE"), primary_key=True)
+    exerciseId = Column(String, ForeignKey("exam_exercises.exerciseId", ondelete="CASCADE"), primary_key=True)
+    examId = Column(String, ForeignKey("exam_calls.examId", ondelete="CASCADE"), nullable=False)
+    model = Column(String, nullable=True)
+    lastUpdated = Column(String, nullable=False, default=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+
+    user = relationship("User", back_populates="exam_submissions")
+    exercise = relationship("ExamExercise", back_populates="submissions")
+
+    def serialize(self):
+        return {
+            "username": self.username,
+            "exerciseId": self.exerciseId,
+            "examId": self.examId,
+            "model": self.model,
+            "lastUpdated": self.lastUpdated,
+        }
