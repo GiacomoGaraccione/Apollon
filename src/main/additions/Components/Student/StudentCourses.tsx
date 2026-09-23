@@ -2,10 +2,11 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import { Alert, Button, Card, Center, Flex, Text, Modal, Fieldset, Tabs, Image, Grid, Stack, Notification, TextInput, NativeSelect, Textarea, Group, Loader } from "@mantine/core";
 import API from "../../API";
 import { UserContext } from "../Login/UserContext";
-import { IconExclamationCircle } from "@tabler/icons-react";
-import { Course } from "../../Utils/Models";
+import { IconCalendarTime, IconExclamationCircle } from "@tabler/icons-react";
+import { Course, ExamCall } from "../../Utils/Models";
 import { AvatarUnlockOptions } from "../../Utils/AvatarUtils";
 import { useNavigate } from "react-router-dom";
+import { getExamStatus } from "../../Utils/ExamUtils";
 
 function StudentCourses() {
     const user = useContext(UserContext)
@@ -14,6 +15,7 @@ function StudentCourses() {
     const [courseLoad, setCourseLoad] = useState(false)
     const [warning, setWarning] = useState<boolean>(false)
     const [clicked, setClicked] = useState<string | null>(null)
+    const [ongoingExams, setOngoingExams] = useState<ExamCall[]>([])
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -30,6 +32,12 @@ function StudentCourses() {
                 .finally(() => {
                     setCourseLoad(false)
                 })
+            Promise.all(user.courses.map((course: string) => API.getStudentExamCalls(course, user.username)))
+                .then((results) => {
+                    const ongoing = results.flat().filter((exam: ExamCall) => getExamStatus(exam.startDate, exam.endDate) === "ongoing")
+                    setOngoingExams(ongoing)
+                })
+                .catch(() => {})
         } else {
             setCourses([])
             setCourseLoad(false)
@@ -38,6 +46,13 @@ function StudentCourses() {
 
     return (
         <>
+            {ongoingExams.length > 0 && (
+                <Alert variant="light" color="red" icon={<IconCalendarTime size={20} />} title="Exam in progress!" mb="md"
+                    style={{ cursor: "pointer" }} onClick={() => navigate("/student/exams")}>
+                    You have {ongoingExams.length} ongoing exam{ongoingExams.length > 1 ? "s" : ""}: <strong>{ongoingExams.map(e => e.title).join(", ")}</strong>.
+                    Click here to go to your exams page. Access to courses is restricted during active exams.
+                </Alert>
+            )}
             <Fieldset legend="Your courses" style={{ width: "100%" }}>
                 <Flex direction="column" gap={10} style={{ width: "100%" }}>
                     {courses.length > 0 ? (<>

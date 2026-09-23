@@ -5,19 +5,25 @@ from flask_cors import CORS
 from flask_swagger_ui import get_swaggerui_blueprint
 from config import config
 from app.models import Base
-from app.database.db import engine
+from app.database.db import engine, ensure_column
 from app.routes.auth import auth_bp
 from app.routes.users import users_bp
 from app.routes.courses import courses_bp
 from app.routes.exercises import exercises_bp
+from app.routes.exams import exams_bp
 from app.routes.rankings import rankings_bp
 from app.routes.errors import errors_bp
 from app.routes.sandbox import sandbox_bp
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 db = SQLAlchemy()
 jwt = JWTManager()
 Base.metadata.create_all(engine)
+ensure_column("courses", "gamified", "gamified BOOLEAN NOT NULL DEFAULT 1")
+
 
 def create_app():
     env_name = os.getenv('FLASK_ENV', 'development')
@@ -29,7 +35,7 @@ def create_app():
         if not key.startswith('__'):
             print(f"{key}: {value}")
     print(f"Starting app in {env_name} environment.")
-    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8888", "http://127.0.0.1:5000", "http://se-fall25.noyce.calpoly.io", "https://assistants.polito.it"])
+    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://localhost:8888", "http://127.0.0.1:5000", "http://se-fall25.noyce.calpoly.io", "https://assistants.polito.it", "https://softeng.polito.it"])
 
     # Initialize extensions
     jwt.init_app(app)
@@ -39,6 +45,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(courses_bp, url_prefix='/courses')
     app.register_blueprint(exercises_bp, url_prefix='/courses')
+    app.register_blueprint(exams_bp, url_prefix='/courses')
     app.register_blueprint(rankings_bp, url_prefix='/courses')
     app.register_blueprint(errors_bp, url_prefix='/errors')
     app.register_blueprint(sandbox_bp, url_prefix='/sandbox')

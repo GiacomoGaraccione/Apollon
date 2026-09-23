@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { IconBulb, IconCheck, IconExclamationCircleFilled, IconList, IconPencil, IconRobot, IconSquareRoundedPlusFilled, IconTrash, IconX } from '@tabler/icons-react';
+import { IconBulb, IconCheck, IconExclamationCircleFilled, IconFileAnalytics, IconList, IconPencil, IconRobot, IconSquareRoundedPlusFilled, IconTrash, IconX } from '@tabler/icons-react';
 import { Alert, Button, Center, Checkbox, Divider, Fieldset, Grid, Menu, Modal, Notification, ScrollArea, Stack, Table, Text, } from '@mantine/core';
 import cx from 'clsx';
 import API from '../../API';
@@ -86,6 +86,7 @@ function ExerciseTable() {
                                                         <Menu.Item leftSection={<IconBulb size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/solutions")} >View exercise solutions</Menu.Item>
                                                         <Menu.Item leftSection={<IconRobot size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/boss")} >Edit exercise boss</Menu.Item>
                                                         <Menu.Item leftSection={<IconCheck size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/diagrams")} >View student diagrams</Menu.Item>
+                                                        <Menu.Item leftSection={<IconFileAnalytics size={14} />} onClick={() => navigate("/teacher/courses/" + courseId + "/exercises/" + row.exerciseId + "/evaluations")} >Evaluate student solutions</Menu.Item>
                                                         <Menu.Item color='red' leftSection={<IconTrash size={14} />} onClick={() => {
                                                             setCurrentExercise(row)
                                                             setShowDelete(true)

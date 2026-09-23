@@ -1,8 +1,10 @@
 import json
 import sys
+import time
+import copy
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
-from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog, StudentExerciseCompletion
+from app.models import User, Course, Exercise, Boss, Solution, StudentCourseInfo, StudentExerciseLog, StudentExerciseCompletion, TeacherEvaluation
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
 from app.utils.game_utils import update_experience_points
@@ -10,6 +12,8 @@ from sqlalchemy.orm import joinedload
 import app.evaluator.eval as evaluator
 from datetime import datetime
 from app.evaluator.evaluator_factory import get_evaluator
+from app.evaluator.utils.model_converter import ensure_v3
+from app.evaluator.llm_evaluator import evaluate_with_llm
 
 exercises_bp = Blueprint("exercises", __name__)
         
@@ -354,3 +358,304 @@ def get_student_diagrams(courseId, exerciseId):
         except Exception as e:
             print(e)
             return jsonify({"message": "Invalid JSON"}), 400
+
+
+def apply_colors_to_model(model, syntax_errors, semantic_errors, results, diagram_type):
+    colored = copy.deepcopy(model)
+    if diagram_type == "ClassDiagram":
+        for error in syntax_errors:
+            etype = error.get("type", "")
+            if etype == "missingClassName":
+                eid = (error.get("element") or {}).get("elementId")
+                el = colored["elements"].get(eid) if eid else None
+                if el:
+                    el["textColor"] = "#e8590c"
+                    el["strokeColor"] = "#e8590c"
+            elif etype in ("duplicateClassName", "unconnectedClass", "invalidIntermediateClassConnections"):
+                eid = (error.get("element") or {}).get("elementId")
+                el = colored["elements"].get(eid) if eid else None
+                if el:
+                    el["fillColor"] = "#fff4e6"
+            elif etype in ("missingAttributeName", "duplicateAttributeName", "missingAttributeType",
+                           "foreignKeyReference", "invalidAttributeType", "enumerationTypeWithAttributes",
+                           "classAsAttributeType", "unconnectedEnumeration"):
+                eid = (error.get("attribute") or {}).get("elementId")
+                el = colored["elements"].get(eid) if eid else None
+                if el:
+                    el["fillColor"] = "#fff4e6"
+            elif etype in ("missingAssociationName", "missingAssociationMultiplicity",
+                           "invalidAssociationMultiplicity", "missingRecursiveAssociationRole"):
+                eid = (error.get("association") or {}).get("elementId")
+                el = colored["relationships"].get(eid) if eid else None
+                if el:
+                    el["strokeColor"] = "#e8590c"
+                    el["textColor"] = "#e8590c"
+        for error in semantic_errors:
+            etype = error.get("type", "")
+            if etype in ("associationName", "associationMultiplicity", "associationType", "forbiddenAssociation"):
+                el = colored["relationships"].get(error.get("elementId"))
+                if el:
+                    el["strokeColor"] = "#ff6b6b"
+                    el["textColor"] = "#ff6b6b"
+            elif etype == "attributeType":
+                el = colored["elements"].get(error.get("id"))
+                if el:
+                    el["textColor"] = "#ff6b6b"
+            elif etype == "forbiddenClass":
+                el = colored["elements"].get(error.get("id"))
+                if el:
+                    el["textColor"] = "#ff6b6b"
+                    el["strokeColor"] = "#ff6b6b"
+            elif etype == "classType":
+                el = colored["elements"].get(error.get("id"))
+                if el:
+                    el["fillColor"] = "#ff6b6b"
+            elif etype == "forbiddenAttribute":
+                el = colored["elements"].get(error.get("id"))
+                if el:
+                    el["textColor"] = "#ff6b6b"
+                    el["strokeColor"] = "#ff6b6b"
+        for match in results.get("matchingClasses", []):
+            dc = match.get("diagramClass") or {}
+            eid = dc.get("elementId")
+            el = colored["elements"].get(eid) if eid else None
+            if el:
+                el["strokeColor"] = "#51cf66"
+                el["textColor"] = "#51cf66"
+            for attr in match.get("matchingAttributes", []):
+                da = attr.get("diagramAttribute") or {}
+                aeid = da.get("elementId")
+                ael = colored["elements"].get(aeid) if aeid else None
+                if ael:
+                    ael["fillColor"] = "#ebfbee"
+        for match in results.get("matchingAssociations", []):
+            da = match.get("diagramAssociation") or {}
+            rid = da.get("id")
+            el = colored["relationships"].get(rid) if rid else None
+            if el:
+                el["strokeColor"] = "#51cf66"
+                el["textColor"] = "#51cf66"
+    elif diagram_type == "UseCaseDiagram":
+        for error in syntax_errors:
+            etype = error.get("type", "")
+            if etype in ("missingActorName", "missingUseCaseName", "missingSystemName"):
+                el = colored["elements"].get(error.get("elementId"))
+                if el:
+                    el["textColor"] = "#e8590c"
+                    el["strokeColor"] = "#e8590c"
+            elif etype in ("duplicateActorName", "misplacedActor"):
+                el = colored["elements"].get(error.get("elementId"))
+                if el:
+                    el["fillColor"] = "#fd7e14"
+            elif etype in ("unconnectedUseCase", "duplicateUseCaseName", "duplicateSystemName",
+                           "displacedUseCase", "multipleConnectedActors"):
+                el = colored["elements"].get(error.get("elementId"))
+                if el:
+                    el["fillColor"] = "#ffa94d"
+            elif etype in ("noActorGeneralization", "wrongUseCaseAssociation"):
+                el = colored["relationships"].get(error.get("elementId"))
+                if el:
+                    el["strokeColor"] = "#e8590c"
+                    el["textColor"] = "#e8590c"
+        for error in semantic_errors:
+            etype = error.get("type", "")
+            if etype in ("wrongIncludeExtendAssociation", "wrongIncludeExtendAssociationDirection"):
+                el = colored["relationships"].get(error.get("elementId"))
+                if el:
+                    el["strokeColor"] = "#ff6b6b"
+                    el["textColor"] = "#ff6b6b"
+            elif etype == "wrongUseCaseOwner":
+                el = colored["elements"].get(error.get("elementId"))
+                if el:
+                    el["fillColor"] = "#fff5f5"
+        for match in results.get("matchingActors", []):
+            da = match.get("diagramActor") or {}
+            eid = da.get("elementId")
+            el = colored["elements"].get(eid) if eid else None
+            if el:
+                el["strokeColor"] = "#51cf66"
+                el["textColor"] = "#51cf66"
+        for match in results.get("matchingUseCases", []):
+            da = match.get("diagramUseCase") or {}
+            eid = da.get("elementId")
+            el = colored["elements"].get(eid) if eid else None
+            if el:
+                el["strokeColor"] = "#51cf66"
+                el["textColor"] = "#51cf66"
+        for match in results.get("matchingSystems", []):
+            da = match.get("diagramSystem") or {}
+            eid = da.get("elementId")
+            el = colored["elements"].get(eid) if eid else None
+            if el:
+                el["strokeColor"] = "#51cf66"
+                el["textColor"] = "#51cf66"
+    return colored
+
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/evaluations", methods=["GET"])
+@jwt_required()
+@role_required("Teacher")
+def get_teacher_evaluations(courseId, exerciseId):
+    with get_session() as session:
+        try:
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            evals = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId).all()
+            return jsonify([e.serialize() for e in evals]), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Server error"}), 500
+
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/evaluations", methods=["POST"])
+@jwt_required()
+@role_required("Teacher")
+def upload_student_solution(courseId, exerciseId):
+    with get_session() as session:
+        try:
+            data = request.json
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            student_id = data.get("studentId")
+            model = data.get("model")
+            if not student_id or model is None:
+                return jsonify({"message": "studentId and model are required"}), 400
+            model = ensure_v3(model)
+            existing = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=student_id).first()
+            if existing is not None:
+                existing.originalModel = json.dumps(model)
+                existing.staticResult = None
+                existing.staticModel = None
+                existing.staticTime = None
+                existing.llmResult = None
+                existing.llmModel = None
+                existing.llmTime = None
+                existing.timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                session.commit()
+                return jsonify(existing.serialize()), 200
+            evaluation = TeacherEvaluation(
+                exerciseId=exerciseId,
+                studentId=student_id,
+                originalModel=json.dumps(model),
+            )
+            session.add(evaluation)
+            session.commit()
+            return jsonify(evaluation.serialize()), 201
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Server error"}), 500
+
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/evaluations/<studentId>", methods=["DELETE"])
+@jwt_required()
+@role_required("Teacher")
+def delete_teacher_evaluation(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            evaluation = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=studentId).first()
+            if evaluation is None:
+                return jsonify({"message": "Evaluation not found"}), 404
+            session.delete(evaluation)
+            session.commit()
+            return jsonify({"message": "Evaluation deleted"}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({"message": "Server error"}), 500
+
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/evaluations/<studentId>/static", methods=["POST"])
+@jwt_required()
+@role_required("Teacher")
+def run_static_evaluation(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            evaluation = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=studentId).first()
+            if evaluation is None:
+                return jsonify({"message": "Evaluation not found"}), 404
+            solutions = session.query(Solution).filter_by(exerciseId=exerciseId).all()
+            if not solutions:
+                return jsonify({"message": "No reference solutions found for this exercise"}), 400
+            solutions_data = [sol.serialize() for sol in solutions]
+            model = json.loads(evaluation.originalModel)
+            start_time = time.time()
+            results = evaluator.evaluate_uml_diagram(solutions=solutions_data, model=model, diagram_type=exercise.exType)
+            elapsed = time.time() - start_time
+            syntax_errors = results.get("syntax_errors", [])
+            semantic_errors = results.get("semantic_errors", [])
+            colored_model = apply_colors_to_model(model, syntax_errors, semantic_errors, results, exercise.exType)
+            evaluation.staticResult = json.dumps(results)
+            evaluation.staticModel = json.dumps(colored_model)
+            evaluation.staticTime = round(elapsed, 4)
+            session.commit()
+            return jsonify(evaluation.serialize()), 200
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            print(f"Error in static evaluation: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+            return jsonify({"message": "Server error"}), 500
+
+
+@exercises_bp.route("/<courseId>/exercises/<exerciseId>/evaluations/<studentId>/llm", methods=["POST"])
+@jwt_required()
+@role_required("Teacher")
+def run_llm_evaluation(courseId, exerciseId, studentId):
+    with get_session() as session:
+        try:
+            exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
+            if exercise is None:
+                return jsonify({"message": "Exercise not found"}), 404
+            evaluation = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=studentId).first()
+            if evaluation is None:
+                return jsonify({"message": "Evaluation not found"}), 404
+            solutions = session.query(Solution).filter_by(exerciseId=exerciseId).all()
+            if not solutions:
+                return jsonify({"message": "No reference solutions found for this exercise"}), 400
+            model = json.loads(evaluation.originalModel)
+            best_result = None
+            best_completeness = -1
+            best_tokens = 0
+            total_time = 0
+            for sol in solutions:
+                content = json.loads(sol.content)
+                reference = content.get("reference")
+                if not reference:
+                    continue
+                start_time = time.time()
+                result, tokens = evaluate_with_llm(reference, model)
+                elapsed = time.time() - start_time
+                total_time += elapsed
+                completeness = result.get("completeness", 0)
+                if completeness > best_completeness:
+                    best_completeness = completeness
+                    best_result = result
+                    best_tokens = tokens
+            if best_result is None:
+                return jsonify({"message": "LLM evaluation failed: no valid results"}), 500
+            try:
+                syntax_errors = best_result.get("syntax_errors", [])
+                semantic_errors = best_result.get("semantic_errors", [])
+                colored_model = apply_colors_to_model(model, syntax_errors, semantic_errors, best_result, exercise.exType)
+                evaluation.llmResult = json.dumps(best_result)
+                evaluation.llmModel = json.dumps(colored_model)
+                evaluation.llmTime = round(total_time, 4)
+                evaluation.llmTokens = best_tokens
+                session.commit()
+                return jsonify(evaluation.serialize()), 200
+            except Exception as e:
+                session.rollback()
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                print(f"Error processing LLM result: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+                return jsonify({
+                    "message": f"LLM returned a result but post-processing failed: {str(e)}",
+                    "llmRawResult": best_result,
+                    "llmTime": round(total_time, 4),
+                    "llmTokens": best_tokens
+                }), 422
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            print(f"Error in LLM evaluation: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
+            return jsonify({"message": f"LLM evaluation error: {str(e)}"}), 500

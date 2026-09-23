@@ -163,7 +163,10 @@ def convert_apollon_model_to_reference(model):
         
         newAssoc["source"] = sourceCls
         newAssoc["target"] = targetCls
-        
+
+        if sourceCls["referenceClass"] is None or targetCls["referenceClass"] is None:
+            continue
+
         actual_source_mult = sourceCls["multiplicities"][0] if sourceCls["multiplicities"] else ""
         actual_target_mult = targetCls["multiplicities"][0] if targetCls["multiplicities"] else ""
         

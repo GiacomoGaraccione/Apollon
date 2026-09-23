@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react'
-import { IconCalendarStats, IconChevronLeft, IconChevronRight, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconPencilCancel, IconPencilCheck, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
+import { IconCalendarStats, IconCalendarTime, IconChevronLeft, IconChevronRight, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconPencilCancel, IconPencilCheck, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
 import { ActionIcon, Center, Stack, Tooltip, UnstyledButton, Text, Group } from '@mantine/core';
 import { Roles, UserContext } from '../Login/UserContext';
 import "./style.css"
@@ -15,10 +15,15 @@ interface NavbarLinkProps {
     mobile?: boolean
 }
 
-function NavbarLink({ icon: Icon, label, active, onClick, mobile }: NavbarLinkProps) {
+interface NavbarLinkExtendedProps extends NavbarLinkProps {
+    disabled?: boolean
+}
+
+function NavbarLink({ icon: Icon, label, active, onClick, mobile, disabled }: NavbarLinkExtendedProps) {
     return (
-        <Tooltip label={label} position='right' transitionProps={{ duration: 0 }} disabled={mobile}>
-            <UnstyledButton onClick={onClick} className="link" data-active={active || undefined}>
+        <Tooltip label={disabled ? `${label} (disabled during exam)` : label} position='right' transitionProps={{ duration: 0 }} disabled={mobile}>
+            <UnstyledButton onClick={disabled ? undefined : onClick} className="link" data-active={active || undefined}
+                style={disabled ? { opacity: 0.3, cursor: "not-allowed" } : undefined}>
                 <Icon size={mobile ? 30 : 40} stroke={1.5} />
             </UnstyledButton>
         </Tooltip>
@@ -29,7 +34,8 @@ interface NavbarProps {
     logout: () => void,
     open: boolean,
     toggleOpen: () => void,
-    isMobile?: boolean
+    isMobile?: boolean,
+    examActive?: boolean
 }
 
 
@@ -64,6 +70,9 @@ function Navbar(props: NavbarProps) {
             case "/student/courses":
                 setActive("Courses")
                 break
+            case "/student/exams":
+                setActive("Exams")
+                break
             case "/student/examples":
                 setActive("Examples")
                 break
@@ -79,6 +88,9 @@ function Navbar(props: NavbarProps) {
         if (loc.includes("/teacher/courses/") ||
             loc.includes("/student/courses/")) {
             setActive("Courses")
+        }
+        if (loc.includes("/student/exams/")) {
+            setActive("Exams")
         }
     }, [])
 
@@ -102,20 +114,24 @@ function Navbar(props: NavbarProps) {
                                 }} />
                             </>}
                             {user?.role === Roles.STUDENT && <>
-                                <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} mobile={props.isMobile} onClick={() => {
+                                <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} mobile={props.isMobile} disabled={props.examActive} onClick={() => {
                                     navigate("/student/courses")
                                     setActive("Courses")
                                 }} />
-                                <NavbarLink icon={IconHelp} label="Error Examples" key={"Examples"} active={active === "Examples"} mobile={props.isMobile} onClick={() => {
+                                <NavbarLink icon={IconCalendarTime} label="Exams" key={"Exams"} active={active === "Exams"} mobile={props.isMobile} onClick={() => {
+                                    navigate("/student/exams")
+                                    setActive("Exams")
+                                }} />
+                                <NavbarLink icon={IconHelp} label="Error Examples" key={"Examples"} active={active === "Examples"} mobile={props.isMobile} disabled={props.examActive} onClick={() => {
                                     navigate("/student/examples")
                                     setActive("Examples")
                                 }} />
                             </>}
-                            <NavbarLink icon={IconPencilCheck} label="Sandbox" key={"Sandbox"} active={active === "Sandbox"} mobile={props.isMobile} onClick={() => {
+                            <NavbarLink icon={IconPencilCheck} label="Sandbox" key={"Sandbox"} active={active === "Sandbox"} mobile={props.isMobile} disabled={user?.role === Roles.STUDENT && props.examActive} onClick={() => {
                                 navigate("/sandbox")
                                 setActive("Sandbox")
                             }} />
-                            <NavbarLink icon={IconSettings} label="Settings" key={"Settings"} active={active === "Settings"} mobile={props.isMobile} onClick={() => {
+                            <NavbarLink icon={IconSettings} label="Settings" key={"Settings"} active={active === "Settings"} mobile={props.isMobile} disabled={user?.role === Roles.STUDENT && props.examActive} onClick={() => {
                                 navigate("/settings")
                                 setActive("Settings")
                             }} />

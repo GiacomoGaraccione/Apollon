@@ -27,7 +27,7 @@ def add_course():
                 return jsonify({'message': 'Course ID is already in use'}), 400
             if session.query(Course).filter_by(name=data["courseName"]).first() :
                 return jsonify({'message': 'Course name is already in use'}), 400
-            new_course = Course(courseId=data["courseId"], name=data["courseName"])
+            new_course = Course(courseId=data["courseId"], name=data["courseName"], gamified=data.get("gamified", True))
             session.add(new_course)
             session.commit()
             return jsonify({'message': 'Course created successfully'}), 201
@@ -35,6 +35,22 @@ def add_course():
             print(e)
             return jsonify({'message': 'Database connection error'}), 500
 
+@courses_bp.route("/<courseId>/gamified", methods=["PUT"])
+@jwt_required()
+@role_required("Teacher")
+def update_course_gamified(courseId):
+    with get_session() as session:
+        try:
+            data = request.json
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
+                return jsonify({'message': 'Course not found'}), 404
+            course.gamified = data.get("gamified", course.gamified)
+            session.commit()
+            return jsonify({'message': 'Course gamified status updated successfully'}), 200
+        except Exception as e:
+            print(e)
+            return jsonify({'message': 'Database connection error'}), 500
 
 @courses_bp.route("/<courseId>", methods=["GET"])
 @jwt_required()
@@ -179,6 +195,7 @@ def get_course_info(courseId):
                 "exercises": [exercise.serialize() for exercise in course.exercises],
                 "settings": course.settings,
                 "gameOptions": course.gameOptions,
+                "gamified": course.gamified
             }), 200
         except Exception as e:
             print(e)

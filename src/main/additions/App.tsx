@@ -17,9 +17,18 @@ import CourseSettings from './Components/Teacher/CourseSettings';
 import CourseHome from './Components/Student/CourseHome';
 import ExercisePage from './Components/Student/ExercisePage';
 import DiagramView from './Components/Teacher/DiagramView';
+import EvaluationView from './Components/Teacher/EvaluationView';
 import ErrorTutorial from './Components/Student/ErrorTutorial';
 import { Sandbox } from './Components/Common/Sandbox';
 import UserSettings from './Components/Login/UserSettings';
+import { ExamCallCreator, ExamCallEditor } from './Components/Teacher/ExamCallCreator';
+import ExamCallPage from './Components/Teacher/ExamCallPage';
+import { ExamExerciseCreator, ExamExerciseEditor } from './Components/Teacher/ExamExerciseCreator';
+import ExamSubmissionsView from './Components/Teacher/ExamSubmissionsView';
+import StudentExams from './Components/Student/StudentExams';
+import StudentExamCallPage from './Components/Student/StudentExamCallPage';
+import StudentExamExercisePage from './Components/Student/StudentExamExercisePage';
+import { getExamStatus } from './Utils/ExamUtils';
 
 
 function App() {
@@ -27,6 +36,7 @@ function App() {
     const [loggedIn, setLoggedIn] = useState(false)
     const [loaded, setLoaded] = useState(false)
     const [failed, setFailed] = useState(false)
+    const [examActive, setExamActive] = useState(false)
     const navigate = useNavigate()
     const isMobile = useMediaQuery('(max-width: 62em)')
     const [open, setOpen] = useState(true)
@@ -37,10 +47,27 @@ function App() {
 
     const toggleOpen = () => setOpen((prev) => !prev)
 
+    const checkActiveExams = async (u: User): Promise<boolean> => {
+        if (u.role !== Roles.STUDENT || !Array.isArray(u.courses) || u.courses.length === 0) {
+            setExamActive(false)
+            return false
+        }
+        try {
+            const results = await Promise.all(u.courses.map((course: string) => API.getStudentExamCalls(course, u.username)))
+            const hasOngoing = results.flat().some((exam: any) => getExamStatus(exam.startDate, exam.endDate) === "ongoing")
+            setExamActive(hasOngoing)
+            return hasOngoing
+        } catch {
+            setExamActive(false)
+            return false
+        }
+    }
+
     useEffect(() => {
-        API.getUserInfo().then((user) => {
+        API.getUserInfo().then(async (user) => {
             setUser(user)
             setLoggedIn(true)
+            await checkActiveExams(user)
             setLoaded(true)
         }).catch((err) => {
             setUser(undefined)
@@ -50,10 +77,11 @@ function App() {
     }, [])
 
     const doLogin = (username: string, password: string) => {
-        API.login(username, password).then((user) => {
+        API.login(username, password).then(async (user) => {
             setUser(user)
             setLoggedIn(true)
-            navigate("/")
+            const hasExam = await checkActiveExams(user)
+            navigate(hasExam ? "/student/exams" : "/")
         }).catch((err) => {
             setFailed(true)
             setTimeout(() => setFailed(false), 5000)
@@ -88,12 +116,12 @@ function App() {
                     </AppShell.Header>}
 
                 {loggedIn && <AppShell.Navbar >
-                    <Navbar logout={doLogout} open={open} toggleOpen={toggleOpen} isMobile={!!isMobile} />
+                    <Navbar logout={doLogout} open={open} toggleOpen={toggleOpen} isMobile={!!isMobile} examActive={examActive} />
                 </AppShell.Navbar>}
                 <AppShell.Main className="app-main" style={{ paddingTop: loggedIn ? undefined : "2vh" }}>
                     <Routes>
                         <Route path="/"
-                            element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)} />
+                            element={!loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to={examActive ? "/student/exams" : "/student/courses"} /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)} />
                         <Route path="/login" element={
                             !loaded ? <Loading /> : (loggedIn ? <Navigate to="/" /> : <Login failed={failed} setFailed={setFailed} doLogin={doLogin} />)
                         } />
@@ -115,6 +143,15 @@ function App() {
                         } />
                         <Route path="/student/courses/:courseId/exercises/:exerciseId" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <ExercisePage /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/student/exams" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentExams /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/student/exams/:courseId/:examId" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentExamCallPage /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/student/exams/:courseId/:examId/exercises/:exerciseId" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <StudentExamExercisePage /> : <Navigate to="/teacher/users" />) : <Navigate to="/login" />)
                         } />
                         <Route path="/teacher/users" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <UsersView />) : <Navigate to="/login" />)
@@ -142,6 +179,27 @@ function App() {
                         } />
                         <Route path="/teacher/courses/:courseId/exercises/:exerciseId/diagrams" element={
                             !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <DiagramView />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exercises/:exerciseId/evaluations" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <EvaluationView />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exams/new" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExamCallCreator />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exams/:examId" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExamCallPage />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exams/:examId/edit" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExamCallEditor />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exams/:examId/exercises/new" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExamExerciseCreator />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exams/:examId/exercises/:exerciseId/edit" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExamExerciseEditor />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/courses/:courseId/exams/:examId/exercises/:exerciseId/submissions" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <ExamSubmissionsView />) : <Navigate to="/login" />)
                         } />
                     </Routes>
 

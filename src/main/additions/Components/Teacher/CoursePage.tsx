@@ -5,6 +5,7 @@ import "./style.scss"
 import { useParams } from 'react-router-dom';
 import EnrollmentView from './EnrollmentView';
 import ExerciseTable from './ExerciseTable';
+import ExamCallTable from './ExamCallTable';
 
 function CoursePage() {
     const { courseId } = useParams()
@@ -16,6 +17,8 @@ function CoursePage() {
             <EnrollmentView />
             <Divider my="md" label="Exercises" labelPosition='center' />
             <ExerciseTable />
+            <Divider my="md" label="Exam calls" labelPosition='center' />
+            <ExamCallTable />
         </>
     )
 }
