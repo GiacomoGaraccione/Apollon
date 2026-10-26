@@ -20,6 +20,10 @@ import DiagramView from './Components/Teacher/DiagramView';
 import EvaluationView from './Components/Teacher/EvaluationView';
 import ErrorTutorial from './Components/Student/ErrorTutorial';
 import { Sandbox } from './Components/Common/Sandbox';
+import { GroupWorkspace } from './Components/Common/GroupWorkspace';
+import MyGroups from './Components/Common/MyGroups';
+import GroupsView from './Components/Teacher/GroupsView';
+import GroupMembersView from './Components/Teacher/GroupMembersView';
 import UserSettings from './Components/Login/UserSettings';
 import { ExamCallCreator, ExamCallEditor } from './Components/Teacher/ExamCallCreator';
 import ExamCallPage from './Components/Teacher/ExamCallPage';
@@ -127,6 +131,18 @@ function App() {
                         } />
                         <Route path="/sandbox" element={
                             !loaded ? <Loading /> : (loggedIn ? <Sandbox /> : <Navigate to="/login" />)
+                        } />
+                        <Route path="/groups" element={
+                            !loaded ? <Loading /> : (loggedIn ? <MyGroups /> : <Navigate to="/login" />)
+                        } />
+                        <Route path="/groups/:groupId/workspace" element={
+                            !loaded ? <Loading /> : (loggedIn ? <GroupWorkspace /> : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/groups" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <GroupsView />) : <Navigate to="/login" />)
+                        } />
+                        <Route path="/teacher/groups/:groupId/members" element={
+                            !loaded ? <Loading /> : (loggedIn ? (user?.role === Roles.STUDENT ? <Navigate to="/student/courses" /> : <GroupMembersView />) : <Navigate to="/login" />)
                         } />
                         <Route path="/settings"
                             element={

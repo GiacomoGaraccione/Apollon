@@ -2,14 +2,14 @@ import { UMLModel } from "../typings"
 import { User } from "./Components/Login/UserContext"
 import { AvatarUnlockOptions } from "./Utils/AvatarUtils"
 import { ClassDiagramErrorExample } from "./Utils/ClassDiagram/EvaluationTypes"
-import { Course, Exercise, Boss, Solution, SandboxDiagram, ExamCall, ExamExercise, ExamSubmission, TeacherEvaluation } from "./Utils/Models"
+import { Course, Exercise, Boss, Solution, SandboxDiagram, Group, GroupDiagram, ExamCall, ExamExercise, ExamSubmission, TeacherEvaluation } from "./Utils/Models"
 import { ClassDiagramReferenceSolution } from "./Utils/ClassDiagram/MatcherTypes"
 import { UseCaseDiagramReferenceSolution } from "./Utils/UseCaseDiagram/MatcherTypes"
 
 let baseURL = "http://localhost:5000"
 
 if (process.env.NODE_ENV === "production") {
-    baseURL = "/uml-modeler-server"
+    baseURL = process.env.API_BASE_PATH || "/uml-modeler-server"
 }
 
 // ----------------- Auth APIs -----------------
@@ -202,26 +202,13 @@ async function getAllCourses() {
     let response = await fetch(baseURL + "/courses/", { credentials: "include" })
     if (response.ok) {
         const ret = await response.json()
+        // Il server ora manda solo courseId/name/gamified per questa lista (serialize_summary lato
+        // server): CourseView.tsx - l'unico consumer di getAllCourses() - usa comunque solo questi
+        // due campi per mostrare l'elenco corsi. students/exercises restano vuoti qui apposta, non
+        // sono mai letti in questo contesto - il dettaglio completo di un corso si ottiene con
+        // getCourse(courseId), che non e' cambiato.
         let coursesList: Course[] = ret.courses.map((course: any) => {
-            let studentsList: User[] = course.students.map((student: any) => {
-                return new User(student.userId, student.username, student.name, student.surname, student.role)
-            })
-            let exercisesList: Exercise[] = course.exercises.map((exercise: any) => {
-                let boss = exercise.boss ? new Boss(exercise.boss.introDialogue, exercise.boss.victoryDialogue, exercise.boss.props) : null
-                let solutionsList: Solution[] = exercise.solutions.map((solution: any) => {
-                    let sol = JSON.parse(solution.content)
-                    return new Solution(sol.reference, sol.model, sol.image, solution.solutionId)
-                })
-                return new Exercise(exercise.exerciseId, exercise.title, exercise.description, exercise.level, exercise.experience, exercise.visible, exercise.gamified, exercise.exType, boss, solutionsList)
-            })
-            let settings
-            try {
-                settings = JSON.parse(course.settings) as AvatarUnlockOptions
-            } catch (error) {
-                settings = null
-                console.error("Error parsing settings:", error)
-            }
-            return new Course(course.courseId, course.name, studentsList, exercisesList, settings, course.gameOptions, course.gamified)
+            return new Course(course.courseId, course.name, [], [], null, undefined, course.gamified)
         })
         return coursesList
     } else {
@@ -855,6 +842,299 @@ async function getExampleErrors() {
     }
 }
 
+// ----------------- Group APIs -----------------
+
+function buildGroup(ret: any): Group {
+    let membersList: User[] = (ret.members || []).map((member: any) => {
+        return new User(member.userId, member.username, member.name, member.surname, member.role)
+    })
+    return new Group(ret.groupId, ret.name, membersList, ret.diagramCount)
+}
+
+async function getAllGroups() {
+    let response = await fetch(baseURL + "/groups/", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        return ret.groups.map((group: any) => buildGroup(group))
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getGroup(groupId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        return buildGroup(ret)
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getMyGroups() {
+    let response = await fetch(baseURL + "/groups/mine", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        return ret.groups.map((group: any) => buildGroup(group))
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function createGroup(name: string, memberUserIds: string[]) {
+    let response = await fetch(baseURL + "/groups/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ name, memberUserIds })
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        return buildGroup(ret)
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateGroup(groupId: string, name: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ name })
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        return buildGroup(ret)
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function deleteGroup(groupId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getNonGroupMembers(groupId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/non-members", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        const ret = await response.json()
+        return ret.users.map((user: any) => new User(user.userId, user.username, user.name, user.surname, user.role))
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function addGroupMembers(groupId: string, userIds: string[]) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/members", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ userIds })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function removeGroupMember(groupId: string, userId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/members/" + userId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function getGroupDiagrams(groupId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/diagrams", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        let res = await response.json()
+        let diagrams = res.map((diagram: any) => {
+            return new GroupDiagram(diagram.groupId, diagram.diagramId, diagram.model ? JSON.parse(diagram.model) as UMLModel : "", diagram.diagramType, diagram.filename, diagram.createdBy, diagram.lastEditedBy, diagram.lastUpdated, diagram.hidden)
+        })
+        return diagrams
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function createGroupDiagram(groupId: string, model: any, diagramType: string, filename: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/diagrams", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ model, diagramType, filename })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function updateGroupDiagram(groupId: string, diagramId: string, model: any, diagramType: string, filename: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/diagrams/" + diagramId, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        },
+        body: JSON.stringify({ model, diagramType, filename })
+    })
+    if (response.ok) {
+        let res = await response.json()
+        return res
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function hideGroupDiagram(groupId: string, diagramId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/diagrams/" + diagramId, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
+async function restoreGroupDiagram(groupId: string, diagramId: string) {
+    let response = await fetch(baseURL + "/groups/" + groupId + "/diagrams/" + diagramId + "/restore", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": localStorage.getItem("csrf-token") || ""
+        }
+    })
+    if (response.ok) {
+        return
+    } else {
+        let errDetail = await response.json()
+        if (errDetail.error) throw new Error(errDetail.error)
+        if (errDetail.message) throw new Error(errDetail.message)
+        throw new Error("Unknown error")
+    }
+}
+
 // ----------------- Sandbox APIs -----------------
 
 async function getSandboxDiagrams(userId: string) {
@@ -1385,6 +1665,9 @@ const API = {
     getStudentExamCalls, getExamSubmission, saveExamSubmission, getExamSubmissions,
     getRankingByExerciseCompleteness, getRankingByLevel, getRankingByCompletedExercises,
     getExampleErrors,
+    getAllGroups, getGroup, getMyGroups, createGroup, updateGroup, deleteGroup,
+    getNonGroupMembers, addGroupMembers, removeGroupMember,
+    getGroupDiagrams, createGroupDiagram, updateGroupDiagram, hideGroupDiagram, restoreGroupDiagram,
     getSandboxDiagrams, saveSandboxDiagram, updateSandboxDiagram, deleteSandboxDiagram,
     getTeacherEvaluations, uploadStudentSolution, deleteTeacherEvaluation, runStaticEvaluation, runLlmEvaluation
 }

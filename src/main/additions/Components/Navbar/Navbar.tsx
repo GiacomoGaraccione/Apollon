@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react'
-import { IconCalendarStats, IconCalendarTime, IconChevronLeft, IconChevronRight, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconPencilCancel, IconPencilCheck, IconSettings, IconSun, IconSwitchHorizontal, IconUser, } from '@tabler/icons-react';
+import { IconCalendarStats, IconCalendarTime, IconChevronLeft, IconChevronRight, IconHelp, IconHome2, IconLighter, IconLogout, IconMoon, IconPencilCancel, IconPencilCheck, IconSettings, IconSun, IconSwitchHorizontal, IconUser, IconUserCog, IconUsersGroup, } from '@tabler/icons-react';
 import { ActionIcon, Center, Stack, Tooltip, UnstyledButton, Text, Group } from '@mantine/core';
 import { Roles, UserContext } from '../Login/UserContext';
 import "./style.css"
@@ -41,6 +41,7 @@ interface NavbarProps {
 
 function Navbar(props: NavbarProps) {
     const [active, setActive] = useState("")
+    const [hasGroups, setHasGroups] = useState(false)
     const user = useContext(UserContext)
     const navigate = useNavigate()
     const { colorScheme, setColorScheme } = useMantineColorScheme()
@@ -50,9 +51,19 @@ function Navbar(props: NavbarProps) {
         setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark');
     }
 
+    useEffect(() => {
+        if (user?.role === Roles.STUDENT) {
+            API.getMyGroups().then((groups) => {
+                setHasGroups(groups.length > 0)
+            }).catch(() => {
+                setHasGroups(false)
+            })
+        }
+    }, [user])
+
 
     useEffect(() => {
-        let loc = window.location.pathname.replace("/uml-modeler", "")
+        let loc = window.location.pathname.replace(process.env.PUBLIC_URL || "/uml-modeler", "")
         switch (loc) {
             case "/teacher":
                 setActive("Home")
@@ -79,6 +90,12 @@ function Navbar(props: NavbarProps) {
             case "/sandbox":
                 setActive("Sandbox")
                 break
+            case "/groups":
+                setActive("Groups")
+                break
+            case "/teacher/groups":
+                setActive("Manage Groups")
+                break
             case "/settings":
                 setActive("Settings")
                 break
@@ -91,6 +108,12 @@ function Navbar(props: NavbarProps) {
         }
         if (loc.includes("/student/exams/")) {
             setActive("Exams")
+        }
+        if (loc.includes("/groups/")) {
+            setActive("Groups")
+        }
+        if (loc.includes("/teacher/groups/")) {
+            setActive("Manage Groups")
         }
     }, [])
 
@@ -112,6 +135,10 @@ function Navbar(props: NavbarProps) {
                                     navigate("/teacher/courses")
                                     setActive("Courses")
                                 }} />
+                                <NavbarLink icon={IconUserCog} label="Manage Groups" key={"Manage Groups"} active={active === "Manage Groups"} mobile={props.isMobile} onClick={() => {
+                                    navigate("/teacher/groups")
+                                    setActive("Manage Groups")
+                                }} />
                             </>}
                             {user?.role === Roles.STUDENT && <>
                                 <NavbarLink icon={IconCalendarStats} label="Courses" key={"Courses"} active={active === "Courses"} mobile={props.isMobile} disabled={props.examActive} onClick={() => {
@@ -131,6 +158,10 @@ function Navbar(props: NavbarProps) {
                                 navigate("/sandbox")
                                 setActive("Sandbox")
                             }} />
+                            {(user?.role === Roles.TEACHER || hasGroups) && <NavbarLink icon={IconUsersGroup} label="Groups" key={"Groups"} active={active === "Groups"} mobile={props.isMobile} disabled={user?.role === Roles.STUDENT && props.examActive} onClick={() => {
+                                navigate("/groups")
+                                setActive("Groups")
+                            }} />}
                             <NavbarLink icon={IconSettings} label="Settings" key={"Settings"} active={active === "Settings"} mobile={props.isMobile} disabled={user?.role === Roles.STUDENT && props.examActive} onClick={() => {
                                 navigate("/settings")
                                 setActive("Settings")

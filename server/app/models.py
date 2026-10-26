@@ -18,6 +18,12 @@ exam_call_students = Table("exam_call_students",
     Column("examId", String, ForeignKey("exam_calls.examId", ondelete="CASCADE"))
 )
 
+group_members = Table("group_members",
+    Base.metadata,
+    Column("username", String, ForeignKey("users.username", ondelete="CASCADE")),
+    Column("groupId", String, ForeignKey("groups.groupId", ondelete="CASCADE"))
+)
+
 class User(Base):
     __tablename__ = 'users'
     username = Column(String, primary_key=True)
@@ -35,6 +41,8 @@ class User(Base):
     exam_calls = relationship("ExamCall", secondary=exam_call_students, back_populates="students")
     exam_submissions = relationship("StudentExamSubmission", back_populates="user", cascade="all, delete-orphan")
 
+    groups = relationship("Group", secondary=group_members, back_populates="members")
+
     def serialize(self):
         return {
             "username": self.username,
@@ -43,6 +51,18 @@ class User(Base):
             "surname": self.surname,
             "role": self.role,
             "courses": [course.courseId for course in self.courses]
+        }
+
+    def serialize_basic(self):
+        """Senza `courses`: usata per elencare gli iscritti DENTRO un corso (Course.serialize()),
+        dove quel campo non serve mai lato client ma il suo accesso innescherebbe comunque una query
+        lazy separata per OGNI studente elencato (N+1, significativo con centinaia di iscritti)."""
+        return {
+            "username": self.username,
+            "userId": self.userId,
+            "name": self.name,
+            "surname": self.surname,
+            "role": self.role,
         }
 
     def set_password(self, password):
@@ -68,13 +88,25 @@ class Course(Base):
         return {
             "courseId": self.courseId,
             "name": self.name,
-            "students": [student.serialize() for student in self.students],
+            "students": [student.serialize_basic() for student in self.students],
             "exercises": [exercise.serialize() for exercise in self.exercises],
             "settings": self.settings,
             "gameOptions": self.gameOptions,
             "gamified": self.gamified,
         }
-  
+
+    def serialize_summary(self):
+        """Versione leggera per la lista corsi (GET /courses/): niente studenti/esercizi annidati,
+        che per un corso con molti iscritti ed esercizi fanno esplodere sia il numero di query
+        (N+1 su ogni relationship, per ogni corso) sia la dimensione del payload - il frontend della
+        lista corsi (CourseView.tsx) usa comunque solo courseId/name. Il dettaglio completo resta
+        disponibile via GET /courses/<courseId> (serialize())."""
+        return {
+            "courseId": self.courseId,
+            "name": self.name,
+            "gamified": self.gamified,
+        }
+
 class Exercise(Base):
     __tablename__ = "exercises"
     exerciseId = Column(String, primary_key=True)
@@ -95,6 +127,14 @@ class Exercise(Base):
     teacher_evaluations = relationship("TeacherEvaluation", back_populates="exercise", cascade="all, delete-orphan")
 
     def serialize(self):
+        # `records`/`completions` (i log di OGNI studente su questo esercizio, con l'intero diagramma
+        # UML sottomesso + dettagli di valutazione) sono stati rimossi da qui: nessun campo client-side
+        # li legge mai (ne' in Course/Exercise di Models.ts ne' nelle mappature di API.ts), ma venivano
+        # comunque serializzati per intero ad ogni fetch di un esercizio (compresa la lista corsi e la
+        # vista corso dello STUDENTE in get_course_info, che quindi esponeva anche le submission di
+        # tutti gli altri studenti) - con molti iscritti e' la causa principale dei payload multi-MB.
+        # Quel dato resta disponibile dove serve davvero tramite l'endpoint dedicato per esercizio
+        # (GET .../records in exercises.py), scoping corretto per una vista "risultati esercizio".
         return{
             "exerciseId": self.exerciseId,
             "title": self.title,
@@ -107,8 +147,6 @@ class Exercise(Base):
             "exType": self.exType,
             "solutions": [solution.serialize() for solution in self.solutions],
             "boss": self.boss.serialize() if self.boss else None,
-            "records": [record.serialize() for record in self.student_exercises],
-            "completions": [completion.serialize() for completion in self.exercise_completions]
         }
     
 class Solution(Base):
@@ -345,4 +383,49 @@ class StudentExamSubmission(Base):
             "examId": self.examId,
             "model": self.model,
             "lastUpdated": self.lastUpdated,
+        }
+
+class Group(Base):
+    __tablename__ = "groups"
+    groupId = Column(String, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+    createdAt = Column(String, nullable=False, default=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
+
+    members = relationship("User", secondary=group_members, back_populates="groups")
+    diagrams = relationship("GroupDiagram", back_populates="group", cascade="all, delete-orphan")
+
+    def serialize(self):
+        return {
+            "groupId": self.groupId,
+            "name": self.name,
+            "members": [member.serialize() for member in self.members],
+            "diagramCount": len([d for d in self.diagrams if not d.hidden]),
+        }
+
+class GroupDiagram(Base):
+    __tablename__ = "group_diagrams"
+    groupId = Column(String, ForeignKey("groups.groupId", ondelete="CASCADE"), primary_key=True)
+    diagramId = Column(String, primary_key=True)
+    counter = Column(Integer, nullable=False)
+    filename = Column(String, nullable=True)
+    diagramType = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    createdBy = Column(String, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
+    lastEditedBy = Column(String, ForeignKey("users.username", ondelete="SET NULL"), nullable=True)
+    lastUpdated = Column(String, nullable=False, default=lambda: datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
+    hidden = Column(Boolean, nullable=False, default=False)
+
+    group = relationship("Group", back_populates="diagrams")
+
+    def serialize(self):
+        return {
+            "groupId": self.groupId,
+            "diagramId": self.diagramId,
+            "filename": self.filename,
+            "diagramType": self.diagramType,
+            "model": self.model,
+            "createdBy": self.createdBy,
+            "lastEditedBy": self.lastEditedBy,
+            "lastUpdated": self.lastUpdated,
+            "hidden": self.hidden,
         }

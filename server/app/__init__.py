@@ -14,6 +14,7 @@ from app.routes.exams import exams_bp
 from app.routes.rankings import rankings_bp
 from app.routes.errors import errors_bp
 from app.routes.sandbox import sandbox_bp
+from app.routes.groups import groups_bp
 import os
 from dotenv import load_dotenv
 
@@ -49,6 +50,7 @@ def create_app():
     app.register_blueprint(rankings_bp, url_prefix='/courses')
     app.register_blueprint(errors_bp, url_prefix='/errors')
     app.register_blueprint(sandbox_bp, url_prefix='/sandbox')
+    app.register_blueprint(groups_bp, url_prefix='/groups')
     # Swagger
     SWAGGER_URL = app.config['SWAGGER_URL']
     API_URL = app.config['API_URL']
