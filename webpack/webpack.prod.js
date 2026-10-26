@@ -9,7 +9,7 @@ module.exports = merge(common, {
   devtool: false,
   output: {
     filename: '[name].[contenthash].js',
-    publicPath: "/uml-modeler/",
+    publicPath: process.env.PUBLIC_URL ? `${process.env.PUBLIC_URL}/` : "/uml-modeler/",
   },
 
   plugins: [

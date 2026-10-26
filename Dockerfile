@@ -1,4 +1,4 @@
-FROM node:20-bullseye-slim
+FROM node:24-bullseye-slim
 WORKDIR /app
 
 # Copy everything
@@ -10,6 +10,8 @@ COPY . .
 RUN npm install
 ARG PUBLIC_URL=/uml-modeler
 ENV PUBLIC_URL=$PUBLIC_URL
+ARG API_BASE_PATH=/uml-modeler-server
+ENV API_BASE_PATH=$API_BASE_PATH
 
 RUN npm run build
 

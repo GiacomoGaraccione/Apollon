@@ -12,6 +12,7 @@ test-report.html
 /server/src/hf-api-token.txt
 /server/src/hf-token.txt
 /data
+llm-diagram-benchmark/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

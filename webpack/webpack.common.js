@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
@@ -59,6 +60,10 @@ module.exports = {
     },
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.API_BASE_PATH': JSON.stringify(process.env.API_BASE_PATH || ''),
+      'process.env.PUBLIC_URL': JSON.stringify(process.env.PUBLIC_URL || ''),
+    }),
     new CircularDependencyPlugin({ exclude: /node_modules/ }),
     new HtmlWebpackPlugin({
       template: './public/index.html.ejs',
