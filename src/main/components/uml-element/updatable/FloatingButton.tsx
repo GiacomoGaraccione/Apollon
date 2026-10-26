@@ -9,12 +9,12 @@ const FloatingButtonContainer = styled.g.attrs((props) => ({
 
   path {
     pointer-events: all;
-    fill: var(--apollon-primary-contrast);
+    fill: var(--apollon-primary-contrast, #212529);
   }
   rect {
     pointer-events: all;
-    fill: var(--apollon-background);
-    stroke: var(--apollon-gray);
+    fill: var(--apollon-background, #ffffff);
+    stroke: var(--apollon-gray, #e9ecef);
   }
   :hover {
     transform: translate(0px, -30px);
@@ -23,12 +23,12 @@ const FloatingButtonContainer = styled.g.attrs((props) => ({
     transform: translate(0px, -30px);
   }
   :hover rect {
-    fill: var(--apollon-gray);
-    stroke: var(--apollon-gray-variant);
+    fill: var(--apollon-gray, #e9ecef);
+    stroke: var(--apollon-gray-variant, #343a40);
   }
   :active rect {
-    fill: var(--apollon-gray);
-    stroke: var(--apollon-gray-variant);
+    fill: var(--apollon-gray, #e9ecef);
+    stroke: var(--apollon-gray-variant, #343a40);
   }
 `;
 

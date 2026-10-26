@@ -12,9 +12,9 @@ type Props = {
 };
 
 const ZoomButton = styled.button`
-  background: var(--apollon-background);
-  color: var(--apollon-primary-contrast);
-  border: 1px solid var(--apollon-gray);
+  background: var(--apollon-background, #ffffff);
+  color: var(--apollon-primary-contrast, #212529);
+  border: 1px solid var(--apollon-gray, #e9ecef);
   margin: 0;
   outline: none;
   border-radius: 0.25rem;
@@ -25,13 +25,13 @@ const ZoomButton = styled.button`
   justify-content: center;
 
   :hover {
-    background-color: var(--apollon-gray);
-    border-color: var(--apollon-gray-variant);
+    background-color: var(--apollon-gray, #e9ecef);
+    border-color: var(--apollon-gray-variant, #343a40);
   }
 
   :active {
-    background-color: var(--apollon-gray);
-    border-color: var(--apollon-gray-variant);
+    background-color: var(--apollon-gray, #e9ecef);
+    border-color: var(--apollon-gray-variant, #343a40);
   }
 `;
 
