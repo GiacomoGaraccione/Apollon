@@ -58,8 +58,9 @@ function CourseHome() {
                             let svg = createAvatar(avataaars, avatarOpts).toString()
                             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
                             setLevel(1)
-                            let levelInfo = c.gameOptions!.levels[0]
-                            setLevelInfo(levelInfo)
+                            if (c.gameOptions) {
+                                setLevelInfo(c.gameOptions.levels[0])
+                            }
                             setTimeout(() => {
                                 setNotif(false)
                             }, 5000)
@@ -70,18 +71,20 @@ function CourseHome() {
                             setAvatarOptions(avatarOpts)
                             let svg = createAvatar(avataaars, avatarOpts).toString()
                             setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
-                            let levelInfo = c.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
-                            if (!levelInfo && studentCourse.info.experience >= c.gameOptions!.levels[c.gameOptions!.levels.length - 1].max) {
-                                levelInfo = {
-                                    min: c.gameOptions!.levels[c.gameOptions!.levels.length - 1].max,
-                                    max: studentCourse.info.experience,
-                                    level: c.gameOptions!.levels[c.gameOptions!.levels.length - 1].level
+                            if (c.gameOptions) {
+                                let levelInfo = c.gameOptions.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
+                                if (!levelInfo && studentCourse.info.experience >= c.gameOptions.levels[c.gameOptions.levels.length - 1].max) {
+                                    levelInfo = {
+                                        min: c.gameOptions.levels[c.gameOptions.levels.length - 1].max,
+                                        max: studentCourse.info.experience,
+                                        level: c.gameOptions.levels[c.gameOptions.levels.length - 1].level
+                                    }
+                                    setMaxLevel(true)
                                 }
-                                setMaxLevel(true)
+                                setLevel(levelInfo.level)
+                                setLevelInfo(levelInfo)
                             }
-                            setLevel(levelInfo.level)
-                            API.updateStudentCourseInfo(courseId, user.username, levelInfo.level, studentCourse.info.experience, JSON.parse(studentCourse.info.avatar))
-                            setLevelInfo(levelInfo)
+                            API.updateStudentCourseInfo(courseId, user.username, studentCourse.info.level, studentCourse.info.experience, JSON.parse(studentCourse.info.avatar))
                         }
 
                         setLoad(false)
@@ -113,14 +116,17 @@ function CourseHome() {
                         setCourseInfo(studentCourse.info)
                         setLevel(studentCourse.info.level)
                         setExperience(studentCourse.info.experience)
-                        let levelInfo = course!.gameOptions!.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
-                        if (!levelInfo && studentCourse.info.experience >= course!.gameOptions!.levels[course!.gameOptions!.levels.length - 1].max) {
-                            levelInfo = {
-                                min: course!.gameOptions!.levels[course!.gameOptions!.levels.length - 1].max,
-                                max: studentCourse.info.experience,
-                                level: course!.gameOptions!.levels[course!.gameOptions!.levels.length - 1].level
+                        if (course?.gameOptions) {
+                            let levelInfo = course.gameOptions.levels.find((l: any) => l.min <= studentCourse.info.experience && l.max > studentCourse.info.experience)
+                            if (!levelInfo && studentCourse.info.experience >= course.gameOptions.levels[course.gameOptions.levels.length - 1].max) {
+                                levelInfo = {
+                                    min: course.gameOptions.levels[course.gameOptions.levels.length - 1].max,
+                                    max: studentCourse.info.experience,
+                                    level: course.gameOptions.levels[course.gameOptions.levels.length - 1].level
+                                }
+                                setMaxLevel(true)
                             }
-                            setMaxLevel(true)
+                            setLevelInfo(levelInfo)
                         }
                     })
                 }
@@ -791,7 +797,7 @@ function CourseHome() {
                                                                         </>}
                                                                     </Flex>
                                                                 </div>
-                                                                {isCompleted && <Tooltip label="You defeated this boss!">
+                                                                {isCompleted && exercise.gamified && bossStr && <Tooltip label="You defeated this boss!">
                                                                     <Avatar
                                                                         src={`data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(bottts, JSON.parse(bossStr)).toString())}`}
                                                                         size={80}

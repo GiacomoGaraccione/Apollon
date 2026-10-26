@@ -142,11 +142,15 @@ function CourseSettings() {
                     try {
                         const json = JSON.parse(contents) as AvatarUnlockOptions
                         setUnlockOptions(json)
-                        closeUnlock()
-                        setUploadNotif(true)
-                        setTimeout(() => {
-                            setUploadNotif(false)
-                        }, 3000)
+                        if (courseId) {
+                            API.updateCourseSettings(courseId, json).then(() => {
+                                closeUnlock()
+                                setUploadNotif(true)
+                                setTimeout(() => {
+                                    setUploadNotif(false)
+                                }, 3000)
+                            })
+                        }
                     } catch (err) {
                         console.error("Error parsing JSON:", err);
                     }
@@ -178,11 +182,15 @@ function CourseSettings() {
                         setDifferenceThreshold(json.difference.threshold)
                         setDifferenceSettings(json.difference.settings)
                         setLevelSettings(json.levels)
-                        closeSettings()
-                        setUploadNotif(true)
-                        setTimeout(() => {
-                            setUploadNotif(false)
-                        }, 3000)
+                        if (courseId) {
+                            API.updateCourseGameOptions(courseId, json).then(() => {
+                                closeSettings()
+                                setUploadNotif(true)
+                                setTimeout(() => {
+                                    setUploadNotif(false)
+                                }, 3000)
+                            })
+                        }
                     } catch (err) {
                         console.error("Error parsing JSON:", err);
                     }
