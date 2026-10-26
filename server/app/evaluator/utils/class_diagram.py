@@ -14,12 +14,14 @@ class Multiplicity(Enum):
     NUMERIC_TO_MANY = "NUMERIC_TO_MANY"
 
 
-class AttributeType(Enum): 
+class AttributeType(Enum):
     FLOAT = "float"
     INT = "int"
     STRING = "string"
     BOOLEAN = "boolean"
+    BOOL = "bool"
     DATE = "date"
+    DATA = "data"  # alias italiano di "date", stesso significato
     CURRENCY = "currency"
     TIME = "time"
     DATETIME = "datetime"
@@ -136,11 +138,29 @@ def convert_apollon_model_to_reference(model):
                     newAttr["types"] = [attrType]
                     newClass["attributes"].append(newAttr)
             reference["classes"].append(newClass)
+    # Mappa ESPLICITA invece del precedente fallback "tutto cio' che non e' Default diventa
+    # Aggregation": quel fallback etichettava Inheritance/Realization/Composition come "Aggregation",
+    # cosa che storicamente non ha mai causato un bug osservabile in produzione (il confronto di tipo
+    # in class_diagram_evaluator.py rilegge il tipo grezzo originale dal modello, non questo campo -
+    # vedi "diagramAssociation" nel report), MA questa stessa funzione puo' anche essere usata per
+    # costruire la REFERENCE stessa (non solo il lato "diagramma" di uno studente) - es. in uno script
+    # di ricerca che valuta diagrammi generati da LLM contro una ground truth anch'essa convertita da
+    # qui. In quel caso il fallback sbagliato corrompe il tipo DICHIARATO della reference, facendo
+    # segnalare come "tipo sbagliato" una ereditarieta' identica tra reference e diagramma.
+    ASSOCIATION_TYPE_MAP = {
+        "ClassInheritance": "Inheritance",
+        "ClassRealization": "Inheritance",  # nessun bucket "Realization" a parte nello schema reference
+        "ClassAggregation": "Aggregation",
+        "ClassComposition": "Composition",
+        "ClassBidirectional": "Default",
+        "ClassUnidirectional": "Default",
+        "ClassDependency": "Default",
+    }
     relationships = model.get("relationships", {})
     for rel in relationships.values():
         newAssoc = {
             "message": "",
-            "type":  "Default" if (rel.get("type") == "ClassBidirectional" or rel.get("type") == "ClassUnidirectional") else "Aggregation", 
+            "type": ASSOCIATION_TYPE_MAP.get(rel.get("type"), "Default"),
             "weight": "STRONG",
             "synonyms": [],
             "name": rel.get("name", ""),

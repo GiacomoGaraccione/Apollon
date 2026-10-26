@@ -34,7 +34,7 @@ export function AssociationForm(props: { reference: ClassDiagramReferenceSolutio
     useEffect(() => {
         if (classes.length > 0) {
             setSourceClass(classes[0].name)
-            setTargetClass(classes[0].name)
+            setTargetClass(classes.length > 1 ? classes[1].name : classes[0].name)
         }
     }, [classes])
 
@@ -74,7 +74,7 @@ export function AssociationForm(props: { reference: ClassDiagramReferenceSolutio
             setError("Please select a source and target class")
             return
         }
-        if (sourceMultiplicity.length === 0 || targetMultiplicity.length === 0) {
+        if (type !== "Inheritance" && (sourceMultiplicity.length === 0 || targetMultiplicity.length === 0)) {
             setError("Please enter at least one multiplicity value for both source and target classes")
             return
         }
