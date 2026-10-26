@@ -194,9 +194,10 @@ class ClassDiagramEvaluator(BaseEvaluator):
                                 "refTarget": diag_target.get("referenceClass"),
                                 "id": assoc.get("elementId")
                             })
+                total_reference_attributes = sum(len(cl.get("attributes", [])) for cl in reference.get("classes", []))
                 class_completeness = len(report["matchingClasses"]) / len(reference.get("classes", [])) if reference.get("classes") else 0
-                attribute_completeness = sum(len(mc.get("matchingAttributes", [])) for mc in report["matchingClasses"]) / sum(len(cl.get("attributes", [])) for cl in reference.get("classes", [])) if reference.get("classes") else 0
-                association_completeness = len(report["matchingAssociations"]) / len(reference.get("associations", []))
+                attribute_completeness = sum(len(mc.get("matchingAttributes", [])) for mc in report["matchingClasses"]) / total_reference_attributes if total_reference_attributes else 0
+                association_completeness = len(report["matchingAssociations"]) / len(reference.get("associations", [])) if reference.get("associations") else 0
                 report["classCompleteness"] = round(100 * class_completeness, 2)
                 report["attributeCompleteness"] = round(100* attribute_completeness, 2)
                 report["associationCompleteness"] = round(100 * association_completeness, 2)
@@ -204,14 +205,16 @@ class ClassDiagramEvaluator(BaseEvaluator):
                 total_matched = len(report["matchingClasses"]) + sum(len(mc.get("matchingAttributes", [])) for mc in report["matchingClasses"]) + len(report.get("matchingAssociations", []))
                 completeness = total_matched / total_reference if total_reference else 0
                 report["completeness"] = round(100 * completeness, 2)
-                if completeness > best_completeness:
+                # Bug fix: il branch "else" sovrascriveva incondizionatamente best/best_reference con
+                # la soluzione CORRENTE anche quando era peggiore di quella gia' trovata, e resettava
+                # best_completeness a 0 - quindi con piu' di una reference solution accettata, vinceva
+                # tipicamente l'ultima della lista indipendentemente dalla sua completeness reale.
+                # "best is None" tiene la prima soluzione anche quando la sua completeness e'
+                # esattamente 0, cosi' "best" non resta mai None dopo il ciclo.
+                if best is None or completeness > best_completeness:
                     best_completeness = completeness
                     best = report
                     best_reference = reference
-                else:
-                    best_completeness = 0
-                    best_reference = reference
-                    best = report
             semantic_errors = self._get_semantic_errors_from_report(best, best_reference)
             syntax_errors = self._get_syntax_errors_from_model(convert_apollon_model_to_reference(model), best_reference, best)
             best["syntax_errors"] = syntax_errors
