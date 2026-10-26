@@ -24,6 +24,7 @@ import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
 import 'bpmn-js-bpmnlint/dist/assets/css/bpmn-js-bpmnlint.css'
 import * as bpmnlintConfig from './bundled-config'
+import { BPMNZoomControls } from "./BPMNZoomControls"
 
 
 const options = {
@@ -609,6 +610,7 @@ export function Sandbox() {
                 }
             }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >
                 <Fieldset legend="Sandbox" style={{ width: "100%" }}>
+                    {diagramType === "BPMN" && <BPMNZoomControls getModeler={() => modeler} />}
                     <div ref={apollonRef} id="apollon" style={{ height: "80vh" }} ></div>
                     <Grid mt="md" justify="center">
                         <Grid.Col span={6}>

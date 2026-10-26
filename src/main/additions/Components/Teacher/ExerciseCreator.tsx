@@ -135,7 +135,7 @@ function ExerciseForm(props: { exercise: Exercise, mode: string }) {
                             </div>
                         </Group>
                     </Checkbox.Card>
-                    <NativeSelect {...form.getInputProps("exType")} label="Diagram Type" data={[UMLDiagramType.ClassDiagram, UMLDiagramType.UseCaseDiagram, UMLDiagramType.DeploymentDiagram]} />
+                    <NativeSelect {...form.getInputProps("exType")} label="Diagram Type" data={[UMLDiagramType.ClassDiagram, UMLDiagramType.UseCaseDiagram, UMLDiagramType.DeploymentDiagram, UMLDiagramType.BPMN]} />
                 </SimpleGrid>
 
                 <Center mt="md">

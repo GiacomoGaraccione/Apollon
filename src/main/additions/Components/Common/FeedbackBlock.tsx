@@ -6,12 +6,13 @@ import "csshake/dist/csshake.css"
 import 'svg2pdf.js'
 import { ClassDiagramEvaluationResults } from "../../Utils/ClassDiagram/EvaluationTypes";
 import { UseCaseDiagramEvaluationResults } from "../../Utils/UseCaseDiagram/EvaluationTypes";
-import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList, UseCaseDiagramMatchingElementsList, UseCaseDiagramSemanticErrorsList, UseCaseDiagramSyntaxErrorsList } from "./FeedbackLists";
+import { BPMNDiagramEvaluationResults } from "../../Utils/BPMN/EvaluationTypes";
+import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList, UseCaseDiagramMatchingElementsList, UseCaseDiagramSemanticErrorsList, UseCaseDiagramSyntaxErrorsList, BPMNMatchingElementsList, BPMNSemanticErrorsList, BPMNSyntaxErrorsList, BPMNClosePartsList, BPMNCloseElementsList } from "./FeedbackLists";
 
 export function FeedbackBlock(props: {
     load: boolean,
     exerciseType: string,
-    results: ClassDiagramEvaluationResults | UseCaseDiagramEvaluationResults
+    results: ClassDiagramEvaluationResults | UseCaseDiagramEvaluationResults | BPMNDiagramEvaluationResults
 }) {
     return (
         <>
@@ -37,6 +38,23 @@ export function FeedbackBlock(props: {
                         </Grid.Col>
                         <Grid.Col span={4}>
                             {props.results.results && <UseCaseDiagramMatchingElementsList results={(props.results as UseCaseDiagramEvaluationResults)} />}
+                        </Grid.Col>
+                    </>}
+                    {props.exerciseType === UMLDiagramType.BPMN && <>
+                        <Grid.Col span={4}>
+                            <BPMNSyntaxErrorsList syntaxErrors={(props.results as BPMNDiagramEvaluationResults).newSyntaxErrors} />
+                        </Grid.Col>
+                        <Grid.Col span={4}>
+                            <BPMNSemanticErrorsList semanticErrors={(props.results as BPMNDiagramEvaluationResults).newSemanticErrors} />
+                        </Grid.Col>
+                        <Grid.Col span={4}>
+                            <BPMNMatchingElementsList results={(props.results as BPMNDiagramEvaluationResults).results} />
+                        </Grid.Col>
+                        <Grid.Col span={4}>
+                            <BPMNClosePartsList results={(props.results as BPMNDiagramEvaluationResults).results} />
+                        </Grid.Col>
+                        <Grid.Col span={4}>
+                            <BPMNCloseElementsList results={(props.results as BPMNDiagramEvaluationResults).results} />
                         </Grid.Col>
                     </>}
                 </Grid>

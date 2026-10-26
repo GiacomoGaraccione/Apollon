@@ -16,6 +16,25 @@ import { ClassDiagramReferenceFormModal } from "./SolutionCreators/ClassDiagram/
 import { ReferenceActor, ReferenceSystem, ReferenceUseCase, UseCaseDiagramReferenceBuilder, UseCaseDiagramReferenceSolution } from "../../Utils/UseCaseDiagram/MatcherTypes";
 import { UseCaseDiagramReferenceFormModal } from "./SolutionCreators/UseCaseDiagram/UseCaseDiagramCreator";
 import UseCaseDiagramStructureBuilderFromReference from "../../Utils/UseCaseDiagram/StructureBuilder";
+import { BPMNDiagramReferenceBuilder, BPMNDiagramReferenceSolution, BusinessEntity, Actor, SubProcess, ProcessPart } from "../../Utils/BPMN/MatcherTypes";
+import { BPMNDiagramReferenceFormModal } from "./SolutionCreators/BPMN/BPMNDiagramCreator";
+import Modeler from "bpmn-js/lib/Modeler"
+import lintModule from "bpmn-js-bpmnlint"
+import resizeAllModule from "bpmn-js-nyan/lib/resize-all-rules"
+import "bpmn-js/dist/assets/diagram-js.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
+import 'bpmn-js-bpmnlint/dist/assets/css/bpmn-js-bpmnlint.css'
+import * as bpmnlintConfig from '../Common/bundled-config'
+
+const startingBpmnDiagram = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" id="Definitions_0pkl0yz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="12.0.0">
+  <bpmn:process id="Process_10owelu" isExecutable="true" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_10owelu" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`
 
 const options = {
     colorEnabled: false,
@@ -28,14 +47,21 @@ function SolutionCreator() {
     const { courseId, exerciseId } = useParams()
     const [exercise, setExercise] = useState<Exercise | undefined>(undefined)
     const [editor, setEditor] = useState<ApollonEditor | undefined>()
+    const [modeler, setModeler] = useState<Modeler | undefined>()
     const [openDelete, setOpenDelete] = useState(false)
     const [currentSolution, setCurrentSolution] = useState<Solution | undefined>(undefined)
     const [currentReference, setCurrentReference] = useState<ClassDiagramReferenceSolution | undefined>(undefined)
     const [currentUCReference, setCurrentUCReference] = useState<UseCaseDiagramReferenceSolution | undefined>(new UseCaseDiagramReferenceSolution())
+    const [currentBPMNReference, setCurrentBPMNReference] = useState<BPMNDiagramReferenceSolution>(new BPMNDiagramReferenceSolution())
     const [successUpload, setSuccessUpload] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [openedModel, { open: openModel, close: closeModel }] = useDisclosure(false)
     const [openedReference, { open: openReference, close: closeReference }] = useDisclosure(false)
+    const [openedBPMNReference, { open: openBPMNReference, close: closeBPMNReference }] = useDisclosure(false)
+    const [openedBPMNImport, { open: openBPMNImport, close: closeBPMNImport }] = useDisclosure(false)
+    const [openedClassDiagramImport, { open: openClassDiagramImport, close: closeClassDiagramImport }] = useDisclosure(false)
+    const [openedModelImport, { open: openModelImport, close: closeModelImport }] = useDisclosure(false)
+    const [uploadedModel, setUploadedModel] = useState<string>("")
     const [openedUpload, { open: openUpload, close: closeUpload }] = useDisclosure(false)
     const [preview, setPreview] = useState(false)
     const apollonRef = useRef<HTMLDivElement>(null)
@@ -67,11 +93,32 @@ function SolutionCreator() {
                     editor.destroy?.()
                     setEditor(undefined)
                 }
+                if (modeler) {
+                    modeler.destroy?.()
+                    setModeler(undefined)
+                }
                 if (exercise) {
-                    if (apollonRef.current) {
+                    if (exercise.exType === "BPMN") {
+                        let cont = document.getElementById("apollon")
+                        let mod = new Modeler({ container: cont ? cont : undefined, additionalModules: [lintModule, resizeAllModule] })
+                        if (currentSolution?.model && typeof currentSolution.model === "string") {
+                            await mod.importXML(currentSolution.model)
+                        } else {
+                            await mod.importXML(startingBpmnDiagram)
+                        }
+                        let linter: any = mod.get("linting")
+                        linter.setLinterConfig(bpmnlintConfig)
+                        linter.toggle(false)
+                        setModeler(mod)
+                    } else if (apollonRef.current) {
                         let ed = new ApollonEditor(apollonRef.current, { ...options, type: exercise.exType as any })
                         await ed.nextRender
-                        if (currentSolution?.model) {
+                        if (uploadedModel) {
+                            // caricato da "Import model" - ha la precedenza su una eventuale soluzione
+                            // in modifica, dato che si arriva qui solo passando da quel bottone
+                            ed.model = JSON.parse(uploadedModel) as UMLModel
+                            setUploadedModel("")
+                        } else if (currentSolution?.model) {
                             ed.model = currentSolution.model as UMLModel
                         }
                         setEditor(ed)
@@ -135,6 +182,7 @@ function SolutionCreator() {
                     setCurrentSolution(undefined)
                     closeModel()
                     closeReference()
+                    closeBPMNReference()
                     setPreview(false)
                 }
             })
@@ -142,6 +190,23 @@ function SolutionCreator() {
     }
 
     const saveModel = async () => {
+        if (modeler && exercise?.exType === "BPMN") {
+            let builder = new BPMNDiagramReferenceBuilder(modeler)
+            let ref = builder.buildReference()
+            let xmlRes = await modeler.saveXML({ format: true })
+            let xml = xmlRes.xml ?? startingBpmnDiagram
+            let svgRes = await modeler.saveSVG()
+            if (courseId && exerciseId) {
+                if (currentSolution && currentSolution.reference) {
+                    API.updateSolution(courseId, exerciseId, currentSolution.solutionId,
+                        builder.updateReference(currentSolution.reference as unknown as BPMNDiagramReferenceSolution),
+                        xml, { svg: svgRes.svg }).then(() => updateEx())
+                } else {
+                    API.addSolution(courseId, exerciseId, ref, xml, { svg: svgRes.svg }).then(() => updateEx())
+                }
+            }
+            return
+        }
         if (editor && exercise) {
             let builder
             if (exercise.exType === "ClassDiagram") {
@@ -254,6 +319,108 @@ function SolutionCreator() {
         }
     }
 
+    const addBusinessEntity = (businessEntities: BusinessEntity[]) => {
+        setCurrentBPMNReference((ref) => ({ ...ref, businessEntities }))
+    }
+
+    const addActor = (actors: Actor[]) => {
+        setCurrentBPMNReference((ref) => ({ ...ref, actors }))
+    }
+
+    const addSubProcess = (subProcesses: SubProcess[]) => {
+        setCurrentBPMNReference((ref) => ({ ...ref, subProcesses }))
+    }
+
+    const addProcessPart = (processParts: ProcessPart[]) => {
+        setCurrentBPMNReference((ref) => ({ ...ref, processParts }))
+    }
+
+    const addForbiddenEntities = (forbiddenEntities: string[]) => {
+        setCurrentBPMNReference((ref) => ({ ...ref, forbiddenEntities }))
+    }
+
+    const addForbiddenActors = (forbiddenActors: string[]) => {
+        setCurrentBPMNReference((ref) => ({ ...ref, forbiddenActors }))
+    }
+
+    const saveBPMNReference = (reference: BPMNDiagramReferenceSolution, model: string, svg: string) => {
+        if (courseId && exerciseId) {
+            if (currentSolution && currentSolution.reference) {
+                API.updateSolution(courseId, exerciseId, currentSolution.solutionId, reference, model, { svg }).then(() => updateEx())
+            } else {
+                API.addSolution(courseId, exerciseId, reference, model, { svg }).then(() => updateEx())
+            }
+        }
+    }
+
+    const handleBPMNReferenceImport = (files: File[]) => {
+        if (files.length !== 1) return
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            const contents = e.target?.result
+            if (typeof contents === "string") {
+                try {
+                    const imported = JSON.parse(contents) as BPMNDiagramReferenceSolution
+                    setCurrentBPMNReference(imported)
+                    setCurrentSolution(undefined)
+                    closeBPMNImport()
+                    openBPMNReference()
+                } catch (err) {
+                    console.error("Error parsing imported BPMN reference:", err)
+                    window.alert("The uploaded file is not a valid BPMN reference solution JSON.")
+                }
+            }
+        }
+        reader.readAsText(files[0])
+    }
+
+    const handleModelImport = (files: File[]) => {
+        if (files.length !== 1 || !exercise) return
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            const contents = e.target?.result
+            if (typeof contents === "string") {
+                try {
+                    const imported = JSON.parse(contents) as UMLModel
+                    if (imported.type && imported.type !== exercise.exType) {
+                        window.alert(`The uploaded model is a ${imported.type} diagram, but this exercise is ${exercise.exType}.`)
+                        return
+                    }
+                    setUploadedModel(contents)
+                    setCurrentReference(undefined)
+                    setCurrentSolution(undefined)
+                    closeModelImport()
+                    openModel()
+                } catch (err) {
+                    console.error("Error parsing imported model:", err)
+                    window.alert("The uploaded file is not a valid diagram model JSON.")
+                }
+            }
+        }
+        reader.readAsText(files[0])
+    }
+
+    const handleClassDiagramReferenceImport = (files: File[]) => {
+        if (files.length !== 1) return
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            const contents = e.target?.result
+            if (typeof contents === "string") {
+                try {
+                    const imported = JSON.parse(contents) as ClassDiagramReferenceSolution
+                    setCurrentReference(imported)
+                    setCurrentSolution(undefined)
+                    closeClassDiagramImport()
+                    openReference()
+                } catch (err) {
+                    console.error("Error parsing imported ClassDiagram reference:", err)
+                    window.alert("The uploaded file is not a valid Class Diagram reference solution JSON.")
+                }
+            }
+        }
+        reader.readAsText(files[0])
+    }
+
     const downloadSolutions = async () => {
         if (exercise && exercise.solutions.length > 0) {
             const zip = new JSZip()
@@ -348,18 +515,25 @@ function SolutionCreator() {
                                                 Solution n. {index + 1}
                                             </Text>
                                             <Center mt="md">
-                                                <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" onClick={() => {
+                                                {exercise.exType !== "BPMN" && <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" onClick={() => {
                                                     setCurrentSolution(solution)
                                                     setCurrentReference(solution.reference)
                                                     openModel()
-                                                }} >Edit solution in UML modeler</Button>
-                                                <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
+                                                }} >Edit solution in UML modeler</Button>}
+                                                {exercise.exType !== "BPMN" && <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
                                                     setCurrentSolution(solution)
                                                     setCurrentReference(solution.reference)
                                                     openReference()
                                                 }} >
                                                     Edit solution with reference form
-                                                </Button>
+                                                </Button>}
+                                                {exercise.exType === "BPMN" && <Button variant="light" color="lime" rightSection={<IconEdit size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
+                                                    setCurrentSolution(solution)
+                                                    setCurrentBPMNReference(solution.reference as unknown as BPMNDiagramReferenceSolution)
+                                                    openBPMNReference()
+                                                }} >
+                                                    Edit solution with reference form
+                                                </Button>}
                                                 <Button variant="light" color="red" rightSection={<IconTrashFilled size={16} stroke={1.5} />} mt="sm" ml="md"
                                                     onClick={() => {
                                                         setCurrentSolution(solution)
@@ -382,20 +556,36 @@ function SolutionCreator() {
                 </>
             )}
             <Center mt="md">
-                <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => {
+                {exercise?.exType !== "BPMN" && <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" onClick={() => {
                     openModel()
                     setCurrentReference(undefined)
                     setCurrentSolution(undefined)
                 }} >
                     Create new solution with UML modeler
-                </Button>
-                <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
+                </Button>}
+                {exercise?.exType !== "BPMN" && <Button variant="light" color="grape" onClick={openModelImport} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
+                    Import model
+                </Button>}
+                {exercise?.exType !== "BPMN" && <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
                     openReference()
                     setCurrentReference(undefined)
                     setCurrentSolution(undefined)
                 }} >
                     Create new solution with reference form
-                </Button>
+                </Button>}
+                {exercise?.exType === "ClassDiagram" && <Button variant="light" color="grape" onClick={openClassDiagramImport} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
+                    Import reference
+                </Button>}
+                {exercise?.exType === "BPMN" && <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
+                    setCurrentBPMNReference(new BPMNDiagramReferenceSolution())
+                    setCurrentSolution(undefined)
+                    openBPMNReference()
+                }} >
+                    Create new solution with reference form
+                </Button>}
+                {exercise?.exType === "BPMN" && <Button variant="light" color="grape" onClick={openBPMNImport} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
+                    Import reference
+                </Button>}
                 <Button variant="light" color="orange" onClick={openUpload} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
                     Upload solution
                 </Button>
@@ -435,6 +625,96 @@ function SolutionCreator() {
                 </Alert>}
             </Modal>
 
+            <Modal opened={openedBPMNImport} onClose={closeBPMNImport}>
+                <Dropzone onDrop={handleBPMNReferenceImport} className="dropzone" radius="md" accept={["application/json"]} maxSize={5 * 1024 ** 2}>
+                    <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                        <Fieldset legend="Import BPMN reference">
+                            <Group justify='center' align='center'>
+                                <Dropzone.Accept>
+                                    <IconDownload size={50} color="blue" stroke={1.5} />
+                                </Dropzone.Accept>
+                                <Dropzone.Reject>
+                                    <IconX size={50} color="red" stroke={1.5} />
+                                </Dropzone.Reject>
+                                <Dropzone.Idle>
+                                    <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                </Dropzone.Idle>
+                            </Group>
+                            <Text ta="center" fw={700} fz="lg" mt="xl">
+                                <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                <Dropzone.Idle>Import a BPMN reference JSON</Dropzone.Idle>
+                            </Text>
+                            <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                Drag&apos;n&apos;drop a JSON file containing only a BPMNDiagramReferenceSolution (businessEntities, actors,
+                                processParts, forbiddenEntities, forbiddenActors). It opens directly in the reference form, already filled in -
+                                nothing is saved until you preview and save it from there.
+                            </Text>
+                        </Fieldset>
+                    </div>
+                </Dropzone>
+            </Modal>
+
+            <Modal opened={openedClassDiagramImport} onClose={closeClassDiagramImport}>
+                <Dropzone onDrop={handleClassDiagramReferenceImport} className="dropzone" radius="md" accept={["application/json"]} maxSize={5 * 1024 ** 2}>
+                    <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                        <Fieldset legend="Import Class Diagram reference">
+                            <Group justify='center' align='center'>
+                                <Dropzone.Accept>
+                                    <IconDownload size={50} color="blue" stroke={1.5} />
+                                </Dropzone.Accept>
+                                <Dropzone.Reject>
+                                    <IconX size={50} color="red" stroke={1.5} />
+                                </Dropzone.Reject>
+                                <Dropzone.Idle>
+                                    <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                </Dropzone.Idle>
+                            </Group>
+                            <Text ta="center" fw={700} fz="lg" mt="xl">
+                                <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                <Dropzone.Idle>Import a Class Diagram reference JSON</Dropzone.Idle>
+                            </Text>
+                            <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                Drag&apos;n&apos;drop a JSON file containing a ClassDiagramReferenceSolution (classes with their attributes,
+                                associations, forbiddenClasses, forbiddenAssociations). It opens directly in the reference form, already filled
+                                in - nothing is saved until you preview and save it from there.
+                            </Text>
+                        </Fieldset>
+                    </div>
+                </Dropzone>
+            </Modal>
+
+            <Modal opened={openedModelImport} onClose={closeModelImport}>
+                <Dropzone onDrop={handleModelImport} className="dropzone" radius="md" accept={["application/json"]} maxSize={30 * 1024 ** 2}>
+                    <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                        <Fieldset legend="Import model">
+                            <Group justify='center' align='center'>
+                                <Dropzone.Accept>
+                                    <IconDownload size={50} color="blue" stroke={1.5} />
+                                </Dropzone.Accept>
+                                <Dropzone.Reject>
+                                    <IconX size={50} color="red" stroke={1.5} />
+                                </Dropzone.Reject>
+                                <Dropzone.Idle>
+                                    <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                </Dropzone.Idle>
+                            </Group>
+                            <Text ta="center" fw={700} fz="lg" mt="xl">
+                                <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                <Dropzone.Idle>Import a diagram model JSON</Dropzone.Idle>
+                            </Text>
+                            <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                Drag&apos;n&apos;drop a JSON file exported from the UML modeler (e.g. from Apollon&apos;s own export, or another
+                                solution) matching this exercise&apos;s type ({exercise?.exType}). It opens directly in the UML modeler, already
+                                loaded - nothing is saved until you click &quot;Save solution&quot; there.
+                            </Text>
+                        </Fieldset>
+                    </div>
+                </Dropzone>
+            </Modal>
+
             {exercise && exercise.exType === "ClassDiagram" && <ClassDiagramReferenceFormModal openedReference={openedReference} closeReference={closeReference} setPreview={setPreview} preview={preview} currentReference={currentReference!} addClass={addClass} addAssociation={addAssociation}
                 addForbiddenClasses={addForbiddenClasses} addForbiddenAssociations={addForbiddenAssociations} saveReference={saveReference} previewRef={previewRef}
             />}
@@ -442,10 +722,19 @@ function SolutionCreator() {
             {exercise && exercise.exType === "UseCaseDiagram" && <UseCaseDiagramReferenceFormModal openedReference={openedReference} closeReference={closeReference} setPreview={setPreview} preview={preview} currentReference={currentUCReference!}
                 saveReference={saveReference} previewRef={previewRef} setCurrentReference={setCurrentUCReference} />}
 
+            {exercise && exercise.exType === "BPMN" && <BPMNDiagramReferenceFormModal opened={openedBPMNReference} onClose={closeBPMNReference}
+                currentReference={currentBPMNReference} addBusinessEntity={addBusinessEntity} addActor={addActor} addSubProcess={addSubProcess} addProcessPart={addProcessPart}
+                addForbiddenEntities={addForbiddenEntities} addForbiddenActors={addForbiddenActors}
+                onSaveReference={saveBPMNReference} />}
+
             <Modal opened={openedModel} onClose={() => {
                 if (editor) {
                     editor.destroy?.()
                     setEditor(undefined)
+                }
+                if (modeler) {
+                    modeler.destroy?.()
+                    setModeler(undefined)
                 }
                 closeModel()
             }} fullScreen transitionProps={{ transition: 'fade', duration: 300 }} >

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Alert, Badge, Button, Card, Center, Code, Divider, FileInput, Flex, Grid, Modal, ScrollArea, Skeleton, Stack, Tabs, Text, RingProgress, Notification } from "@mantine/core";
+import { Alert, Badge, Button, Card, Center, Code, Divider, FileInput, Flex, Grid, Modal, ScrollArea, Skeleton, Stack, Tabs, Text, RingProgress, Notification, Tooltip } from "@mantine/core";
 import API from "../../API";
 import { IconCheck, IconCloudUpload, IconDownload, IconExclamationCircleFilled, IconPlayerPlay, IconRobot, IconTrash } from "@tabler/icons-react";
 import { Course, Exercise, TeacherEvaluation } from "../../Utils/Models";
@@ -12,6 +12,10 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
 import "csshake/dist/csshake.css";
+import NavigatedViewer from "bpmn-js/lib/NavigatedViewer";
+import "bpmn-js/dist/assets/diagram-js.css";
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 
 const editorOptions = {
     colorEnabled: false,
@@ -46,6 +50,7 @@ function EvaluationView() {
     const [currentEval, setCurrentEval] = useState<TeacherEvaluation | null>(null);
     const [showModal, { open: openModal, close: closeModal }] = useDisclosure(false);
     const [editor, setEditor] = useState<ApollonEditor | null>(null);
+    const [bpmnViewer, setBpmnViewer] = useState<NavigatedViewer | null>(null);
     const [loadModal, setLoadModal] = useState(false);
     const [activeTab, setActiveTab] = useState<string | null>("original");
     const [runningStatic, setRunningStatic] = useState<string | null>(null);
@@ -73,7 +78,7 @@ function EvaluationView() {
     }, []);
 
     useEffect(() => {
-        if (showModal && currentEval) {
+        if (showModal && currentEval && exercise) {
             let model = currentEval.originalModel;
             if (activeTab === "static" && currentEval.staticModel) {
                 model = currentEval.staticModel;
@@ -82,8 +87,17 @@ function EvaluationView() {
             }
             setLoadModal(true);
             const timer = setTimeout(async () => {
-                if (editor) editor.destroy();
-                if (apollonRef.current && exercise) {
+                if (editor) { editor.destroy(); setEditor(null); }
+                if (bpmnViewer) { bpmnViewer.destroy(); setBpmnViewer(null); }
+                if (exercise.exType === "BPMN" && apollonRef.current) {
+                    let viewer = new NavigatedViewer({ container: apollonRef.current });
+                    if (model) {
+                        let xml = typeof model === "string" ? JSON.parse(model) : model;
+                        await viewer.importXML(xml);
+                    }
+                    setBpmnViewer(viewer);
+                    setLoadModal(false);
+                } else if (apollonRef.current) {
                     let ed = new ApollonEditor(apollonRef.current, { ...editorOptions, type: exercise.exType as any });
                     await ed.nextRender;
                     if (model) ed.model = typeof model === "string" ? JSON.parse(model) : model;
@@ -93,14 +107,15 @@ function EvaluationView() {
             }, 350);
             return () => clearTimeout(timer);
         }
-    }, [showModal, currentEval, activeTab]);
+    }, [showModal, currentEval, activeTab, exercise]);
 
     const uploadJsonFile = async (name: string, content: ArrayBuffer | string) => {
         if (!courseId || !exerciseId) return;
         try {
             const text = typeof content === "string" ? content : new TextDecoder().decode(content);
-            const model = JSON.parse(text);
-            const studentId = name.replace(/\.json$/i, "");
+            const isBpmn = exercise?.exType === "BPMN";
+            const model = isBpmn ? text : JSON.parse(text);
+            const studentId = name.replace(isBpmn ? /\.(bpmn|xml)$/i : /\.json$/i, "");
             await API.uploadStudentSolution(courseId, exerciseId, studentId, model);
         } catch (e) {
             console.error("Error uploading:", name, e);
@@ -115,10 +130,11 @@ function EvaluationView() {
                 try {
                     const zipData = await file.arrayBuffer();
                     const zip = await JSZip.loadAsync(zipData);
-                    const jsonFiles = Object.entries(zip.files).filter(
-                        ([name, entry]) => !entry.dir && name.toLowerCase().endsWith(".json")
+                    const isBpmn = exercise?.exType === "BPMN";
+                    const solutionFiles = Object.entries(zip.files).filter(
+                        ([name, entry]) => !entry.dir && (isBpmn ? /\.(bpmn|xml)$/i.test(name) : name.toLowerCase().endsWith(".json"))
                     );
-                    for (const [name, entry] of jsonFiles) {
+                    for (const [name, entry] of solutionFiles) {
                         const content = await entry.async("arraybuffer");
                         const baseName = name.includes("/") ? name.split("/").pop()! : name;
                         await uploadJsonFile(baseName, content);
@@ -278,7 +294,8 @@ function EvaluationView() {
         if (!exercise || evaluations.length === 0) return;
         try {
             const zip = new JSZip();
-            const renderSvg = async (modelJson: string): Promise<string> => {
+            const isBpmn = exercise.exType === "BPMN";
+            const renderApollonSvg = async (modelJson: string): Promise<string> => {
                 const tempContainer = document.createElement("div");
                 tempContainer.style.position = "absolute";
                 tempContainer.style.left = "-9999px";
@@ -294,6 +311,22 @@ function EvaluationView() {
                 document.body.removeChild(tempContainer);
                 return svg;
             };
+            const renderBpmnSvg = async (modelJson: string): Promise<string> => {
+                const xml = JSON.parse(modelJson);
+                const tempContainer = document.createElement("div");
+                tempContainer.style.position = "absolute";
+                tempContainer.style.left = "-9999px";
+                tempContainer.style.width = "800px";
+                tempContainer.style.height = "600px";
+                document.body.appendChild(tempContainer);
+                const viewer = new NavigatedViewer({ container: tempContainer });
+                await viewer.importXML(xml);
+                const { svg } = await viewer.saveSVG();
+                viewer.destroy();
+                document.body.removeChild(tempContainer);
+                return svg;
+            };
+            const renderSvg = isBpmn ? renderBpmnSvg : renderApollonSvg;
             for (const ev of evaluations) {
                 if (ev.originalModel) {
                     const svg = await renderSvg(ev.originalModel);
@@ -351,8 +384,8 @@ function EvaluationView() {
                     <Flex gap="md" align="flex-end" wrap="wrap">
                         <FileInput
                             label="Upload student solutions"
-                            placeholder="Select JSON or ZIP files"
-                            accept=".json,.zip"
+                            placeholder={exercise?.exType === "BPMN" ? "Select BPMN/XML or ZIP files" : "Select JSON or ZIP files"}
+                            accept={exercise?.exType === "BPMN" ? ".bpmn,.xml,.zip" : ".json,.zip"}
                             multiple
                             value={files}
                             onChange={setFiles}
@@ -399,16 +432,22 @@ function EvaluationView() {
                                                 </Badge>
                                             </Flex>
                                             <Flex gap={6} onClick={(e) => e.stopPropagation()}>
-                                                <Button size="xs" variant="light" color="cyan" leftSection={<IconPlayerPlay size={14} />}
-                                                    loading={runningStatic === ev.studentId}
-                                                    onClick={() => handleRunStatic(ev.studentId)}>
-                                                    Static
-                                                </Button>
-                                                <Button size="xs" variant="light" color="violet" leftSection={<IconRobot size={14} />}
-                                                    loading={runningLlm === ev.studentId}
-                                                    onClick={() => handleRunLlm(ev.studentId)}>
-                                                    LLM
-                                                </Button>
+                                                <Tooltip label="Automated evaluation is not yet available for BPMN exercises" disabled={exercise?.exType !== "BPMN"}>
+                                                    <Button size="xs" variant="light" color="cyan" leftSection={<IconPlayerPlay size={14} />}
+                                                        loading={runningStatic === ev.studentId}
+                                                        disabled={exercise?.exType === "BPMN"}
+                                                        onClick={() => handleRunStatic(ev.studentId)}>
+                                                        Static
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip label="Automated evaluation is not yet available for BPMN exercises" disabled={exercise?.exType !== "BPMN"}>
+                                                    <Button size="xs" variant="light" color="violet" leftSection={<IconRobot size={14} />}
+                                                        loading={runningLlm === ev.studentId}
+                                                        disabled={exercise?.exType === "BPMN"}
+                                                        onClick={() => handleRunLlm(ev.studentId)}>
+                                                        LLM
+                                                    </Button>
+                                                </Tooltip>
                                                 <Button size="xs" variant="light" color="red" leftSection={<IconTrash size={14} />}
                                                     onClick={() => handleDelete(ev.studentId)}>
                                                     Delete

@@ -1,11 +1,11 @@
 import React from "react";
 import { Button, Center, Text, Popover, List } from "@mantine/core";
-import { IconCheck, IconExclamationCircleFilled } from "@tabler/icons-react";
+import { IconCheck, IconExclamationCircleFilled, IconHelpCircleFilled } from "@tabler/icons-react";
 
 export interface FeedbackPopoverProps {
     title: string,
     count: number,
-    color?: "red" | "orange" | "green",
+    color?: "red" | "orange" | "green" | "yellow" | "grape",
     emptyMessage?: string,
     children: React.ReactNode
     width?: number
@@ -18,6 +18,8 @@ export function FeedbackPopover(props: FeedbackPopoverProps) {
     const leftIcon = count > 0 ? (
         color === "green" ? (
             <IconCheck size={16} color="green" />
+        ) : color === "yellow" ? (
+            <IconHelpCircleFilled size={16} color={color} />
         ) : (
             <IconExclamationCircleFilled size={16} color={color} />
         )

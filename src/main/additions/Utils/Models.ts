@@ -63,11 +63,11 @@ class Boss {
 
 class Solution {
     reference: ClassDiagramReferenceSolution
-    model: UMLModel
+    model: UMLModel | string
     image: any
     solutionId: string
 
-    constructor(reference: ClassDiagramReferenceSolution, model: UMLModel, image: any, solutionId: string) {
+    constructor(reference: ClassDiagramReferenceSolution, model: UMLModel | string, image: any, solutionId: string) {
         this.image = image
         this.reference = reference
         this.model = model
@@ -90,6 +90,44 @@ class SandboxDiagram {
         this.lastUpdated = lastUpdated
         this.exerciseType = exerciseType
         this.filename = filename
+    }
+}
+
+class Group {
+    groupId: string
+    name: string
+    members: User[]
+    diagramCount: number
+
+    constructor(groupId: string, name: string, members: User[], diagramCount: number) {
+        this.groupId = groupId
+        this.name = name
+        this.members = members
+        this.diagramCount = diagramCount
+    }
+}
+
+class GroupDiagram {
+    groupId: string
+    diagramId: string
+    model: UMLModel | string
+    diagramType: string
+    filename: string
+    createdBy: string | null
+    lastEditedBy: string | null
+    lastUpdated: string
+    hidden: boolean
+
+    constructor(groupId: string, diagramId: string, model: UMLModel | string, diagramType: string, filename: string, createdBy: string | null, lastEditedBy: string | null, lastUpdated: string, hidden: boolean) {
+        this.groupId = groupId
+        this.diagramId = diagramId
+        this.model = model
+        this.diagramType = diagramType
+        this.filename = filename
+        this.createdBy = createdBy
+        this.lastEditedBy = lastEditedBy
+        this.lastUpdated = lastUpdated
+        this.hidden = hidden
     }
 }
 
@@ -175,4 +213,4 @@ class TeacherEvaluation {
     }
 }
 
-export { Course, Exercise, Boss, Solution, SandboxDiagram, ExamCall, ExamExercise, ExamSubmission, TeacherEvaluation }
+export { Course, Exercise, Boss, Solution, SandboxDiagram, Group, GroupDiagram, ExamCall, ExamExercise, ExamSubmission, TeacherEvaluation }

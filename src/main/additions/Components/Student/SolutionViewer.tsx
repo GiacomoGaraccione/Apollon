@@ -9,6 +9,10 @@ import { ApollonMode } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
 import "csshake/dist/csshake.css"
+import NavigatedViewer from "bpmn-js/lib/NavigatedViewer"
+import "bpmn-js/dist/assets/diagram-js.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
 
 const options = {
     colorEnabled: false,
@@ -23,10 +27,12 @@ function SolutionViewer() {
     const user = useContext(UserContext)
     const [completedExercises, setCompletedExercises] = useState<Exercise[]>([])
     const [currentSolution, setCurrentSolution] = useState<Solution | null>(null)
+    const [currentExType, setCurrentExType] = useState<string>("ClassDiagram")
     const [opened = false, { open, close }] = useDisclosure(false)
     const [loadModal, setLoadModal] = useState(false)
     const apollonRef = useRef<HTMLDivElement>(null)
     const [editor, setEditor] = useState<ApollonEditor | null>(null)
+    const [bpmnViewer, setBpmnViewer] = useState<NavigatedViewer | null>(null)
 
     useEffect(() => {
         if (courseId && user) {
@@ -52,12 +58,25 @@ function SolutionViewer() {
             const timer = setTimeout(async () => {
                 if (editor) {
                     editor.destroy()
+                    setEditor(null)
                 }
-                if (apollonRef.current) {
-                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: "ClassDiagram" })
+                if (bpmnViewer) {
+                    bpmnViewer.destroy()
+                    setBpmnViewer(null)
+                }
+                if (currentExType === "BPMN") {
+                    let cont = document.getElementById("apollon")
+                    let viewer = new NavigatedViewer({ container: cont ? cont : undefined })
+                    if (currentSolution.model && typeof currentSolution.model === "string") {
+                        await viewer.importXML(currentSolution.model)
+                    }
+                    setBpmnViewer(viewer)
+                    setLoadModal(false)
+                } else if (apollonRef.current) {
+                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: currentExType as any })
                     await ed.nextRender;
                     if (currentSolution.model) {
-                        ed.model = currentSolution.model
+                        ed.model = currentSolution.model as any
                     }
                     setEditor(ed)
                     setLoadModal(false)
@@ -68,7 +87,7 @@ function SolutionViewer() {
                 clearTimeout(timer)
             }
         }
-    }, [opened, currentSolution])
+    }, [opened, currentSolution, currentExType])
 
     return (
         <>
@@ -90,6 +109,7 @@ function SolutionViewer() {
                                                 style={{ width: '100%', margin: 'auto', cursor: 'pointer', position: 'relative', overflow: 'hidden', }}
                                                 onClick={() => {
                                                     setCurrentSolution(solution)
+                                                    setCurrentExType(exercise.exType)
                                                     open()
                                                 }}
                                             >

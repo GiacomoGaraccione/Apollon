@@ -280,6 +280,203 @@ export function UseCaseDiagramSemanticErrorsList(props: { semanticErrors: any[] 
     )
 }
 
+export function BPMNSyntaxErrorsList(props: { syntaxErrors: any[] }) {
+    const errors = props.syntaxErrors ?? []
+    const missingTaskNameCount = errors.filter((e: any) => e.type === "missingTaskName").length
+    return (
+        <FeedbackPopover title="Syntax Errors" count={errors.length} color="orange"
+            emptyMessage="There are no syntax errors in your diagram, very good!" >
+            {missingTaskNameCount > 0 && (
+                <FeedbackListItem divider={true} variant="syntax" highlights={["missing a name"]} highlightColor="orange-5"
+                    message={`At least one task in the diagram is missing a name.`} />
+            )}
+            {errors.filter((e: any) => e.type === "duplicateName").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `duplicate-name-${index}`} divider={true} variant="syntax" highlights={[e.name]} highlightColor="orange-5" error={e}
+                    message={`There are two or more elements in the diagram with the same name: ${e.name}.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "unconnectedElement").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `unconnected-element-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The element "${e.name ?? e.elementId}" is missing an incoming or outgoing connection.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "gatewaySplitMergeMismatch").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `gateway-split-merge-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The gateway "${e.name ?? e.elementId}" both splits and merges the flow at once, consider using two separate gateways.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "missingIncomingMessageFlow").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-incoming-message-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The message element "${e.name ?? e.elementId}" is expected to receive a message but has no incoming message flow.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "missingOutgoingMessageFlow").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-outgoing-message-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The message element "${e.name ?? e.elementId}" is expected to send a message but has no outgoing message flow.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "emptyPool").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `empty-pool-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The pool "${e.name ?? e.elementId}" does not contain any elements.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "missingStartEvent").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-start-event-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The pool "${e.name ?? e.elementId}" does not have a start event.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "eventSubprocessBlankStartEvent").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `event-subprocess-blank-start-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The event sub-process "${e.name ?? e.elementId}" has a blank start event: it must define what triggers it (message, timer, signal, ...).`} />
+            ))}
+            {errors.filter((e: any) => e.type === "signalThrowWithoutCatch").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `signal-throw-without-catch-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The signal "${e.name ?? e.elementId}" is thrown but there is no matching catch event anywhere in the diagram.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "signalCatchWithoutThrow").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `signal-catch-without-throw-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The signal "${e.name ?? e.elementId}" is caught but it is never thrown anywhere in the diagram.`} />
+            ))}
+            {errors.filter((e: any) => e.type === "eventBasedGatewayInvalidTarget").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `event-based-gateway-invalid-target-${index}`} divider={true} variant="syntax" highlights={[e.name ?? e.elementId]} highlightColor="orange-5" error={e}
+                    message={`The event-based gateway "${e.name ?? e.elementId}" has an outgoing path that does not lead to a catch event.`} />
+            ))}
+        </FeedbackPopover>
+    )
+}
+
+export function BPMNSemanticErrorsList(props: { semanticErrors: any[] }) {
+    const errors = props.semanticErrors ?? []
+    return (
+        <FeedbackPopover title="Semantic Errors" count={errors.length} color="red"
+            emptyMessage="There are no semantic errors in your diagram, very good!" >
+            {errors.filter((e: any) => e.category === "missing-business-entity").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-be-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The pool representing ${e.name} is required but is missing from your diagram.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "missing-actor").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-actor-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The lane representing ${e.name} is required but is missing from your diagram.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "forbidden-business-entity").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `forbidden-be-${index}`} divider={true} variant="semantic" highlights={[e.elementId]} highlightColor="red-5" error={e}
+                    message={`Your diagram contains a pool (${e.elementId}) that should not be present.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "forbidden-actor").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `forbidden-actor-${index}`} divider={true} variant="semantic" highlights={[e.elementId]} highlightColor="red-5" error={e}
+                    message={`Your diagram contains a lane (${e.elementId}) that should not be present.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "missing-process-part").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-part-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The process step "${e.name}" is required but is missing or incomplete in your diagram.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "unordered-process-part").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `unordered-part-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The elements that model the step "${e.name}" are present but not connected in the correct order.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "out-of-order-process-part").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `out-of-order-part-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The step "${e.name}" is not connected after the step(s) that should come before it in the process.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "part-with-element-in-wrong-lane").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-lane-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`One or more elements that model the step "${e.name}" are placed in the wrong lane.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "part-with-wrong-message-sending").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-message-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The step "${e.name}" is not correctly sending a required message to another part of the process.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "part-with-wrong-message-receiving").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-message-receiving-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The step "${e.name}" is not correctly receiving a required message from another part of the process.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "wrong-collapsed-pool").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-collapsed-pool-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The pool representing ${e.name} should be collapsed/expanded differently than how you modeled it.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "wrong-boundary-event-interrupting").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-boundary-interrupting-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`A boundary event in the step "${e.name}" should be interrupting/non-interrupting differently than how you modeled it.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "missing-subprocess").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-subprocess-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The sub-process representing ${e.name} is required but is missing from your diagram.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "wrong-subprocess-interrupting").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-subprocess-interrupting-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={`The sub-process "${e.name}" should be interrupting/non-interrupting differently than how you modeled it.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "missing-subprocess-boundary-event").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `missing-subprocess-boundary-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={e.description || `The sub-process "${e.name}" is missing a required boundary event.`} />
+            ))}
+            {errors.filter((e: any) => e.category === "wrong-subprocess-boundary-event").map((e: any, index: number) => (
+                <FeedbackListItem key={e.id ?? `wrong-subprocess-boundary-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e}
+                    message={e.description || `A boundary event on the sub-process "${e.name}" does not match what is expected.`} />
+            ))}
+        </FeedbackPopover>
+    )
+}
+
+export function BPMNMatchingElementsList(props: { results: any }) {
+    const results = props.results ?? {}
+    const validBusinessEntities = results.validBusinessEntities ?? []
+    const validActors = results.validActors ?? []
+    const correctlyModeledParts = results.correctlyModeledParts ?? []
+    const total = validBusinessEntities.length + validActors.length + correctlyModeledParts.length
+    return (
+        <FeedbackPopover title="Found Elements" count={total} color="green"
+            emptyMessage="There are no matching elements in your diagram, keep trying!" >
+            {validBusinessEntities.map((match: any, id: number) => (
+                <FeedbackListItem key={`matching-be-${id}`} divider={true} variant="success" highlights={[match.businessEntity.name, match.element.name]} highlightColor="green-5"
+                    message={`Your pool ${match.element.name} matches the required participant ${match.businessEntity.name}.`} />
+            ))}
+            {validActors.map((match: any, id: number) => (
+                <FeedbackListItem key={`matching-actor-${id}`} divider={true} variant="success" highlights={[match.actor.name, match.element.name]} highlightColor="green-5"
+                    message={`Your lane ${match.element.name} matches the required actor ${match.actor.name}.`} />
+            ))}
+            {correctlyModeledParts.map((part: any, id: number) => (
+                <FeedbackListItem key={`matching-part-${id}`} divider={true} variant="success" highlights={[part.name]} highlightColor="green-5"
+                    message={`Your diagram correctly models the process step "${part.name}".`} />
+            ))}
+        </FeedbackPopover>
+    )
+}
+
+export function BPMNClosePartsList(props: { results: any }) {
+    const closeParts = props.results?.closeParts ?? []
+    return (
+        <FeedbackPopover title="Close Parts" count={closeParts.length} color="yellow"
+            emptyMessage="There are no partially modeled process steps in your diagram." >
+            {closeParts.map((cp: any, id: number) => (
+                <FeedbackListItem key={`close-part-${id}`} divider={true} variant="semantic" highlights={[cp.name]} highlightColor="yellow-7"
+                    message={`You are close to correctly modeling the process step "${cp.name}", but it is not yet complete.`}>
+                    <List>
+                        {cp.found.map((f: any, i: number) => (
+                            <FeedbackListItem key={`found-${i}`} variant="success" highlights={[f.diagram.name || f.diagram.elementId]} highlightColor="green-5"
+                                message={`Found: ${f.diagram.name || f.diagram.elementId}`} />
+                        ))}
+                        {cp.missing.map((m: any, i: number) => (
+                            <FeedbackListItem key={`missing-${i}`} variant="syntax" highlights={[m.description || (m.names && m.names[0]) || m.elementId]} highlightColor="yellow-7"
+                                message={`Still missing: ${m.description || (m.names && m.names[0]) || m.elementId}`} />
+                        ))}
+                    </List>
+                </FeedbackListItem>
+            ))}
+        </FeedbackPopover>
+    )
+}
+
+export function BPMNCloseElementsList(props: { results: any }) {
+    const closeElements = props.results?.closeElements ?? []
+    const causeMessage = (cause: string) =>
+        cause === "Both" ? "it belongs to the wrong pool and is also of the wrong type" :
+            cause === "Type" ? "it is of the wrong type" :
+                "it belongs to the wrong pool"
+    return (
+        <FeedbackPopover title="Close Elements" count={closeElements.length} color="grape"
+            emptyMessage="There are no elements in your diagram that closely, but incorrectly, match a required element." >
+            {closeElements.map((ce: any, id: number) => (
+                <FeedbackListItem key={`close-element-${id}`} divider={true} variant="semantic" highlights={[ce.diagramElementId, ce.name, ce.partName]} highlightColor="grape-5" error={ce}
+                    message={(e: any) => `The element ${e.diagramElementId} looks like it could represent "${e.description || e.name}" for the process step "${e.partName}", but ${causeMessage(e.cause)}.`} />
+            ))}
+        </FeedbackPopover>
+    )
+}
+
 export function UseCaseDiagramMatchingElementsList(props: { results: UseCaseDiagramEvaluationResults }) {
     let matchingElements: any = []
     matchingElements = matchingElements.concat(props.results.results.matchingActors)

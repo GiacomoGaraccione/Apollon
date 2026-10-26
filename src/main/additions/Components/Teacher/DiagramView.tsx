@@ -13,6 +13,10 @@ import JSZip from 'jszip'
 import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList } from "../Common/FeedbackLists";
 import { saveAs } from "file-saver"
 import * as XLSX from 'xlsx'
+import NavigatedViewer from "bpmn-js/lib/NavigatedViewer"
+import "bpmn-js/dist/assets/diagram-js.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
 
 const options = {
     colorEnabled: false,
@@ -30,6 +34,7 @@ function DiagramView() {
     const [currentDiagram, setCurrentDiagram] = useState<any | null>(null)
     const [showDiagram, { open: openDiagram, close: closeDiagram }] = useDisclosure(false)
     const [editor, setEditor] = useState<ApollonEditor | null>(null)
+    const [bpmnViewer, setBpmnViewer] = useState<NavigatedViewer | null>(null)
     const [loadModal, setLoadModal] = useState(false)
     const apollonRef = useRef<HTMLDivElement>(null)
 
@@ -48,14 +53,27 @@ function DiagramView() {
     }, [])
 
     useEffect(() => {
-        if (showDiagram && currentDiagram) {
+        if (showDiagram && currentDiagram && exercise) {
             setLoadModal(true)
             const timer = setTimeout(async () => {
                 if (editor) {
                     editor.destroy()
+                    setEditor(null)
                 }
-                if (apollonRef.current) {
-                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: "ClassDiagram" })
+                if (bpmnViewer) {
+                    bpmnViewer.destroy()
+                    setBpmnViewer(null)
+                }
+                if (exercise.exType === "BPMN") {
+                    let cont = document.getElementById("apollon")
+                    let viewer = new NavigatedViewer({ container: cont ? cont : undefined })
+                    if (currentDiagram.model) {
+                        await viewer.importXML(JSON.parse(currentDiagram.model))
+                    }
+                    setBpmnViewer(viewer)
+                    setLoadModal(false)
+                } else if (apollonRef.current) {
+                    let ed = new ApollonEditor(apollonRef.current, { ...options, type: exercise.exType as any })
                     await ed.nextRender;
                     if (currentDiagram.model) {
                         ed.model = JSON.parse(currentDiagram.model)
@@ -69,7 +87,7 @@ function DiagramView() {
                 clearTimeout(timer)
             }
         }
-    }, [showDiagram, currentDiagram])
+    }, [showDiagram, currentDiagram, exercise])
 
     const downloadSources = () => {
         if (exercise && diagrams) {
@@ -77,13 +95,31 @@ function DiagramView() {
                 let zip = new JSZip()
                 Promise.all(
                     diagrams.map(async (diagram: any) => {
+                        if (exercise.exType === "BPMN") {
+                            if (!diagram.model) return
+                            let xml = JSON.parse(diagram.model)
+                            let tempContainer = document.createElement("div")
+                            tempContainer.style.position = "absolute"
+                            tempContainer.style.left = "-9999px"
+                            tempContainer.style.width = "800px"
+                            tempContainer.style.height = "600px"
+                            document.body.appendChild(tempContainer);
+                            let viewer = new NavigatedViewer({ container: tempContainer });
+                            await viewer.importXML(xml);
+                            let { svg } = await viewer.saveSVG();
+                            zip?.file(`${diagram.username}.svg`, svg);
+                            zip?.file(`${diagram.username}.bpmn`, xml);
+                            viewer.destroy();
+                            document.body.removeChild(tempContainer);
+                            return
+                        }
                         let tempContainer = document.createElement("div")
                         tempContainer.style.position = "absolute"
                         tempContainer.style.left = "-9999px"
                         tempContainer.style.width = "800px"
                         tempContainer.style.height = "600px"
                         document.body.appendChild(tempContainer);
-                        let ed = new ApollonEditor(tempContainer, { ...options, type: "ClassDiagram" });
+                        let ed = new ApollonEditor(tempContainer, { ...options, type: exercise.exType as any });
                         await ed.nextRender;
                         let model = JSON.parse(diagram.model);
                         Object.keys(model.elements).forEach((key) => {
@@ -208,7 +244,7 @@ function DiagramView() {
                                 {diagrams.map((diagram, index) => (
                                     <Card key={index} shadow="xs" padding="lg" style={{ width: "100%", margin: 'auto', cursor: "pointer", position: "relative", minHeight: "80px", height: "80px", flexShrink: 0 }}
                                         onClick={async () => {
-                                            setCurrentDiagram({ ...diagram, results: JSON.parse(diagram.results), syntax_errors: JSON.parse(diagram.syntax_errors), semantic_errors: JSON.parse(diagram.semantic_errors) })
+                                            setCurrentDiagram({ ...diagram, results: JSON.parse(diagram.results || "{}"), syntax_errors: JSON.parse(diagram.syntax_errors || "[]"), semantic_errors: JSON.parse(diagram.semantic_errors || "[]") })
                                             openDiagram()
                                         }}>
                                         <Flex justify="space-between" align="center" style={{ height: "100%" }}>
@@ -229,7 +265,7 @@ function DiagramView() {
         {exercise && currentDiagram && <Modal closeOnEscape={false} opened={showDiagram} onClose={closeDiagram} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
             <Skeleton visible={loadModal} height="100%" >
                 <Stack align="center" justify="center">
-                    <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
+                    {exercise?.exType !== "BPMN" && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                         <Grid.Col span={3}>
                             <Center>
                                 <Stack align="center">
@@ -249,7 +285,7 @@ function DiagramView() {
                         <Grid.Col span={3}>
                             <ClassDiagramMatchingElementsList results={currentDiagram.results} />
                         </Grid.Col>
-                    </Grid>
+                    </Grid>}
                     <div ref={apollonRef} id="apollon" className="canv" style={{ width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
                 </Stack>
             </Skeleton>

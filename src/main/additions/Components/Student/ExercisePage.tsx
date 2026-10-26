@@ -11,6 +11,9 @@ import { ApollonMode, UMLDiagramType } from "../../../typings"
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
 import { ClassDiagramEvaluationResults } from "../../Utils/ClassDiagram/EvaluationTypes";
+import { BPMNDiagramEvaluationResults } from "../../Utils/BPMN/EvaluationTypes";
+import { colorBpmnDiagram } from "../../Utils/BPMN/Feedback";
+import { EvaluationResults } from "../../Utils/EvaluationTypes";
 import "csshake/dist/csshake.css"
 import { Shake, ShakeCrazy } from "reshake"
 import { Dropzone } from "@mantine/dropzone";
@@ -25,6 +28,24 @@ import { ProgressBlock } from "../Common/ProgressBlock";
 import { AvatarBlock } from "../Common/AvatarBlock";
 import { FeedbackBlock } from "../Common/FeedbackBlock";
 import ErrorMessage from "../Common/ErrorMessage";
+import Modeler from "bpmn-js/lib/Modeler"
+import lintModule from "bpmn-js-bpmnlint"
+import resizeAllModule from "bpmn-js-nyan/lib/resize-all-rules"
+import "bpmn-js/dist/assets/diagram-js.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
+import 'bpmn-js-bpmnlint/dist/assets/css/bpmn-js-bpmnlint.css'
+import * as bpmnlintConfig from '../Common/bundled-config'
+import { BPMNZoomControls } from "../Common/BPMNZoomControls"
+
+const startingBpmnDiagram = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" id="Definitions_0pkl0yz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="12.0.0">
+  <bpmn:process id="Process_10owelu" isExecutable="true" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_10owelu" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`
 
 const options = {
     colorEnabled: false,
@@ -45,6 +66,7 @@ function ExercisePage() {
     const [avatarOptions, setAvatarOptions] = useState<any>(null)
     const [avatarString, setAvatarString] = useState<string>("")
     const [editor, setEditor] = useState<ApollonEditor>()
+    const [modeler, setModeler] = useState<Modeler>()
     const [menuOpened, { open: openMenu, close: closeMenu }] = useDisclosure(false)
     const [resultsOpened, { open: openResults, close: closeResults }] = useDisclosure(false)
     const [exitOpened, { open: openExit, close: closeExit }] = useDisclosure(false)
@@ -55,6 +77,7 @@ function ExercisePage() {
     const [checking, setChecking] = useState<boolean>(false)
     const [results, setResults] = useState<ClassDiagramEvaluationResults>(new ClassDiagramEvaluationResults())
     const [useCaseResults, setUseCaseResults] = useState<UseCaseDiagramEvaluationResults>(new UseCaseDiagramEvaluationResults())
+    const [bpmnResults, setBpmnResults] = useState<BPMNDiagramEvaluationResults>(new BPMNDiagramEvaluationResults())
     const [mood, setMood] = useState<string>("Neutral")
     const [shaker, setShaker] = useState<string>("")
     const [shakeProps, setShakeProps] = useState<any>({})
@@ -73,6 +96,8 @@ function ExercisePage() {
     const [errorInfo, setErrorInfo] = useState<string>("")
     const navigate = useNavigate()
 
+    const currentResults: EvaluationResults = exercise?.exType === UMLDiagramType.BPMN ? bpmnResults : exercise?.exType === UMLDiagramType.UseCaseDiagram ? useCaseResults : results
+
     useEffect(() => {
         if (user && courseId && exerciseId) {
             API.getCourseInfo(courseId).then((course) => {
@@ -81,8 +106,8 @@ function ExercisePage() {
                 if (ex) {
                     setExercise(ex)
                     setGamified(course.gamified)
-                    if (course.gamified) {
-                        let opts = JSON.parse(ex.boss?.bossOptions)
+                    if (course.gamified && ex.boss?.bossOptions) {
+                        let opts = JSON.parse(ex.boss.bossOptions)
                         setBossSettings(opts)
                         setDialogue(ex.boss?.introDialogue || "")
                         let bossStr = createAvatar(bottts, opts).toString()
@@ -90,23 +115,34 @@ function ExercisePage() {
                     }
                     API.getStudentCourseInfo(courseId, user.username).then(async (studentCourse) => {
                         setStudentInfo(studentCourse.info)
-                        let avatarOpts = JSON.parse(studentCourse.info.avatar)
-                        setAvatarOptions(avatarOpts)
-                        let svg = createAvatar(avataaars, { ...avatarOpts, style: ["default"], mouth: ["serious"], eyes: ["side"] }).toString()
-                        setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
-                        try {
-                            let cont = document.getElementById("apollon");
-                            if (cont) {
-                                let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, });
-                                setEditor(ed)
+                        if (studentCourse.info) {
+                            let avatarOpts = JSON.parse(studentCourse.info.avatar)
+                            setAvatarOptions(avatarOpts)
+                            let svg = createAvatar(avataaars, { ...avatarOpts, style: ["default"], mouth: ["serious"], eyes: ["side"] }).toString()
+                            setAvatarString(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`)
+                        }
+                        if (ex.exType !== UMLDiagramType.BPMN) {
+                            try {
+                                let cont = document.getElementById("apollon");
+                                if (cont) {
+                                    let ed = new ApollonEditor(cont, { ...options, type: ex.exType as UMLDiagramType, });
+                                    setEditor(ed)
+                                }
+                            } catch (error) {
+                                console.error("Error creating Apollon editor:", error)
+                                openError()
+                                setErrorInfo("There was an error while creating the diagram editor.")
                             }
-                        } catch (error) {
-                            console.error("Error creating Apollon editor:", error)
-                            openError()
-                            setErrorInfo("There was an error while creating the diagram editor.")
                         }
                         API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                            handleFeedback(res, false, ex.exType as UMLDiagramType)
+                            if (ex.exType === UMLDiagramType.BPMN) {
+                                loadBpmnDiagram(typeof res.data.model === "string" && res.data.model ? JSON.parse(res.data.model) : startingBpmnDiagram).then((mod) => {
+                                    let r = handleBpmnFeedback(res, false)
+                                    if (r) colorBpmnDiagram(mod, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                                })
+                            } else {
+                                handleFeedback(res, false, ex.exType as UMLDiagramType)
+                            }
                             if (course.gamified) {
                                 API.getStudentExerciseCompletion(courseId, exerciseId, user.username).then((comp) => {
                                     setCompletionRecord(comp.log)
@@ -135,7 +171,12 @@ function ExercisePage() {
                                 })
                             }
                         }).catch((err) => {
-                            setResults({ ...results, oldXP: ex.experience, newXP: ex.experience, oldProgress: 0, newProgress: 0 });
+                            if (ex.exType === UMLDiagramType.BPMN) {
+                                loadBpmnDiagram(startingBpmnDiagram)
+                                setBpmnResults({ ...bpmnResults, oldXP: ex.experience, newXP: ex.experience, oldProgress: 0, newProgress: 0 });
+                            } else {
+                                setResults({ ...results, oldXP: ex.experience, newXP: ex.experience, oldProgress: 0, newProgress: 0 });
+                            }
                         })
                         setLoad(false)
                     })
@@ -143,6 +184,39 @@ function ExercisePage() {
             })
         }
     }, [])
+
+    const loadBpmnDiagram = async (xml: string) => {
+        if (modeler) {
+            modeler.destroy?.()
+            setModeler(undefined)
+        }
+        let cont = document.getElementById("apollon");
+        let mod = new Modeler({
+            container: cont ? cont : undefined,
+            additionalModules: [lintModule, resizeAllModule],
+        })
+        try {
+            await mod.importXML(xml)
+        } catch (error) {
+            console.error("Error importing BPMN diagram, falling back to a blank diagram:", error)
+            openError()
+            setErrorInfo("There was an error while loading the saved diagram, so a blank diagram was opened instead. Your previously saved version has not been lost - avoid pressing Save until you have reloaded the page and confirmed this.")
+            try {
+                await mod.importXML(startingBpmnDiagram)
+            } catch (fallbackError) {
+                console.error("Error creating blank BPMN diagram:", fallbackError)
+            }
+        }
+        try {
+            let linter: any = mod.get("linting")
+            linter.setLinterConfig(bpmnlintConfig)
+            linter.toggle(false)
+        } catch (lintError) {
+            console.error("Error configuring BPMN linter:", lintError)
+        }
+        setModeler(mod)
+        return mod
+    }
 
     const handleFeedback = (res: any, afterCheck: boolean, exType: UMLDiagramType) => {
         try {
@@ -220,7 +294,46 @@ function ExercisePage() {
         }
     }
 
-    const handleMoodChange = (res: ClassDiagramEvaluationResults) => {
+    const handleBpmnFeedback = (res: any, afterCheck: boolean) => {
+        try {
+            let r = new BPMNDiagramEvaluationResults()
+            let data = afterCheck ? res : res.data
+            if (afterCheck) {
+                r.oldXP = bpmnResults.newXP
+                r.newXP = data.experience
+                r.oldProgress = bpmnResults.newProgress
+                r.newProgress = data.correctness
+                r.oldSyntaxErrors = bpmnResults.newSyntaxErrors
+                r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                r.oldSemanticErrors = bpmnResults.newSemanticErrors
+                r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                r.results = JSON.parse(data.results || "{}")
+                if (gamified) {
+                    handleMoodChange(r)
+                    setCompleted(data.correctness >= 75)
+                }
+            } else {
+                r.oldXP = data.experience
+                r.newXP = data.experience
+                r.oldProgress = data.correctness
+                r.newProgress = data.correctness
+                r.oldSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                r.newSyntaxErrors = JSON.parse(data.syntax_errors || "[]")
+                r.oldSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                r.newSemanticErrors = JSON.parse(data.semantic_errors || "[]")
+                r.results = JSON.parse(data.results || "{}")
+            }
+            setBpmnResults(r)
+            return r
+        } catch (error) {
+            console.error("Error handling BPMN feedback:", error)
+            openError()
+            setErrorInfo("There was an error while handling the feedback on the diagram.")
+            return undefined
+        }
+    }
+
+    const handleMoodChange = (res: EvaluationResults) => {
         if (exercise) {
             let progDiff = res.newProgress - res.oldProgress
             let xpDiff = res.newXP - res.oldXP
@@ -310,7 +423,22 @@ function ExercisePage() {
     const evaluate = () => {
         try {
             setChecking(true)
-            if (courseId && exerciseId && user && editor) {
+            if (courseId && exerciseId && user && exercise?.exType === UMLDiagramType.BPMN && modeler) {
+                modeler.saveXML({ format: true }).then((res) => {
+                    API.saveExerciseRecord(courseId, exerciseId, user.username, res.xml ?? startingBpmnDiagram, true).then((apiRes: any) => {
+                        console.log(apiRes)
+                        setChecking(false)
+                        let r = handleBpmnFeedback(apiRes.record, true)
+                        if (r) colorBpmnDiagram(modeler, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                        openResults()
+                    }).catch((err: any) => {
+                        console.error(err)
+                        setChecking(false)
+                        openError()
+                        setErrorInfo("There was an error while evaluating the exercise.")
+                    })
+                })
+            } else if (courseId && exerciseId && user && editor) {
                 API.saveExerciseRecord(courseId, exerciseId, user.username, editor.model, true).then((res: any) => {
                     console.log(res)
                     setChecking(false)
@@ -344,18 +472,18 @@ function ExercisePage() {
                             let diff = exercise.level - studentInfo.level > 0 ? exercise.level - studentInfo.level : 0
                             if (courseInfo && courseInfo.gameOptions) {
                                 let found = courseInfo.gameOptions.checks.settings.find(
-                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && record.checks >= setting.range[0] && record.checks <= setting.range[1]
+                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && record.data.checks >= setting.range[0] && record.data.checks <= setting.range[1]
                                 )
                                 if (found && typeof found.multiplier !== "undefined") {
                                     checkMult = found.multiplier
                                 }
                                 found = courseInfo.gameOptions.progress.settings.find(
-                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && results.newProgress >= setting.range[0] && results.newProgress <= setting.range[1]
+                                    (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && currentResults.newProgress >= setting.range[0] && currentResults.newProgress <= setting.range[1]
                                 )
                                 if (found && typeof found.multiplier !== "undefined") {
                                     progressMult = found.multiplier
                                 }
-                                if (results.newProgress === 75) progressMult = 1
+                                if (currentResults.newProgress === 75) progressMult = 1
                                 found = courseInfo.gameOptions.difference.settings.find(
                                     (setting: any) => Array.isArray(setting.range) && setting.range.length === 2 && diff >= setting.range[0] && diff <= setting.range[1]
                                 )
@@ -364,49 +492,49 @@ function ExercisePage() {
                                 }
                                 if (diff === 0) levelDiffMult = 1
                             }
-                            let reward = Math.round(results.newXP * checkMult * progressMult * levelDiffMult)
-                            if (reward < 0) reward = results.newXP
+                            let reward = Math.round(currentResults.newXP * checkMult * progressMult * levelDiffMult)
+                            if (reward < 0) reward = currentResults.newXP
                             let rescaled = false
                             if (reward > exercise.experience * 3) {
                                 rescaled = true
                                 reward = exercise.experience * 3
                             }
                             let userXp = studentInfo.experience + reward
-                            let found = courseInfo.gameOptions.levels.find(
+                            let found = courseInfo.gameOptions ? courseInfo.gameOptions.levels.find(
                                 (level: any) => level.min <= userXp && userXp <= level.max
-                            )
+                            ) : null
                             let completeRes = {
-                                checkMult: checkMult,
-                                checks: record.checks,
-                                progressMult: progressMult,
-                                progress: results.newProgress,
-                                levelDiffMult: levelDiffMult,
-                                difference: diff,
-                                reward: reward,
-                                newLevel: studentInfo.level,
-                                newXp: userXp,
+                                checkMult: checkMult ?? 1,
+                                checks: record.data?.checks ?? 0,
+                                progressMult: progressMult ?? 1,
+                                progress: currentResults.newProgress ?? 0,
+                                levelDiffMult: levelDiffMult ?? 1,
+                                difference: diff ?? 0,
+                                reward: reward ?? 0,
+                                newLevel: studentInfo.level ?? 1,
+                                newXp: userXp ?? 0,
                                 levelUp: false,
                                 levelInfo: null as any,
                                 maxLevel: false,
                                 unlockedKeys: {} as any,
                                 rescaled: rescaled
                             }
-                            if (found) {
-                                completeRes.newLevel = found.level
-                                completeRes.levelInfo = found
-                                if (found.level > studentInfo.level) completeRes.levelUp = true
-                            } else {
-                                completeRes.levelUp = false
-                                completeRes.newLevel = studentInfo.level
-                                completeRes.levelInfo = {
-                                    min: courseInfo.gameOptions!.levels[courseInfo.gameOptions!.levels.length - 1].max,
-                                    max: userXp,
-                                    level: courseInfo.gameOptions!.levels[courseInfo.gameOptions!.levels.length - 1].level
+                            if (courseInfo.gameOptions) {
+                                if (found) {
+                                    completeRes.newLevel = found.level
+                                    completeRes.levelInfo = found
+                                    if (found.level > studentInfo.level) completeRes.levelUp = true
+                                } else {
+                                    completeRes.levelUp = false
+                                    completeRes.newLevel = studentInfo.level
+                                    completeRes.levelInfo = {
+                                        min: courseInfo.gameOptions.levels[courseInfo.gameOptions.levels.length - 1].max,
+                                        max: userXp,
+                                        level: courseInfo.gameOptions.levels[courseInfo.gameOptions.levels.length - 1].level
+                                    }
+                                    completeRes.maxLevel = true
                                 }
-                                completeRes.maxLevel = true
-                            }
-                            if (found) {
-                                if (found.level > studentInfo.level) {
+                                if (found && found.level > studentInfo.level) {
                                     let newLevels: number[] = []
                                     for (let lvl = studentInfo.level + 1; lvl <= found.level; lvl++) {
                                         const levelInfo = courseInfo.gameOptions.levels.find((l: any) => l.level === lvl);
@@ -451,7 +579,18 @@ function ExercisePage() {
     }
 
     const exportJSON = () => {
-        if (editor && exercise) {
+        if (exercise?.exType === UMLDiagramType.BPMN && modeler) {
+            modeler.saveXML({ format: true }).then((res) => {
+                let xml: string = res.xml ?? startingBpmnDiagram
+                const dataStr = "data:text/xml;charset=utf-8," + encodeURIComponent(xml);
+                const link = document.createElement('a');
+                link.href = dataStr
+                let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`
+                link.download = `${fn}.xml`;
+                link.click();
+                link.remove()
+            })
+        } else if (editor && exercise) {
             let model = { ...editor.model }
             Object.keys(model.elements).forEach((key) => {
                 let element = model.elements[key]
@@ -477,7 +616,20 @@ function ExercisePage() {
     }
 
     const exportSVG = () => {
-        if (editor && exercise) {
+        if (exercise?.exType === UMLDiagramType.BPMN && modeler) {
+            modeler.saveSVG().then((res) => {
+                const svg = res.svg
+                const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+                const svgBlobURL = URL.createObjectURL(svgBlob);
+                const link = document.createElement('a');
+                link.href = svgBlobURL
+                let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`
+                link.download = `${fn}.svg`;
+                link.click();
+                link.remove()
+                URL.revokeObjectURL(svgBlobURL)
+            })
+        } else if (editor && exercise) {
             const download = async () => {
                 let model = { ...editor.model }
                 Object.keys(model.elements).forEach((key) => {
@@ -514,7 +666,37 @@ function ExercisePage() {
     }
 
     const exportPDF = () => {
-        if (editor && exercise) {
+        if (exercise?.exType === UMLDiagramType.BPMN && modeler) {
+            modeler.saveSVG().then((res) => {
+                const svg = res.svg
+                const img = new Image()
+                const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(svgBlob);
+                img.onload = () => {
+                    const canvas = document.createElement('canvas')
+                    canvas.width = img.width
+                    canvas.height = img.height
+                    const ctx = canvas.getContext('2d')
+                    ctx?.drawImage(img, 0, 0)
+                    const pndDataUrl = canvas.toDataURL('image/png')
+                    const doc = new jsPDF({
+                        orientation: img.width > img.height ? 'landscape' : 'portrait',
+                        unit: 'pt',
+                        format: [img.width, img.height],
+                    })
+                    doc.addImage(pndDataUrl, 'PNG', 0, 0, img.width, img.height);
+                    let fn = filename || `${exercise.title}-${new Date().toLocaleString()}`;
+                    doc.save(`${fn}.pdf`);
+                    URL.revokeObjectURL(url)
+                    canvas.remove()
+                }
+                img.onerror = (err) => {
+                    console.error("Error loading SVG image:", err)
+                    URL.revokeObjectURL(url)
+                }
+                img.src = url
+            })
+        } else if (editor && exercise) {
             const download = async () => {
                 let model = { ...editor.model }
                 Object.keys(model.elements).forEach((key) => {
@@ -577,6 +759,14 @@ function ExercisePage() {
             const fileReader = new FileReader()
             fileReader.onload = (e) => {
                 try {
+                    if (exercise?.exType === UMLDiagramType.BPMN) {
+                        loadBpmnDiagram(e.target?.result as string)
+                        setUploaded(true)
+                        setTimeout(() => {
+                            setUploaded(false)
+                        }, 3000)
+                        return
+                    }
                     let cont = document.getElementById("apollon");
                     if (cont) {
                         let ed = new ApollonEditor(cont, { ...options, type: exercise ? exercise.exType as UMLDiagramType : "ClassDiagram", model: JSON.parse(e.target?.result as string) });
@@ -589,7 +779,7 @@ function ExercisePage() {
                 } catch (error) {
                     console.error("Error reading file:", error)
                     openError()
-                    setErrorInfo("There was an error while reading the uploaded file. Please make sure it is a valid JSON file exported from the diagram editor.")
+                    setErrorInfo("There was an error while reading the uploaded file. Please make sure it is a valid file exported from the diagram editor.")
                 }
             }
             fileReader.readAsText(files[0])
@@ -605,20 +795,20 @@ function ExercisePage() {
                             <AvatarBlock load={load} gamified={gamified} bossDefeated={bossDefeated} avatarUrl={avatarString} mood={mood} bossUrl={bossString} dialogue={dialogue} />
                         </Grid.Col>
                         <Grid.Col span={4}>
-                            {exercise && exercise.exType === UMLDiagramType.ClassDiagram && <ProgressBlock load={load} results={results} completionRecord={completionRecord} exercise={exercise!} />}
-                            {exercise && exercise.exType === UMLDiagramType.UseCaseDiagram && <ProgressBlock load={load} results={useCaseResults} completionRecord={completionRecord} exercise={exercise!} />}
+                            {exercise && <ProgressBlock load={load} results={currentResults} completionRecord={completionRecord} exercise={exercise!} />}
                         </Grid.Col>
                         <Grid.Col span={4}>
-                            {exercise && <FeedbackBlock load={load} results={exercise.exType === UMLDiagramType.ClassDiagram ? results : useCaseResults} exerciseType={exercise.exType} />}
+                            {exercise && <FeedbackBlock load={load} results={currentResults as ClassDiagramEvaluationResults | UseCaseDiagramEvaluationResults | BPMNDiagramEvaluationResults} exerciseType={exercise.exType} />}
                         </Grid.Col>
 
                     </>
                 </Grid>}
                 {!gamified && exercise && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <Grid.Col span={12}>
-                        <FeedbackBlock load={load} results={exercise.exType === UMLDiagramType.ClassDiagram ? results : useCaseResults} exerciseType={exercise.exType} />
+                        <FeedbackBlock load={load} results={currentResults as ClassDiagramEvaluationResults | UseCaseDiagramEvaluationResults | BPMNDiagramEvaluationResults} exerciseType={exercise.exType} />
                     </Grid.Col>
                 </Grid>}
+                {exercise?.exType === "BPMN" && <BPMNZoomControls getModeler={() => modeler} />}
                 <div id="apollon" className="canv" style={{ height: "80vh", width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
                 <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                     <Grid.Col span={4}>
@@ -630,7 +820,13 @@ function ExercisePage() {
                         <Center>
                             <Button variant="light" color="cyan" leftSection={<IconUpload size={14} />} onClick={() => {
                                 setSaving(true)
-                                if (courseId && exerciseId && user && editor) {
+                                if (courseId && exerciseId && user && exercise?.exType === UMLDiagramType.BPMN && modeler) {
+                                    modeler.saveXML({ format: true }).then((res) => {
+                                        API.saveExerciseRecord(courseId, exerciseId, user.username, res.xml ?? startingBpmnDiagram, false).then(() => {
+                                            setSaving(false)
+                                        })
+                                    })
+                                } else if (courseId && exerciseId && user && editor) {
                                     API.saveExerciseRecord(courseId, exerciseId, user?.username, editor?.model, false).then((res) => {
                                         setSaving(false)
                                     })
@@ -667,16 +863,16 @@ function ExercisePage() {
                             <Fieldset legend="Download">
                                 <TextInput placeholder="Filename" value={filename} onChange={(e) => setFilename(e.currentTarget.value)} />
                                 <Stack align="center" justify="center">
-                                    <Button variant="light" color="yellow" onClick={exportJSON} leftSection={<IconDownload size={14} />} >Download JSON source file</Button>
+                                    <Button variant="light" color="yellow" onClick={exportJSON} leftSection={<IconDownload size={14} />} >Download {exercise.exType === UMLDiagramType.BPMN ? "XML" : "JSON"} source file</Button>
                                     <Button variant="light" color="cyan" onClick={exportSVG} leftSection={<IconDownload size={14} />}>Download diagram as SVG image</Button>
                                     <Button variant="light" color="pink" onClick={exportPDF} leftSection={<IconDownload size={14} />}>Download diagram as PDF file</Button>
                                 </Stack>
                             </Fieldset>
 
                             <Divider my="xs" />
-                            <Dropzone onDrop={(files) => handleDrop(files)} accept={["application/json"]} className="dropzone" radius="md" maxSize={30 * 1024 ** 2}>
+                            <Dropzone onDrop={(files) => handleDrop(files)} accept={exercise.exType === UMLDiagramType.BPMN ? ["application/xml", "text/xml"] : ["application/json"]} className="dropzone" radius="md" maxSize={30 * 1024 ** 2}>
                                 <div style={{ pointerEvents: "none" }}>
-                                    <Fieldset legend="Import JSON file" style={{ pointerEvents: "none" }}>
+                                    <Fieldset legend={`Import ${exercise.exType === UMLDiagramType.BPMN ? "XML" : "JSON"} file`} style={{ pointerEvents: "none" }}>
                                         <Group justify='center' align='center'>
                                             <Dropzone.Accept>
                                                 <IconDownload size={50} color="blue" stroke={1.5} />
@@ -694,7 +890,7 @@ function ExercisePage() {
                                             <Dropzone.Idle>Upload source file</Dropzone.Idle>
                                         </Text>
                                         <Text ta="center" fz="sm" mt="xs" c="dimmed">
-                                            Drag&apos;n&apos;drop a JSON file here to load a diagram into the editor.
+                                            Drag&apos;n&apos;drop a {exercise.exType === UMLDiagramType.BPMN ? "XML" : "JSON"} file here to load a diagram into the editor.
                                         </Text>
                                     </Fieldset>
                                 </div>
@@ -725,87 +921,87 @@ function ExercisePage() {
                     {gamified && <List.Item icon={<ThemeIcon size="lg" color="green">
                         <IconCircleDashedCheck size={24} />
                     </ThemeIcon>}>
-                        <Highlight highlight={["changed", "increased", "reduced", results.newProgress.toString(), results.oldProgress.toString()]} highlightStyles={{
-                            backgroundColor: results.newProgress < results.oldProgress ? "var(--mantine-color-red-5)" : "var(--mantine-color-green-5)",
+                        <Highlight highlight={["changed", "increased", "reduced", currentResults.newProgress.toString(), currentResults.oldProgress.toString()]} highlightStyles={{
+                            backgroundColor: currentResults.newProgress < currentResults.oldProgress ? "var(--mantine-color-red-5)" : "var(--mantine-color-green-5)",
                             fontWeight: 700,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                         }}  >
-                            {results.newProgress !== results.oldProgress ?
-                                `Exercise correctness ${results.newProgress > results.oldProgress ? "increased" : "reduced"} from ${results.oldProgress.toString()} to ${results.newProgress.toString()}`
+                            {currentResults.newProgress !== currentResults.oldProgress ?
+                                `Exercise correctness ${currentResults.newProgress > currentResults.oldProgress ? "increased" : "reduced"} from ${currentResults.oldProgress.toString()} to ${currentResults.newProgress.toString()}`
                                 : "There are no changes in the correctness of your diagram since the last evaluation."}
                         </Highlight>
                     </List.Item>}
                     {gamified && <List.Item icon={<ThemeIcon size="lg" color="blue">
                         <IconUserUp size={24} />
                     </ThemeIcon>} >
-                        <Highlight highlight={["changed", "increased", "reduced", results.newXP.toString(), results.oldXP.toString()]} highlightStyles={{
-                            backgroundColor: results.newXP < results.oldXP ? "var(--mantine-color-red-5)" : "var(--mantine-color-green-5)",
+                        <Highlight highlight={["changed", "increased", "reduced", currentResults.newXP.toString(), currentResults.oldXP.toString()]} highlightStyles={{
+                            backgroundColor: currentResults.newXP < currentResults.oldXP ? "var(--mantine-color-red-5)" : "var(--mantine-color-green-5)",
                             fontWeight: 700,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                         }} >
-                            {results.newXP !== results.oldXP ?
-                                `Available experience ${results.newXP > results.oldXP ? "increased" : "reduced"} from ${results.oldXP.toString()} to ${results.newXP.toString()}`
+                            {currentResults.newXP !== currentResults.oldXP ?
+                                `Available experience ${currentResults.newXP > currentResults.oldXP ? "increased" : "reduced"} from ${currentResults.oldXP.toString()} to ${currentResults.newXP.toString()}`
                                 : "There are no changes in the available experience since the last evaluation."}
                         </Highlight>
                     </List.Item>}
                     <List.Item icon={<ThemeIcon size="lg" color="red">
                         <IconExclamationCircle size={24} />
                     </ThemeIcon>}>
-                        {results.newSyntaxErrors.filter(
+                        {currentResults.newSyntaxErrors.filter(
                             (newErr: any) =>
-                                !results.oldSyntaxErrors.some(
+                                !currentResults.oldSyntaxErrors.some(
                                     (oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr)
                                 )
-                        ).length > 0 ? <Highlight highlight={[results.newSyntaxErrors.filter((newErr: any) => !results.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
+                        ).length > 0 ? <Highlight highlight={[currentResults.newSyntaxErrors.filter((newErr: any) => !currentResults.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
                             backgroundColor: "var(--mantine-color-red-5)",
 
                             fontWeight: 700,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                         }}>
-                            {`There are ${results.newSyntaxErrors.filter((newErr: any) => !results.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length} new syntax errors compared to the previous evaluation.`}
+                            {`There are ${currentResults.newSyntaxErrors.filter((newErr: any) => !currentResults.oldSyntaxErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length} new syntax errors compared to the previous evaluation.`}
                         </Highlight> : <Text>There are no new syntax errors compared to the previous evaluation.</Text>}
                     </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="red">
                         <IconExclamationCircle size={24} />
                     </ThemeIcon>}>
-                        {results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length > 0 ?
-                            <Highlight highlight={[results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
+                        {currentResults.newSemanticErrors.filter((newErr: any) => !currentResults.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length > 0 ?
+                            <Highlight highlight={[currentResults.newSemanticErrors.filter((newErr: any) => !currentResults.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length.toString()]} highlightStyles={{
                                 backgroundColor: "var(--mantine-color-red-5)",
 
                                 fontWeight: 700,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                             }}>
-                                {`There are ${results.newSemanticErrors.filter((newErr: any) => !results.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length} new semantic errors compared to the previous evaluation.`}
+                                {`There are ${currentResults.newSemanticErrors.filter((newErr: any) => !currentResults.oldSemanticErrors.some((oldErr: any) => JSON.stringify(oldErr) === JSON.stringify(newErr))).length} new semantic errors compared to the previous evaluation.`}
                             </Highlight> : <Text>There are no new semantic errors compared to the previous evaluation.</Text>}
                     </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="lime">
                         <IconCheck size={24} />
                     </ThemeIcon>}>
-                        {results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
-                            <Highlight highlight={[results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
+                        {currentResults.oldSyntaxErrors.filter((oldErr: any) => !currentResults.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
+                            <Highlight highlight={[currentResults.oldSyntaxErrors.filter((oldErr: any) => !currentResults.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
                                 backgroundColor: "var(--mantine-color-green-5)",
                                 fontWeight: 700,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                             }}>
-                                {`You fixed ${results.oldSyntaxErrors.filter((oldErr: any) => !results.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length} syntax error(s) that were found in the previous evaluation.`}
+                                {`You fixed ${currentResults.oldSyntaxErrors.filter((oldErr: any) => !currentResults.newSyntaxErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length} syntax error(s) that were found in the previous evaluation.`}
                             </Highlight> : <Text>You did not fix any syntax error that was found in the previous evaluation.</Text>}
                     </List.Item>
                     <List.Item icon={<ThemeIcon size="lg" color="lime">
                         <IconCheck size={24} />
                     </ThemeIcon>}>
-                        {results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
-                            <Highlight highlight={[results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
+                        {currentResults.oldSemanticErrors.filter((oldErr: any) => !currentResults.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length > 0 ?
+                            <Highlight highlight={[currentResults.oldSemanticErrors.filter((oldErr: any) => !currentResults.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length.toString()]} highlightStyles={{
                                 backgroundColor: "var(--mantine-color-orange-5)",
                                 fontWeight: 700,
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                             }}>
-                                {`You fixed ${results.oldSemanticErrors.filter((oldErr: any) => !results.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length} semantic error(s) that were found in the previous evaluation.`}
+                                {`You fixed ${currentResults.oldSemanticErrors.filter((oldErr: any) => !currentResults.newSemanticErrors.some((newErr: any) => JSON.stringify(newErr) === JSON.stringify(oldErr))).length} semantic error(s) that were found in the previous evaluation.`}
                             </Highlight> : <Text>You did not fix any semantic error that was found in the previous evaluation.</Text>}
                     </List.Item>
                 </List>
@@ -859,7 +1055,14 @@ function ExercisePage() {
                     <Button variant="light" color="yellow" leftSection={<IconReload size={14} />} onClick={() => {
                         if (courseId && exerciseId && user) {
                             API.getStudentExerciseRecord(courseId, exerciseId, user.username).then((res) => {
-                                handleFeedback(res, false, exercise!.exType as UMLDiagramType)
+                                if (exercise?.exType === UMLDiagramType.BPMN) {
+                                    loadBpmnDiagram(typeof res.data.model === "string" && res.data.model ? JSON.parse(res.data.model) : startingBpmnDiagram).then((mod) => {
+                                        let r = handleBpmnFeedback(res, false)
+                                        if (r) colorBpmnDiagram(mod, r.newSyntaxErrors, r.newSemanticErrors, r.results)
+                                    })
+                                } else {
+                                    handleFeedback(res, false, exercise!.exType as UMLDiagramType)
+                                }
                                 closeReset()
                             })
                         }
@@ -874,7 +1077,20 @@ function ExercisePage() {
                 <Group justify="flex-end" mt="md">
                     <Button variant="light" color="cyan" onClick={closeClear}>Continue</Button>
                     <Button variant="light" color="red" leftSection={<IconSquareXFilled size={14} />} onClick={() => {
-                        if (editor && exercise) {
+                        if (exercise?.exType === UMLDiagramType.BPMN) {
+                            loadBpmnDiagram(startingBpmnDiagram)
+                            let r = { ...bpmnResults }
+                            r.oldProgress = r.newProgress
+                            r.oldXP = r.newXP
+                            r.oldSyntaxErrors = r.newSyntaxErrors
+                            r.oldSemanticErrors = r.newSemanticErrors
+                            r.newProgress = 0
+                            r.newXP = exercise.experience
+                            r.newSyntaxErrors = []
+                            r.newSemanticErrors = []
+                            setBpmnResults(r)
+                            closeClear()
+                        } else if (editor && exercise) {
                             let model = { ...editor.model }
                             model.elements = {}
                             model.relationships = {}
