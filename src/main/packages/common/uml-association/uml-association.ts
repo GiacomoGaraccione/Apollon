@@ -22,6 +22,9 @@ export interface IUMLAssociation extends IUMLRelationship {
   target: IUMLElementPort & {
     multiplicity: string;
     role: string;
+    // solo per le associazioni bidirezionali: indica il verso di lettura del nome ('<'/'>' accanto
+    // al nome). Puramente visivo - il valutatore non legge questo campo, solo `name`.
+    readingDirection?: 'toSource' | 'toTarget';
   };
 }
 
@@ -57,6 +60,7 @@ export abstract class UMLAssociation extends UMLRelationship implements IUMLAsso
     element: '',
     multiplicity: '',
     role: '',
+    readingDirection: undefined,
   };
 
   constructor(values?: DeepPartial<IUMLAssociation>) {

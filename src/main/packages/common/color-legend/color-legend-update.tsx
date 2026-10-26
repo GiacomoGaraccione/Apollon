@@ -43,6 +43,8 @@ class ColorLegendUpdateComponent extends Component<Props, State> {
               placeholder={this.props.translate('packages.SyntaxTree.SyntaxTreeNonterminal')}
               onChange={this.onUpdate}
               autoFocus
+              multiline
+              enterToSubmit={false}
             />
             <ColorButton onClick={this.toggleColor} />
             <Button color="link" tabIndex={-1} onClick={() => this.props.delete(element.id)}>

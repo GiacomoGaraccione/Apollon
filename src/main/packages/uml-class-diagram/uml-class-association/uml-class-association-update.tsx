@@ -115,6 +115,16 @@ class ClassAssociationComponent extends Component<Props, State> {
               {this.props.translate('packages.ClassDiagram.ClassRealization')}
             </Dropdown.Item>
           </Dropdown>
+          {element.type === ClassRelationshipType.ClassBidirectional && (
+            <Flex>
+              <Body style={{ marginRight: '0.5em' }}>{this.props.translate('popup.readingDirection')}</Body>
+              <Dropdown value={element.target.readingDirection || 'none'} onChange={this.onReadingDirectionChange}>
+                <Dropdown.Item value="none">{this.props.translate('popup.readingDirectionNone')}</Dropdown.Item>
+                <Dropdown.Item value="toTarget">{this.props.translate('popup.readingDirectionToTarget')}</Dropdown.Item>
+                <Dropdown.Item value="toSource">{this.props.translate('popup.readingDirectionToSource')}</Dropdown.Item>
+              </Dropdown>
+            </Flex>
+          )}
           <Divider />
         </section>
         <section>
@@ -162,6 +172,12 @@ class ClassAssociationComponent extends Component<Props, State> {
   private onUpdate = (type: 'multiplicity' | 'role', end: 'source' | 'target') => (value: string) => {
     const { element, update } = this.props;
     update<UMLAssociation>(element.id, { [end]: { ...element[end], [type]: value } });
+  };
+
+  private onReadingDirectionChange = (value: string) => {
+    const { element, update } = this.props;
+    const readingDirection = value === 'toTarget' || value === 'toSource' ? value : undefined;
+    update<UMLAssociation>(element.id, { target: { ...element.target, readingDirection } });
   };
 }
 

@@ -214,9 +214,24 @@ export const UMLAssociationComponent: FunctionComponent<Props> = ({ element }) =
         {...layoutText(direction)}
         pointerEvents="none"
         style={{ ...textFill }}
-      >{element.name} </text>
+      >{element.name}{readingDirectionGlyph(element)} </text>
     </g>
   );
+};
+
+// Solo per le associazioni bidirezionali: un carattere '<'/'>' accanto al nome che indica il verso
+// di lettura scelto (element.target.readingDirection). Puramente visivo: non fa parte di
+// element.name, quindi non ha alcun effetto sul matching lato valutatore.
+const readingDirectionGlyph = (element: UMLAssociation): string => {
+  if (element.type !== ClassRelationshipType.ClassBidirectional) return '';
+  switch (element.target.readingDirection) {
+    case 'toTarget':
+      return ' >';
+    case 'toSource':
+      return ' <';
+    default:
+      return '';
+  }
 };
 
 interface Props {

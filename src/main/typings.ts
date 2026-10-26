@@ -144,6 +144,10 @@ export type UMLAssociation = UMLRelationship & {
   target: UMLRelationship['target'] & {
     multiplicity: string;
     role: string;
+    // solo per le associazioni bidirezionali: indica il verso di lettura del nome, mostrato come
+    // un carattere '<'/'>' accanto al nome. Puramente visivo, non fa parte del testo del nome
+    // (il valutatore lato server non legge questo campo, quindi non impatta il matching).
+    readingDirection?: 'toSource' | 'toTarget';
   };
 };
 
