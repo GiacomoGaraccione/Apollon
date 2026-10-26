@@ -50,7 +50,7 @@ def create_exam_call(courseId):
             ids = []
             for eid, in existing_ids:
                 try:
-                    idx = int(eid.split("_")[2])
+                    idx = int(eid.split("_")[-1])
                     ids.append(idx)
                 except (ValueError, IndexError):
                     continue

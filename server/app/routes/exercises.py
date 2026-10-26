@@ -31,7 +31,7 @@ def create_course_exercise(courseId):
             ids = []
             for eid, in existing_ids:
                 try:
-                    idx = int(eid.split("_")[1])
+                    idx = int(eid.split("_")[-1])
                     ids.append(idx)
                 except ValueError:
                     continue
@@ -147,7 +147,7 @@ def add_solution(courseId, exerciseId):
             ids = []
             for eid, in existing_ids:
                 try:
-                    idx = int(eid.split("_")[2])
+                    idx = int(eid.split("_")[-1])
                     ids.append(idx)
                 except ValueError:
                     continue
@@ -239,7 +239,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
             solutions = session.query(Solution).filter_by(exerciseId=exerciseId).all()
             solutions = [sol.serialize() for sol in solutions]
             model = data.get("model", None)
-            results = evaluator.evaluate_uml_diagram(solutions=solutions, model=model, diagram_type=exercise.exType) 
+            results = evaluator.evaluate_uml_diagram(solutions=solutions, model=model, diagram_type=exercise.exType)
             completed = session.query(StudentExerciseCompletion).filter_by(exerciseId=exerciseId, username=studentId).first()
             evaluation = data.get("evaluation", False)
             if record is None:
@@ -265,7 +265,7 @@ def update_student_exercise(courseId, exerciseId, studentId):
                 session.commit()
                 return jsonify({"record": record.serialize(), "results": results}), 201
             else:
-                if evaluation:
+                if evaluation and results is not None:
                     record.experience = update_experience_points(exercise, results, record) if completed is None else completed.experience
                     record.correctness = results.get("completeness", record.correctness)
                     record.checks = record.checks + 1
@@ -522,7 +522,10 @@ def upload_student_solution(courseId, exerciseId):
             model = data.get("model")
             if not student_id or model is None:
                 return jsonify({"message": "studentId and model are required"}), 400
-            model = ensure_v3(model)
+            # BPMN models are XML strings, not Apollon model dicts - ensure_v3 expects
+            # a dict and only applies to Apollon diagram types.
+            if exercise.exType != "BPMN":
+                model = ensure_v3(model)
             existing = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=student_id).first()
             if existing is not None:
                 existing.originalModel = json.dumps(model)
@@ -574,6 +577,8 @@ def run_static_evaluation(courseId, exerciseId, studentId):
             exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
             if exercise is None:
                 return jsonify({"message": "Exercise not found"}), 404
+            if exercise.exType == "BPMN":
+                return jsonify({"message": "Automated evaluation is not yet available for BPMN exercises"}), 400
             evaluation = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=studentId).first()
             if evaluation is None:
                 return jsonify({"message": "Evaluation not found"}), 404
@@ -608,6 +613,8 @@ def run_llm_evaluation(courseId, exerciseId, studentId):
             exercise = session.query(Exercise).filter_by(courseId=courseId, exerciseId=exerciseId).first()
             if exercise is None:
                 return jsonify({"message": "Exercise not found"}), 404
+            if exercise.exType == "BPMN":
+                return jsonify({"message": "Automated evaluation is not yet available for BPMN exercises"}), 400
             evaluation = session.query(TeacherEvaluation).filter_by(exerciseId=exerciseId, studentId=studentId).first()
             if evaluation is None:
                 return jsonify({"message": "Evaluation not found"}), 404

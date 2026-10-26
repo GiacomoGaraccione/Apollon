@@ -1,9 +1,9 @@
 from app.database.db import get_session
 from flask import jsonify, Blueprint, request
-from app.models import User, Course, StudentCourseInfo, StudentExerciseCompletion
+from app.models import User, Course, Exercise, StudentCourseInfo, StudentExerciseCompletion
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.auth_utils import role_required
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 import json
 
 courses_bp = Blueprint('courses', __name__)
@@ -14,7 +14,9 @@ courses_bp = Blueprint('courses', __name__)
 def get_courses():
     with get_session() as session:
         courses = session.query(Course).all()
-        return jsonify({"courses": [course.serialize() for course in courses]}), 200
+        # Lista corsi: il frontend (CourseView.tsx) usa solo courseId/name da questa route - niente
+        # bisogno di studenti/esercizi annidati qui (vedi serialize_summary per i dettagli del perche').
+        return jsonify({"courses": [course.serialize_summary() for course in courses]}), 200
     
 @courses_bp.route("/", methods=["POST"])
 @jwt_required()
@@ -58,7 +60,15 @@ def update_course_gamified(courseId):
 def get_course(courseId):
     with get_session() as session:
         try:
-            course = session.query(Course).options(joinedload(Course.students)).filter_by(courseId=courseId).first()
+            # selectinload su exercises/solutions/boss invece di joinedload: sono relationship
+            # one-to-many annidate, joinedload le moltiplicherebbe tutte insieme in un unico prodotto
+            # cartesiano; selectinload fa una query bulk separata per livello (poche query totali,
+            # invece delle decine/centinaia scatenate da un accesso lazy per ogni esercizio).
+            course = session.query(Course).options(
+                joinedload(Course.students),
+                selectinload(Course.exercises).selectinload(Exercise.solutions),
+                selectinload(Course.exercises).selectinload(Exercise.boss),
+            ).filter_by(courseId=courseId).first()
             if course is None:
                 return jsonify({'message': 'Course not found'}), 404
             return jsonify(course.serialize()), 200
@@ -103,9 +113,10 @@ def update_course_game_settings(courseId):
 def delete_course(courseId):
     with get_session() as session:
         try:
-            if session.query(Course).filter_by(courseId=courseId).first() is None:
+            course = session.query(Course).filter_by(courseId=courseId).first()
+            if course is None:
                 return jsonify({'message': 'Course not found'}), 404
-            session.query(Course).filter_by(courseId=courseId).delete()
+            session.delete(course)
             session.commit()
             return jsonify({'message': 'Course deleted successfully'}), 200
         except:
@@ -186,7 +197,10 @@ def unenroll_student(courseId, studentId):
 def get_course_info(courseId):
     with get_session() as session:
         try:
-            course = session.query(Course).filter_by(courseId=courseId).first()
+            course = session.query(Course).options(
+                selectinload(Course.exercises).selectinload(Exercise.solutions),
+                selectinload(Course.exercises).selectinload(Exercise.boss),
+            ).filter_by(courseId=courseId).first()
             if course is None:
                 return jsonify({'message': 'Course not found'}), 404
             return jsonify({

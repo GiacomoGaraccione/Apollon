@@ -44,9 +44,10 @@ def register():
 def delete_user(username):
     with get_session() as session:
         try:
-            if session.query(User).filter_by(username=username).first() is None:
+            user = session.query(User).filter_by(username=username).first()
+            if user is None:
                 return jsonify({'message': 'User not found'}), 404
-            session.query(User).filter_by(username=username).delete()
+            session.delete(user)
             session.commit()
             return jsonify({'message': 'User deleted successfully'}), 200
         except:

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Center, Fieldset, TextInput } from "@mantine/core";
+import { Button, Center, Fieldset, ScrollArea, TextInput } from "@mantine/core";
 import { IconSquareRoundedPlusFilled, IconTrashFilled } from "@tabler/icons-react";
 
 export function ListEditor(props: { onSave: () => void, mode: string, list: string[], onListChange: (newList: string[]) => void }) {
@@ -18,6 +18,9 @@ export function ListEditor(props: { onSave: () => void, mode: string, list: stri
             case "synonyms":
                 setLegend("Synonyms")
                 break;
+            case "allowedNames":
+                setLegend("Allowed Names")
+                break;
             case "types":
                 setLegend("Attribute Types")
                 break;
@@ -29,6 +32,9 @@ export function ListEditor(props: { onSave: () => void, mode: string, list: stri
                 break;
             case "forbiddenActors":
                 setLegend("Forbidden Actors")
+                break;
+            case "forbiddenEntities":
+                setLegend("Forbidden Business Entities")
                 break;
             case "forbiddenUseCases":
                 setLegend("Forbidden Use Cases")
@@ -66,11 +72,13 @@ export function ListEditor(props: { onSave: () => void, mode: string, list: stri
     return (
         <>
             <Fieldset legend={legend} style={{ width: "100%" }}>
-                {list.map((item, index) => (
-                    <TextInput value={item} onChange={(e) => handleEdit(index, e.currentTarget.value)}
-                        key={index} placeholder={`Item ${index + 1}`} style={{ marginBottom: "10px", width: "100%" }}
-                        rightSection={<IconTrashFilled color="red" onClick={() => handleRemove(index)} />} />
-                ))}
+                <ScrollArea.Autosize mah={320} type="auto" offsetScrollbars>
+                    {list.map((item, index) => (
+                        <TextInput value={item} onChange={(e) => handleEdit(index, e.currentTarget.value)}
+                            key={index} placeholder={`Item ${index + 1}`} style={{ marginBottom: "10px", width: "100%" }}
+                            rightSection={<IconTrashFilled color="red" onClick={() => handleRemove(index)} />} />
+                    ))}
+                </ScrollArea.Autosize>
                 <Center mt="md">
                     <Button variant="light" color="green" onClick={handleAdd} rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm">
                         Add new item
