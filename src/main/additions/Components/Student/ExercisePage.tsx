@@ -31,10 +31,12 @@ import ErrorMessage from "../Common/ErrorMessage";
 import Modeler from "bpmn-js/lib/Modeler"
 import lintModule from "bpmn-js-bpmnlint"
 import resizeAllModule from "bpmn-js-nyan/lib/resize-all-rules"
+import TokenSimulationModule from "bpmn-js-token-simulation"
 import "bpmn-js/dist/assets/diagram-js.css"
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
 import 'bpmn-js-bpmnlint/dist/assets/css/bpmn-js-bpmnlint.css'
+import "bpmn-js-token-simulation/assets/css/bpmn-js-token-simulation.css"
 import * as bpmnlintConfig from '../Common/bundled-config'
 import { BPMNZoomControls } from "../Common/BPMNZoomControls"
 
@@ -193,7 +195,7 @@ function ExercisePage() {
         let cont = document.getElementById("apollon");
         let mod = new Modeler({
             container: cont ? cont : undefined,
-            additionalModules: [lintModule, resizeAllModule],
+            additionalModules: [lintModule, resizeAllModule, TokenSimulationModule],
         })
         try {
             await mod.importXML(xml)
