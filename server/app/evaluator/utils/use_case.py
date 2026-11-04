@@ -17,11 +17,14 @@ class SyntaxErrorType(Enum):
 class SemanticErrorType(Enum):
     MISSING_ACTOR = "missingActor"#done
     MISSING_USE_CASE = "missingUseCase"#done
-    FORBIDDEN_ACTOR = "forbiddenActor"
-    FORBIDDEN_USE_CASE = "forbiddenUseCase"
+    FORBIDDEN_ACTOR = "forbiddenActor"#done
+    FORBIDDEN_USE_CASE = "forbiddenUseCase"#done
+    FORBIDDEN_SYSTEM = "forbiddenSystem"#done
     MISSING_SYSTEM = "missingSystem"#done
-    FORBIDDEN_ASSOCIATION = "forbiddenAssociation"
-    MISSING_GENERALIZATION = "missingGeneralization"
+    FORBIDDEN_ACTOR_USE_CASE_ASSOCIATION = "forbiddenActorUseCaseAssociation"#done
+    FORBIDDEN_ACTOR_ASSOCIATION = "forbiddenActorAssociation"#done
+    FORBIDDEN_USE_CASE_ASSOCIATION = "forbiddenUseCaseAssociation"#done
+    MISSING_GENERALIZATION = "missingGeneralization"#done
     MISSING_ACTOR_USE_CASE_ASSOCIATION = "missingActorUseCaseAssociation"#done
     MISSING_USE_CASE_ASSOCIATION = "missingUseCaseAssociation"#done
     WRONG_INCLUDE_EXTEND_ASSOCIATION = "wrongIncludeExtendAssociation"#done

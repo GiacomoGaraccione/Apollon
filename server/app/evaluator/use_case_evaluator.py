@@ -85,10 +85,22 @@ class UseCaseEvaluator(BaseEvaluator):
                 matched_actors = {m["diagramActor"]["name"] for m in report["matchingActors"]}
                 matched_use_cases = {m["diagramUseCase"]["name"] for m in report["matchingUseCases"]}
                 matched_systems = {m["diagramSystem"]["name"] for m in report["matchingSystems"]}
+                # name -> matched diagram element lookups, used below both for the node-level
+                # forbidden checks and for the forbidden-association checks (which, unlike the
+                # main associations, are authored by name rather than by elementId - see
+                # ForbiddenActorActor.tsx / ForbiddenActorUseCase.tsx / ForbiddenUseCaseUseCase.tsx)
+                name_to_diagram_actor = {m["referenceActor"]: m["diagramActor"] for m in report["matchingActors"]}
+                name_to_diagram_use_case = {m["referenceUseCase"]: m["diagramUseCase"] for m in report["matchingUseCases"]}
+                name_to_diagram_system = {m["referenceSystem"]: m["diagramSystem"] for m in report["matchingSystems"]}
                 forbidden_actors = reference.get("forbiddenActors", [])
                 forbidden_use_cases = reference.get("forbiddenUseCases", [])
                 forbidden_systems = reference.get("forbiddenSystems", [])
-                for act in reference.get("actors", []):
+                # forbidden actors/use cases/systems: these must be checked against the STUDENT's
+                # unmatched diagram elements (extra things they added that resemble something
+                # forbidden), not against the reference's own required elements - mirrors
+                # class_diagram_evaluator's forbidden_classes check (diagram.get("classes", [])
+                # filtered by matched_diagram_class_names)
+                for act in diagram.get("actors", []):
                     if act.get("name") not in matched_actors:
                         _, str2, sim = find_closest_strings(act, {"name": "", "synonyms": forbidden_actors})
                         if sim > 0.7:
@@ -98,7 +110,7 @@ class UseCaseEvaluator(BaseEvaluator):
                                 "matchedForbiddenElement": str2,
                                 "similarity": sim
                             })
-                for uc in reference.get("useCases", []):
+                for uc in diagram.get("useCases", []):
                     if uc.get("name") not in matched_use_cases:
                         _, str2, sim = find_closest_strings(uc, {"name": "", "synonyms": forbidden_use_cases})
                         if sim > 0.7:
@@ -108,7 +120,7 @@ class UseCaseEvaluator(BaseEvaluator):
                                 "matchedForbiddenElement": str2,
                                 "similarity": sim
                             })
-                for syst in reference.get("systems", []):
+                for syst in diagram.get("systems", []):
                     if syst.get("name") not in matched_systems:
                         _, str2, sim = find_closest_strings(syst, {"name": "", "synonyms": forbidden_systems})
                         if sim > 0.7:
@@ -118,22 +130,69 @@ class UseCaseEvaluator(BaseEvaluator):
                                 "matchedForbiddenElement": str2,
                                 "similarity": sim
                             })
-                total_matched = len(report["matchingActors"]) + len(report["matchingUseCases"]) + len(report["matchingSystems"])
-                total_reference = len(reference.get("actors", [])) + len(reference.get("useCases", [])) + len(reference.get("systems", []))
+                # forbidden actor <-> actor associations (generalizations that should not be present)
+                for forbidden_assoc in reference.get("forbiddenActorAssociations", []):
+                    source_diagram = name_to_diagram_actor.get(forbidden_assoc.get("sourceId"))
+                    target_diagram = name_to_diagram_actor.get(forbidden_assoc.get("targetId"))
+                    if source_diagram and target_diagram:
+                        matching_diagram_assoc = next((a for a in diagram.get("actorAssociations", [])
+                            if (a.get("sourceId") == source_diagram.get("elementId") and a.get("targetId") == target_diagram.get("elementId"))
+                            or (a.get("sourceId") == target_diagram.get("elementId") and a.get("targetId") == source_diagram.get("elementId"))), None)
+                        if matching_diagram_assoc:
+                            report["forbiddenElements"].append({
+                                "type": "ActorAssociation",
+                                "source": source_diagram.get("name"),
+                                "target": target_diagram.get("name"),
+                                "elementId": matching_diagram_assoc.get("elementId")
+                            })
+                # forbidden actor/external-system <-> use case associations
+                for forbidden_assoc in reference.get("forbiddenActorUseCaseAssociations", []):
+                    source_diagram = name_to_diagram_actor.get(forbidden_assoc.get("sourceId")) or name_to_diagram_system.get(forbidden_assoc.get("sourceId"))
+                    target_diagram = name_to_diagram_use_case.get(forbidden_assoc.get("targetId"))
+                    if source_diagram and target_diagram:
+                        matching_diagram_assoc = next((a for a in diagram.get("actorUseCaseAssociations", [])
+                            if (a.get("sourceId") == source_diagram.get("elementId") and a.get("targetId") == target_diagram.get("elementId"))
+                            or (a.get("sourceId") == target_diagram.get("elementId") and a.get("targetId") == source_diagram.get("elementId"))), None)
+                        if matching_diagram_assoc:
+                            report["forbiddenElements"].append({
+                                "type": "ActorUseCaseAssociation",
+                                "source": source_diagram.get("name"),
+                                "target": target_diagram.get("name"),
+                                "elementId": matching_diagram_assoc.get("elementId")
+                            })
+                # forbidden use case <-> use case associations
+                for forbidden_assoc in reference.get("forbiddenUseCaseAssociations", []):
+                    source_diagram = name_to_diagram_use_case.get(forbidden_assoc.get("sourceId"))
+                    target_diagram = name_to_diagram_use_case.get(forbidden_assoc.get("targetId"))
+                    if source_diagram and target_diagram:
+                        matching_diagram_assoc = next((a for a in diagram.get("useCaseAssociations", [])
+                            if (a.get("sourceId") == source_diagram.get("elementId") and a.get("targetId") == target_diagram.get("elementId"))
+                            or (a.get("sourceId") == target_diagram.get("elementId") and a.get("targetId") == source_diagram.get("elementId"))), None)
+                        if matching_diagram_assoc:
+                            report["forbiddenElements"].append({
+                                "type": "UseCaseAssociation",
+                                "source": source_diagram.get("name"),
+                                "target": target_diagram.get("name"),
+                                "elementId": matching_diagram_assoc.get("elementId")
+                            })
+                # computed once per candidate reference (not just for the eventual "best") so that
+                # relationship completeness - and the matched-relationship count it depends on - is
+                # consistent with whichever candidate ends up chosen below
+                report["semantic_errors"] = self._get_semantic_errors_from_report(report, reference, diagram)
+                total_relationships = len(reference.get("actorUseCaseAssociations", [])) + len(reference.get("useCaseAssociations", [])) + len(reference.get("actorAssociations", []))
+                matched_relationships = report.get("matchedRelationships", 0)
+                total_matched = len(report["matchingActors"]) + len(report["matchingUseCases"]) + len(report["matchingSystems"]) + matched_relationships
+                total_reference = len(reference.get("actors", [])) + len(reference.get("useCases", [])) + len(reference.get("systems", [])) + total_relationships
                 completeness = total_matched / total_reference if total_reference > 0 else 0
                 report["completeness"] = round(100 * completeness, 2)
-                if completeness > best_completeness:
+                if best is None or completeness > best_completeness:
                     best_completeness = completeness
                     best = report
                     best_reference = reference
                 if first is None:
                     first = report
                     first_reference = reference
-            if completeness == 0 and first is not None:
-                best = first
-                best_reference = first_reference
             best["syntax_errors"] = self._get_syntax_errors_from_model(diagram)
-            best["semantic_errors"] = self._get_semantic_errors_from_report(best, best_reference, diagram)
             return best
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -165,7 +224,7 @@ class UseCaseEvaluator(BaseEvaluator):
                         "type": SyntaxErrorType.MISPLACED_ACTOR.value,
                         "elementId": act.get("elementId"),
                         "name": act.get("name")
-                    })     
+                    })
             for uc in model.get("useCases", []):
                 if not uc.get("name"):
                     errors.append({
@@ -180,7 +239,12 @@ class UseCaseEvaluator(BaseEvaluator):
                     })
                 else:
                     ucs_seen[uc.get("name")] = uc.get("elementId")
-                if not any(assoc.get("sourceId") == uc.get("elementId") or assoc.get("targetId") == uc.get("elementId") for assoc in model.get("actorUseCaseAssociations", [])):
+                connected_to_actor = any(assoc.get("sourceId") == uc.get("elementId") or assoc.get("targetId") == uc.get("elementId") for assoc in model.get("actorUseCaseAssociations", []))
+                # a use case that's only reachable through an Include/Extend relationship (e.g. an
+                # "extend" use case with no direct actor line, which is normal UML) is still
+                # legitimately connected to the diagram - only flag ones connected to nothing at all
+                connected_via_include_extend = any(assoc.get("sourceId") == uc.get("elementId") or assoc.get("targetId") == uc.get("elementId") for assoc in model.get("useCaseAssociations", []))
+                if not connected_to_actor and not connected_via_include_extend:
                     errors.append({
                         "type": SyntaxErrorType.UNCONNECTED_USE_CASE.value,
                         "elementId": uc.get("elementId"),
@@ -239,9 +303,10 @@ class UseCaseEvaluator(BaseEvaluator):
             print(f"Error in use_case_evaluator._get_syntax_errors_from_model: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")
             raise(e)
         return errors
-        
+
     def _get_semantic_errors_from_report(self, report, reference, model=None):
         errors = []
+        matched_relationships = 0
         try:
             for act in reference.get("actors", []):
                 if act.get("name") not in {m["diagramActor"]["name"] for m in report["matchingActors"]}:
@@ -315,6 +380,8 @@ class UseCaseEvaluator(BaseEvaluator):
                             "source": source_element.get("name"),
                             "target": target_element.get("name")
                         })
+                    else:
+                        matched_relationships += 1
             for uc_assoc in reference.get("useCaseAssociations", []):
                 source_element = None
                 target_element = None
@@ -342,6 +409,7 @@ class UseCaseEvaluator(BaseEvaluator):
                             "target": target_match.get("diagramUseCase").get("name")
                         })
                     else:
+                        matched_relationships += 1
                         if matching_association.get("isExtend") != uc_assoc.get("isExtend"):
                             errors.append({
                                 "type": SemanticErrorType.WRONG_INCLUDE_EXTEND_ASSOCIATION.value,
@@ -359,6 +427,81 @@ class UseCaseEvaluator(BaseEvaluator):
                                 "elementId": matching_association.get("elementId"),
                                 "associationType": "Extend" if matching_association.get("isExtend") else "Include"
                             })
+            # actor <-> actor generalizations required by the reference. Every entry in
+            # reference["actorAssociations"] is implicitly a generalization: the client-side
+            # UseCaseDiagramReferenceBuilder only ever pushes into this list for
+            # "UseCaseGeneralization" relationships (see MatcherTypes.ts), unlike the submitted
+            # diagram's own actorAssociations, which may contain non-generalization associations
+            # that are already flagged separately as a NO_ACTOR_GENERALIZATION syntax error.
+            for act_assoc in reference.get("actorAssociations", []):
+                source_actor = next((a for a in reference.get("actors", []) if a.get("elementId") == act_assoc.get("sourceId")), None)
+                target_actor = next((a for a in reference.get("actors", []) if a.get("elementId") == act_assoc.get("targetId")), None)
+                if not source_actor or not target_actor:
+                    continue
+                source_match = next((m for m in report["matchingActors"] if m["referenceActor"] == source_actor.get("name")), None)
+                target_match = next((m for m in report["matchingActors"] if m["referenceActor"] == target_actor.get("name")), None)
+                if source_match and target_match:
+                    source_match_id = source_match["diagramActor"].get("elementId")
+                    target_match_id = target_match["diagramActor"].get("elementId")
+                    matching_generalization = next((a for a in model.get("actorAssociations", [])
+                        if a.get("isGeneralization") and (
+                            (a.get("sourceId") == source_match_id and a.get("targetId") == target_match_id)
+                            or (a.get("sourceId") == target_match_id and a.get("targetId") == source_match_id)
+                        )), None)
+                    if not matching_generalization:
+                        errors.append({
+                            "type": SemanticErrorType.MISSING_GENERALIZATION.value,
+                            "source": source_actor.get("name"),
+                            "target": target_actor.get("name")
+                        })
+                    else:
+                        matched_relationships += 1
+            # forbidden elements found in the submitted diagram - computed earlier in evaluate()
+            # into report["forbiddenElements"], surfaced here as actual semantic errors so they
+            # reach the student's feedback (mirrors class_diagram_evaluator's forbiddenClasses /
+            # forbiddenAssociations handling)
+            for fe in report.get("forbiddenElements", []):
+                fe_type = fe.get("type")
+                if fe_type == "Actor":
+                    errors.append({
+                        "type": SemanticErrorType.FORBIDDEN_ACTOR.value,
+                        "name": fe.get("diagramElement", {}).get("name"),
+                        "elementId": fe.get("diagramElement", {}).get("elementId")
+                    })
+                elif fe_type == "UseCase":
+                    errors.append({
+                        "type": SemanticErrorType.FORBIDDEN_USE_CASE.value,
+                        "name": fe.get("diagramElement", {}).get("name"),
+                        "elementId": fe.get("diagramElement", {}).get("elementId")
+                    })
+                elif fe_type == "System":
+                    errors.append({
+                        "type": SemanticErrorType.FORBIDDEN_SYSTEM.value,
+                        "name": fe.get("diagramElement", {}).get("name"),
+                        "elementId": fe.get("diagramElement", {}).get("elementId")
+                    })
+                elif fe_type == "ActorUseCaseAssociation":
+                    errors.append({
+                        "type": SemanticErrorType.FORBIDDEN_ACTOR_USE_CASE_ASSOCIATION.value,
+                        "source": fe.get("source"),
+                        "target": fe.get("target"),
+                        "elementId": fe.get("elementId")
+                    })
+                elif fe_type == "ActorAssociation":
+                    errors.append({
+                        "type": SemanticErrorType.FORBIDDEN_ACTOR_ASSOCIATION.value,
+                        "source": fe.get("source"),
+                        "target": fe.get("target"),
+                        "elementId": fe.get("elementId")
+                    })
+                elif fe_type == "UseCaseAssociation":
+                    errors.append({
+                        "type": SemanticErrorType.FORBIDDEN_USE_CASE_ASSOCIATION.value,
+                        "source": fe.get("source"),
+                        "target": fe.get("target"),
+                        "elementId": fe.get("elementId")
+                    })
+            report["matchedRelationships"] = matched_relationships
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             print(f"Error in use_case_evaluator._get_semantic_errors_from_report: {exc_type}, {exc_obj}, {exc_tb.tb_lineno}")

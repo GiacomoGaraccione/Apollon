@@ -60,6 +60,7 @@ function SolutionCreator() {
     const [openedBPMNReference, { open: openBPMNReference, close: closeBPMNReference }] = useDisclosure(false)
     const [openedBPMNImport, { open: openBPMNImport, close: closeBPMNImport }] = useDisclosure(false)
     const [openedClassDiagramImport, { open: openClassDiagramImport, close: closeClassDiagramImport }] = useDisclosure(false)
+    const [openedUseCaseDiagramImport, { open: openUseCaseDiagramImport, close: closeUseCaseDiagramImport }] = useDisclosure(false)
     const [openedModelImport, { open: openModelImport, close: closeModelImport }] = useDisclosure(false)
     const [uploadedModel, setUploadedModel] = useState<string>("")
     const [openedUpload, { open: openUpload, close: closeUpload }] = useDisclosure(false)
@@ -421,6 +422,27 @@ function SolutionCreator() {
         reader.readAsText(files[0])
     }
 
+    const handleUseCaseDiagramReferenceImport = (files: File[]) => {
+        if (files.length !== 1) return
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            const contents = e.target?.result
+            if (typeof contents === "string") {
+                try {
+                    const imported = JSON.parse(contents) as UseCaseDiagramReferenceSolution
+                    setCurrentUCReference(imported)
+                    setCurrentSolution(undefined)
+                    closeUseCaseDiagramImport()
+                    openReference()
+                } catch (err) {
+                    console.error("Error parsing imported UseCaseDiagram reference:", err)
+                    window.alert("The uploaded file is not a valid Use Case Diagram reference solution JSON.")
+                }
+            }
+        }
+        reader.readAsText(files[0])
+    }
+
     const downloadSolutions = async () => {
         if (exercise && exercise.solutions.length > 0) {
             const zip = new JSZip()
@@ -576,6 +598,9 @@ function SolutionCreator() {
                 {exercise?.exType === "ClassDiagram" && <Button variant="light" color="grape" onClick={openClassDiagramImport} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
                     Import reference
                 </Button>}
+                {exercise?.exType === "UseCaseDiagram" && <Button variant="light" color="grape" onClick={openUseCaseDiagramImport} rightSection={<IconUpload size={16} stroke={1.5} />} mt="sm" ml="md">
+                    Import reference
+                </Button>}
                 {exercise?.exType === "BPMN" && <Button variant="light" color="green" rightSection={<IconSquareRoundedPlusFilled size={16} stroke={1.5} />} mt="sm" ml="md" onClick={() => {
                     setCurrentBPMNReference(new BPMNDiagramReferenceSolution())
                     setCurrentSolution(undefined)
@@ -679,6 +704,36 @@ function SolutionCreator() {
                                 Drag&apos;n&apos;drop a JSON file containing a ClassDiagramReferenceSolution (classes with their attributes,
                                 associations, forbiddenClasses, forbiddenAssociations). It opens directly in the reference form, already filled
                                 in - nothing is saved until you preview and save it from there.
+                            </Text>
+                        </Fieldset>
+                    </div>
+                </Dropzone>
+            </Modal>
+
+            <Modal opened={openedUseCaseDiagramImport} onClose={closeUseCaseDiagramImport}>
+                <Dropzone onDrop={handleUseCaseDiagramReferenceImport} className="dropzone" radius="md" accept={["application/json"]} maxSize={5 * 1024 ** 2}>
+                    <div style={{ pointerEvents: "none", cursor: "pointer" }}>
+                        <Fieldset legend="Import Use Case Diagram reference">
+                            <Group justify='center' align='center'>
+                                <Dropzone.Accept>
+                                    <IconDownload size={50} color="blue" stroke={1.5} />
+                                </Dropzone.Accept>
+                                <Dropzone.Reject>
+                                    <IconX size={50} color="red" stroke={1.5} />
+                                </Dropzone.Reject>
+                                <Dropzone.Idle>
+                                    <IconCloudUpload size={50} color="gray" stroke={1.5} />
+                                </Dropzone.Idle>
+                            </Group>
+                            <Text ta="center" fw={700} fz="lg" mt="xl">
+                                <Dropzone.Accept>File accepted</Dropzone.Accept>
+                                <Dropzone.Reject>File not valid</Dropzone.Reject>
+                                <Dropzone.Idle>Import a Use Case Diagram reference JSON</Dropzone.Idle>
+                            </Text>
+                            <Text ta="center" fz="sm" mt="xs" c="dimmed">
+                                Drag&apos;n&apos;drop a JSON file containing a UseCaseDiagramReferenceSolution (actors, use cases, systems,
+                                actorUseCaseAssociations, actorAssociations, useCaseAssociations, and the forbidden* lists). It opens directly
+                                in the reference form, already filled in - nothing is saved until you preview and save it from there.
                             </Text>
                         </Fieldset>
                     </div>

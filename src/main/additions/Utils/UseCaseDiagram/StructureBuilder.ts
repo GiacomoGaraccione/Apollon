@@ -160,9 +160,13 @@ export class UseCaseDiagramStructureBuilderFromReference {
 
         // total width needed
         const totalSystemsWidth = systemLayouts.reduce((s, l) => s + l.width, 0) + (systemLayouts.length - 1) * colGap
-        // start X so everything centered-ish
-        let startX = leftMargin + Math.floor((totalAvailableWidth - leftMargin - rightMargin - totalSystemsWidth) / 2)
-        if (startX < leftMargin) startX = leftMargin
+        // start X so everything centered-ish - reserve room for TWO actor columns on the left
+        // (the first system's own left-side actor column, plus the "leftmost" column for
+        // unconnected actors beyond it) so neither ever gets clamped into overlapping the system
+        // or each other (see leftX / globalLeftmostX computation below)
+        const leftActorReserve = 2 * (actorW + 30)
+        let startX = leftMargin + leftActorReserve + Math.floor((totalAvailableWidth - leftMargin - rightMargin - totalSystemsWidth) / 2)
+        if (startX < leftMargin + leftActorReserve) startX = leftMargin + leftActorReserve
 
         // Place systems and their contained use cases
         const systemPositions: { ownerId: string, x: number, y: number, width: number, height: number }[] = []
@@ -295,8 +299,11 @@ export class UseCaseDiagramStructureBuilderFromReference {
             rightColumns.push({ x: rightX, entries: [] })
         })
 
-        // If there are actors with side leftmost (no associations), create a leftmost column
-        const globalLeftmostX = Math.max(20, leftMargin - actorW - 20)
+        // If there are actors with side leftmost (no associations), create a leftmost column -
+        // positioned clear of the first system's own left-side actor column (not just of the
+        // system itself), so unconnected actors never overlap connected ones placed there
+        const firstLeftColumnX = leftColumns.length > 0 ? leftColumns[0].x : leftMargin + actorW + 30
+        const globalLeftmostX = Math.max(leftMargin, firstLeftColumnX - actorW - 30)
         const leftmostColumn = { x: globalLeftmostX, entries: [] as { actorRef: ReferenceActor, yPref: number }[] }
 
         // Assign actors to closest system column or leftmost
@@ -325,28 +332,24 @@ export class UseCaseDiagramStructureBuilderFromReference {
             this.addActor(entry.actorRef, x, y)
         })
 
-        // Place per-system left/right actors, stacking and aligning near preferred y
-        leftColumns.forEach((col, idx) => {
+        // Place per-system left/right actors, stacking and aligning near preferred y. The stack is
+        // computed first, then shifted down as a whole if it would start above topMargin - clamping
+        // each entry independently (as before) could collapse several entries onto the same y once
+        // the unclamped position went negative, since Math.max floors them all to the same value.
+        const placeColumn = (col: { x: number, entries: { actorRef: ReferenceActor, yPref: number }[] }, idx: number) => {
             col.entries.sort((a, b) => a.yPref - b.yPref)
+            const sys = systemPositions[idx]
+            const n = col.entries.length
+            const baseY = sys ? sys.y + sys.height / 2 : topMargin + ((n - 1) * (actorH + rowGap)) / 2
+            const rawYs = col.entries.map((_, i) => baseY - (n * (actorH + rowGap)) / 2 + i * (actorH + rowGap))
+            const minRawY = Math.min(...rawYs)
+            const shift = minRawY < topMargin ? topMargin - minRawY : 0
             col.entries.forEach((entry, i) => {
-                const x = col.x
-                // align vertically near the system: compute a base from system center
-                const sys = systemPositions[idx]
-                const baseY = sys ? sys.y + sys.height / 2 : topMargin + i * (actorH + rowGap)
-                const y = Math.max(topMargin, Math.round(baseY - (col.entries.length * (actorH + rowGap)) / 2 + i * (actorH + rowGap)))
-                this.addActor(entry.actorRef, x, y)
+                this.addActor(entry.actorRef, col.x, Math.round(rawYs[i] + shift))
             })
-        })
-        rightColumns.forEach((col, idx) => {
-            col.entries.sort((a, b) => a.yPref - b.yPref)
-            col.entries.forEach((entry, i) => {
-                const x = col.x
-                const sys = systemPositions[idx]
-                const baseY = sys ? sys.y + sys.height / 2 : topMargin + i * (actorH + rowGap)
-                const y = Math.max(topMargin, Math.round(baseY - (col.entries.length * (actorH + rowGap)) / 2 + i * (actorH + rowGap)))
-                this.addActor(entry.actorRef, x, y)
-            })
-        })
+        }
+        leftColumns.forEach((col, idx) => placeColumn(col, idx))
+        rightColumns.forEach((col, idx) => placeColumn(col, idx))
 
         // For any use cases that belong to no system and were not placed (should be placed in placeholder), ensure they exist
         // (they were already added when ownerId === "" placeholder present)

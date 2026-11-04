@@ -468,6 +468,16 @@ def apply_colors_to_model(model, syntax_errors, semantic_errors, results, diagra
                 el = colored["elements"].get(error.get("elementId"))
                 if el:
                     el["fillColor"] = "#fff5f5"
+            elif etype in ("forbiddenActor", "forbiddenUseCase", "forbiddenSystem"):
+                el = colored["elements"].get(error.get("elementId"))
+                if el:
+                    el["textColor"] = "#ff6b6b"
+                    el["strokeColor"] = "#ff6b6b"
+            elif etype in ("forbiddenActorUseCaseAssociation", "forbiddenActorAssociation", "forbiddenUseCaseAssociation"):
+                el = colored["relationships"].get(error.get("elementId"))
+                if el:
+                    el["strokeColor"] = "#ff6b6b"
+                    el["textColor"] = "#ff6b6b"
         for match in results.get("matchingActors", []):
             da = match.get("diagramActor") or {}
             eid = da.get("elementId")

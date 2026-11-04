@@ -275,6 +275,34 @@ export function UseCaseDiagramSemanticErrorsList(props: { semanticErrors: any[] 
                     <FeedbackListItem key={e.id ?? `wrong-use-case-owner-${index}`} divider={true} variant="semantic" highlights={[e.useCase]} highlightColor="red-5" error={e
                     } message={`The use case ${e.useCase} belongs to the wrong system.`} />
                 ))}
+                {errors.filter((e) => e.type === "missingGeneralization").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `missing-generalization-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target]} highlightColor="red-5" error={e
+                    } message={`A generalization between the actors ${e.source} and ${e.target} is required but missing from your diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "forbiddenActor").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `forbidden-actor-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e
+                    } message={`Your actor ${e.name} should not be present in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "forbiddenUseCase").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `forbidden-usecase-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e
+                    } message={`Your use case ${e.name} should not be present in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "forbiddenSystem").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `forbidden-system-${index}`} divider={true} variant="semantic" highlights={[e.name]} highlightColor="red-5" error={e
+                    } message={`Your system ${e.name} should not be present in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "forbiddenActorUseCaseAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `forbidden-actor-usecase-association-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target]} highlightColor="red-5" error={e
+                    } message={`The association between ${e.source} and ${e.target} should not be present in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "forbiddenActorAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `forbidden-actor-association-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target]} highlightColor="red-5" error={e
+                    } message={`The association between the actors ${e.source} and ${e.target} should not be present in the diagram.`} />
+                ))}
+                {errors.filter((e) => e.type === "forbiddenUseCaseAssociation").map((e: any, index: number) => (
+                    <FeedbackListItem key={e.id ?? `forbidden-usecase-association-${index}`} divider={true} variant="semantic" highlights={[e.source, e.target]} highlightColor="red-5" error={e
+                    } message={`The association between the use cases ${e.source} and ${e.target} should not be present in the diagram.`} />
+                ))}
             </FeedbackPopover>
         </>
     )
