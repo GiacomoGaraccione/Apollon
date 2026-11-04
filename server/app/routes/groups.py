@@ -76,7 +76,7 @@ def create_group():
             group = Group(groupId=str(uuid.uuid4()), name=name)
             for userId in data.get("memberUserIds", []):
                 member = session.query(User).filter_by(userId=userId).first()
-                if member:
+                if member and member not in group.members:
                     group.members.append(member)
             session.add(group)
             session.commit()
