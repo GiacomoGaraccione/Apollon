@@ -7,12 +7,18 @@ import { useParams } from "react-router-dom";
 import { ApollonMode } from "../../../typings";
 import { ApollonEditor } from "../../../apollon-editor";
 import { useDisclosure } from "@mantine/hooks";
-import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList } from "../Common/FeedbackLists";
+import {
+    ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList,
+    UseCaseDiagramMatchingElementsList, UseCaseDiagramSemanticErrorsList, UseCaseDiagramSyntaxErrorsList,
+    BPMNMatchingElementsList, BPMNSemanticErrorsList, BPMNSyntaxErrorsList, BPMNClosePartsList, BPMNCloseElementsList
+} from "../Common/FeedbackLists";
+import { colorBpmnDiagram } from "../../Utils/BPMN/Feedback";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
 import "csshake/dist/csshake.css";
 import NavigatedViewer from "bpmn-js/lib/NavigatedViewer";
+import BpmnModelingModule from "bpmn-js/lib/features/modeling";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
@@ -90,10 +96,15 @@ function EvaluationView() {
                 if (editor) { editor.destroy(); setEditor(null); }
                 if (bpmnViewer) { bpmnViewer.destroy(); setBpmnViewer(null); }
                 if (exercise.exType === "BPMN" && apollonRef.current) {
-                    let viewer = new NavigatedViewer({ container: apollonRef.current });
+                    let viewer = new NavigatedViewer({ container: apollonRef.current, additionalModules: [BpmnModelingModule] });
                     if (model) {
                         let xml = typeof model === "string" ? JSON.parse(model) : model;
                         await viewer.importXML(xml);
+                        if (activeTab !== "original") {
+                            const raw = activeTab === "static" ? currentEval.staticResult : currentEval.llmResult;
+                            const parsedResults = parseResult(raw);
+                            if (parsedResults) colorBpmnDiagram(viewer, parsedResults.syntax_errors || [], parsedResults.semantic_errors || [], parsedResults);
+                        }
                     }
                     setBpmnViewer(viewer);
                     setLoadModal(false);
@@ -204,13 +215,24 @@ function EvaluationView() {
     const downloadExcel = () => {
         if (!exercise || evaluations.length === 0) return;
         const workbook = XLSX.utils.book_new();
+        const isClass = exercise.exType === "ClassDiagram";
+        const isUseCase = exercise.exType === "UseCaseDiagram";
 
-        const statsData: any[][] = [[
+        const statsData: any[][] = isClass ? [[
             "Student ID", "Timestamp",
             "Static Completeness", "Static Class Compl.", "Static Attribute Compl.", "Static Association Compl.",
             "Static Time (s)", "Static Syntax Errors", "Static Semantic Errors",
             "LLM Completeness", "LLM Class Compl.", "LLM Attribute Compl.", "LLM Association Compl.",
             "LLM Time (s)", "LLM Tokens", "LLM Syntax Errors", "LLM Semantic Errors"
+        ]] : isUseCase ? [[
+            "Student ID", "Timestamp",
+            "Static Completeness", "Static Matched Relationships", "Static Time (s)", "Static Syntax Errors", "Static Semantic Errors",
+            "LLM Completeness", "LLM Matched Relationships", "LLM Time (s)", "LLM Tokens", "LLM Syntax Errors", "LLM Semantic Errors"
+        ]] : [[
+            "Student ID", "Timestamp",
+            "Static Completeness", "Static Found Business Entities", "Static Found Actors", "Static Correctly Modeled Parts", "Static Close Parts", "Static Close Elements",
+            "Static Time (s)", "Static Syntax Errors", "Static Semantic Errors",
+            "LLM Completeness", "LLM Time (s)", "LLM Tokens", "LLM Syntax Errors", "LLM Semantic Errors"
         ]];
 
         const syntaxData: any[][] = [["Student ID", "Evaluator", "Type", "Message", "Info"]];
@@ -222,25 +244,31 @@ function EvaluationView() {
             const lr = parseResult(ev.llmResult);
             const llmValid = lr && lr.status !== "not_implemented";
 
-            statsData.push([
-                ev.studentId,
-                ev.timestamp,
-                sr ? sr.completeness : "",
-                sr ? sr.classCompleteness : "",
-                sr ? sr.attributeCompleteness : "",
-                sr ? sr.associationCompleteness : "",
-                ev.staticTime ?? "",
-                sr ? (sr.syntax_errors || []).length : "",
-                sr ? (sr.semantic_errors || []).length : "",
-                llmValid ? lr.completeness : "",
-                llmValid ? lr.classCompleteness : "",
-                llmValid ? lr.attributeCompleteness : "",
-                llmValid ? lr.associationCompleteness : "",
-                llmValid ? ev.llmTime : "",
-                llmValid ? ev.llmTokens : "",
-                llmValid ? (lr.syntax_errors || []).length : "",
-                llmValid ? (lr.semantic_errors || []).length : "",
-            ]);
+            if (isClass) {
+                statsData.push([
+                    ev.studentId, ev.timestamp,
+                    sr ? sr.completeness : "", sr ? sr.classCompleteness : "", sr ? sr.attributeCompleteness : "", sr ? sr.associationCompleteness : "",
+                    ev.staticTime ?? "", sr ? (sr.syntax_errors || []).length : "", sr ? (sr.semantic_errors || []).length : "",
+                    llmValid ? lr.completeness : "", llmValid ? lr.classCompleteness : "", llmValid ? lr.attributeCompleteness : "", llmValid ? lr.associationCompleteness : "",
+                    llmValid ? ev.llmTime : "", llmValid ? ev.llmTokens : "", llmValid ? (lr.syntax_errors || []).length : "", llmValid ? (lr.semantic_errors || []).length : "",
+                ]);
+            } else if (isUseCase) {
+                statsData.push([
+                    ev.studentId, ev.timestamp,
+                    sr ? sr.completeness : "", sr ? sr.matchedRelationships : "",
+                    ev.staticTime ?? "", sr ? (sr.syntax_errors || []).length : "", sr ? (sr.semantic_errors || []).length : "",
+                    llmValid ? lr.completeness : "", llmValid ? lr.matchedRelationships : "",
+                    llmValid ? ev.llmTime : "", llmValid ? ev.llmTokens : "", llmValid ? (lr.syntax_errors || []).length : "", llmValid ? (lr.semantic_errors || []).length : "",
+                ]);
+            } else {
+                statsData.push([
+                    ev.studentId, ev.timestamp,
+                    sr ? sr.completeness : "", sr ? (sr.validBusinessEntities || []).length : "", sr ? (sr.validActors || []).length : "",
+                    sr ? (sr.correctlyModeledParts || []).length : "", sr ? (sr.closeParts || []).length : "", sr ? (sr.closeElements || []).length : "",
+                    ev.staticTime ?? "", sr ? (sr.syntax_errors || []).length : "", sr ? (sr.semantic_errors || []).length : "",
+                    llmValid ? lr.completeness : "", llmValid ? ev.llmTime : "", llmValid ? ev.llmTokens : "", llmValid ? (lr.syntax_errors || []).length : "", llmValid ? (lr.semantic_errors || []).length : "",
+                ]);
+            }
 
             const addDetails = (result: any, evaluator: string) => {
                 if (!result) return;
@@ -252,31 +280,53 @@ function EvaluationView() {
                     const { type, message, ...rest } = err;
                     semanticData.push([ev.studentId, evaluator, type, message || "", JSON.stringify(rest)]);
                 });
-                (result.matchingClasses || []).forEach((mc: any) => {
-                    matchesData.push([ev.studentId, evaluator, "Class",
-                        mc.referenceClass,
-                        mc.diagramClass?.name || "unmatched",
-                        `similarity: ${mc.similarity}, correctType: ${mc.correctType}, matchedAttrs: ${(mc.matchingAttributes || []).length}`
-                    ]);
-                    (mc.matchingAttributes || []).forEach((ma: any) => {
-                        matchesData.push([ev.studentId, evaluator, "Attribute",
-                            `${mc.referenceClass}.${ma.referenceAttribute}`,
-                            `${mc.diagramClass?.name || ""}.${ma.diagramAttribute?.name || "unmatched"}`,
-                            `similarity: ${ma.similarity}, typesMatch: ${ma.typesMatch}`
+                if (isClass) {
+                    (result.matchingClasses || []).forEach((mc: any) => {
+                        matchesData.push([ev.studentId, evaluator, "Class",
+                            mc.referenceClass,
+                            mc.diagramClass?.name || "unmatched",
+                            `similarity: ${mc.similarity}, correctType: ${mc.correctType}, matchedAttrs: ${(mc.matchingAttributes || []).length}`
+                        ]);
+                        (mc.matchingAttributes || []).forEach((ma: any) => {
+                            matchesData.push([ev.studentId, evaluator, "Attribute",
+                                `${mc.referenceClass}.${ma.referenceAttribute}`,
+                                `${mc.diagramClass?.name || ""}.${ma.diagramAttribute?.name || "unmatched"}`,
+                                `similarity: ${ma.similarity}, typesMatch: ${ma.typesMatch}`
+                            ]);
+                        });
+                    });
+                    (result.matchingAssociations || []).forEach((ma: any) => {
+                        const refSrc = ma.referenceAssociation?.source?.referenceClass?.name || ma.source_pair?.referenceInfo?.referenceClass?.name || "";
+                        const refTgt = ma.referenceAssociation?.target?.referenceClass?.name || ma.target_pair?.referenceInfo?.referenceClass?.name || "";
+                        const diagSrc = ma.source_pair?.diagramInfo?.name || "";
+                        const diagTgt = ma.target_pair?.diagramInfo?.name || "";
+                        matchesData.push([ev.studentId, evaluator, "Association",
+                            `${refSrc} — ${refTgt}`,
+                            `${diagSrc} — ${diagTgt}`,
+                            `id: ${ma.diagramAssociation?.id || ""}`
                         ]);
                     });
-                });
-                (result.matchingAssociations || []).forEach((ma: any) => {
-                    const refSrc = ma.referenceAssociation?.source?.referenceClass?.name || ma.source_pair?.referenceInfo?.referenceClass?.name || "";
-                    const refTgt = ma.referenceAssociation?.target?.referenceClass?.name || ma.target_pair?.referenceInfo?.referenceClass?.name || "";
-                    const diagSrc = ma.source_pair?.diagramInfo?.name || "";
-                    const diagTgt = ma.target_pair?.diagramInfo?.name || "";
-                    matchesData.push([ev.studentId, evaluator, "Association",
-                        `${refSrc} — ${refTgt}`,
-                        `${diagSrc} — ${diagTgt}`,
-                        `id: ${ma.diagramAssociation?.id || ""}`
-                    ]);
-                });
+                } else if (isUseCase) {
+                    (result.matchingActors || []).forEach((m: any) => {
+                        matchesData.push([ev.studentId, evaluator, "Actor", m.referenceActor, m.diagramActor?.name || "unmatched", ""]);
+                    });
+                    (result.matchingUseCases || []).forEach((m: any) => {
+                        matchesData.push([ev.studentId, evaluator, "UseCase", m.referenceUseCase, m.diagramUseCase?.name || "unmatched", ""]);
+                    });
+                    (result.matchingSystems || []).forEach((m: any) => {
+                        matchesData.push([ev.studentId, evaluator, "System", m.referenceSystem, m.diagramSystem?.name || "unmatched", ""]);
+                    });
+                } else {
+                    (result.validBusinessEntities || []).forEach((m: any) => {
+                        matchesData.push([ev.studentId, evaluator, "BusinessEntity", m.businessEntity?.name, m.element?.name || "unmatched", ""]);
+                    });
+                    (result.validActors || []).forEach((m: any) => {
+                        matchesData.push([ev.studentId, evaluator, "Actor", m.actor?.name, m.element?.name || "unmatched", ""]);
+                    });
+                    (result.correctlyModeledParts || []).forEach((p: any) => {
+                        matchesData.push([ev.studentId, evaluator, "Part", p.name, p.name, ""]);
+                    });
+                }
             };
 
             addDetails(sr, "Static");
@@ -349,7 +399,7 @@ function EvaluationView() {
     };
 
     const renderFeedbackPanel = (results: any) => {
-        if (!results) return null;
+        if (!results || !exercise) return null;
         const syntaxErrors = results.syntax_errors || [];
         const semanticErrors = results.semantic_errors || [];
         return (
@@ -362,17 +412,51 @@ function EvaluationView() {
                         </Stack>
                     </Center>
                 </Grid.Col>
-                <Grid.Col span={3}>
-                    <Center>
-                        <ClassDiagramSyntaxErrorsList syntaxErrors={syntaxErrors} />
-                    </Center>
-                </Grid.Col>
-                <Grid.Col span={3}>
-                    <ClassDiagramSemanticErrorsList semanticErrors={semanticErrors} />
-                </Grid.Col>
-                <Grid.Col span={3}>
-                    <ClassDiagramMatchingElementsList results={results} />
-                </Grid.Col>
+                {exercise.exType === "ClassDiagram" && <>
+                    <Grid.Col span={3}>
+                        <Center>
+                            <ClassDiagramSyntaxErrorsList syntaxErrors={syntaxErrors} />
+                        </Center>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <ClassDiagramSemanticErrorsList semanticErrors={semanticErrors} />
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <ClassDiagramMatchingElementsList results={results} />
+                    </Grid.Col>
+                </>}
+                {exercise.exType === "UseCaseDiagram" && <>
+                    <Grid.Col span={3}>
+                        <Center>
+                            <UseCaseDiagramSyntaxErrorsList syntaxErrors={syntaxErrors} />
+                        </Center>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <UseCaseDiagramSemanticErrorsList semanticErrors={semanticErrors} />
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <UseCaseDiagramMatchingElementsList results={{ results: results } as any} />
+                    </Grid.Col>
+                </>}
+                {exercise.exType === "BPMN" && <>
+                    <Grid.Col span={3}>
+                        <Center>
+                            <BPMNSyntaxErrorsList syntaxErrors={syntaxErrors} />
+                        </Center>
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <BPMNSemanticErrorsList semanticErrors={semanticErrors} />
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <BPMNMatchingElementsList results={results} />
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <BPMNClosePartsList results={results} />
+                    </Grid.Col>
+                    <Grid.Col span={3}>
+                        <BPMNCloseElementsList results={results} />
+                    </Grid.Col>
+                </>}
             </Grid>
         );
     };

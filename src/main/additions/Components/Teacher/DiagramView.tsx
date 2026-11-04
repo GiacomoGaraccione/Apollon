@@ -10,10 +10,16 @@ import { useDisclosure } from "@mantine/hooks";
 import "csshake/dist/csshake.css"
 import 'svg2pdf.js'
 import JSZip from 'jszip'
-import { ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList } from "../Common/FeedbackLists";
+import {
+    ClassDiagramMatchingElementsList, ClassDiagramSemanticErrorsList, ClassDiagramSyntaxErrorsList,
+    UseCaseDiagramMatchingElementsList, UseCaseDiagramSemanticErrorsList, UseCaseDiagramSyntaxErrorsList,
+    BPMNMatchingElementsList, BPMNSemanticErrorsList, BPMNSyntaxErrorsList, BPMNClosePartsList, BPMNCloseElementsList
+} from "../Common/FeedbackLists";
+import { colorBpmnDiagram } from "../../Utils/BPMN/Feedback";
 import { saveAs } from "file-saver"
 import * as XLSX from 'xlsx'
 import NavigatedViewer from "bpmn-js/lib/NavigatedViewer"
+import BpmnModelingModule from "bpmn-js/lib/features/modeling"
 import "bpmn-js/dist/assets/diagram-js.css"
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css"
@@ -66,9 +72,10 @@ function DiagramView() {
                 }
                 if (exercise.exType === "BPMN") {
                     let cont = document.getElementById("apollon")
-                    let viewer = new NavigatedViewer({ container: cont ? cont : undefined })
+                    let viewer = new NavigatedViewer({ container: cont ? cont : undefined, additionalModules: [BpmnModelingModule] })
                     if (currentDiagram.model) {
                         await viewer.importXML(JSON.parse(currentDiagram.model))
+                        colorBpmnDiagram(viewer, currentDiagram.syntax_errors || [], currentDiagram.semantic_errors || [], currentDiagram.results || {})
                     }
                     setBpmnViewer(viewer)
                     setLoadModal(false)
@@ -156,65 +163,93 @@ function DiagramView() {
     const downloadStats = () => {
         if (exercise && diagrams) {
             let workbook = XLSX.utils.book_new();
-            let statsData = [
-                ["Username", "Correctness", "Checks", "Experience", "Timestamp", "Class Completeness", "Attribute Completeness", "Association Completeness", "Syntax Errors", "Semantic Errors"],
-            ]
-            let syntaxErrorsData = [
-                ["Username", "Type", "Message"],
-            ]
-            let semanticErrorsData = [
+            const isClass = exercise.exType === "ClassDiagram";
+            const isUseCase = exercise.exType === "UseCaseDiagram";
+            const isBpmn = exercise.exType === "BPMN";
+            let statsData: any[][] = isClass
+                ? [["Username", "Correctness", "Checks", "Experience", "Timestamp", "Class Completeness", "Attribute Completeness", "Association Completeness", "Syntax Errors", "Semantic Errors"]]
+                : isUseCase
+                    ? [["Username", "Correctness", "Checks", "Experience", "Timestamp", "Completeness", "Matched Relationships", "Syntax Errors", "Semantic Errors"]]
+                    : [["Username", "Correctness", "Checks", "Experience", "Timestamp", "Completeness", "Found Business Entities", "Found Actors", "Correctly Modeled Parts", "Close Parts", "Close Elements", "Syntax Errors", "Semantic Errors"]]
+            let syntaxErrorsData: any[][] = [
                 ["Username", "Type", "Message", "Info"],
             ]
-            let resultsData = [
+            let semanticErrorsData: any[][] = [
+                ["Username", "Type", "Message", "Info"],
+            ]
+            let resultsData: any[][] = [
                 ["Username", "ReferenceElement", "MatchingElement", "Type"],
             ]
             diagrams.forEach((diagram: any) => {
                 let results = JSON.parse(diagram.results || "{}")
                 let syntaxErrors = JSON.parse(diagram.syntax_errors || "[]");
                 let semanticErrors = JSON.parse(diagram.semantic_errors || "[]");
-                statsData.push([
-                    diagram.username,
-                    diagram.correctness,
-                    diagram.checks,
-                    diagram.experience,
-                    diagram.timestamp,
-                    results.classCompleteness,
-                    results.attributeCompleteness,
-                    results.associationCompleteness,
-                    syntaxErrors.length,
-                    semanticErrors.length
-                ])
-                ;(results.matchingClasses || []).forEach((cls: any) => {
-                    resultsData.push([
-                        diagram.username,
-                        cls.referenceClass,
-                        cls.diagramClass.name,
-                        "Class"
+                if (isClass) {
+                    statsData.push([
+                        diagram.username, diagram.correctness, diagram.checks, diagram.experience, diagram.timestamp,
+                        results.classCompleteness, results.attributeCompleteness, results.associationCompleteness,
+                        syntaxErrors.length, semanticErrors.length
                     ])
-                    ;(cls.matchingAttributes || []).forEach((attr: any) => {
+                    ;(results.matchingClasses || []).forEach((cls: any) => {
+                        resultsData.push([diagram.username, cls.referenceClass, cls.diagramClass.name, "Class"])
+                        ;(cls.matchingAttributes || []).forEach((attr: any) => {
+                            resultsData.push([
+                                diagram.username,
+                                `${cls.referenceClass}.${attr.referenceAttribute}`,
+                                `${cls.diagramClass.name}.${attr.diagramAttribute.name}`,
+                                "Attribute"
+                            ])
+                        })
+                    })
+                    ;(results.matchingAssociations || []).forEach((assoc: any) => {
                         resultsData.push([
                             diagram.username,
-                            `${cls.referenceClass}.${attr.referenceAttribute}`,
-                            `${cls.diagramClass.name}.${attr.diagramAttribute.name}`,
-                            "Attribute"
+                            `${assoc.source_pair.referenceInfo.referenceClass.name} - ${assoc.target_pair.referenceInfo.referenceClass.name}`,
+                            `${assoc.source_pair.diagramInfo.name} - ${assoc.target_pair.diagramInfo.name}`,
+                            `Association (${assoc.diagramAssociation.type})`
                         ])
                     })
-                })
-                ;(results.matchingAssociations || []).forEach((assoc: any) => {
-                    resultsData.push([
-                        diagram.username,
-                        `${assoc.source_pair.referenceInfo.referenceClass.name} - ${assoc.target_pair.referenceInfo.referenceClass.name}`,
-                        `${assoc.source_pair.diagramInfo.name} - ${assoc.target_pair.diagramInfo.name}`,
-                        `Association (${assoc.diagramAssociation.type})`
+                } else if (isUseCase) {
+                    statsData.push([
+                        diagram.username, diagram.correctness, diagram.checks, diagram.experience, diagram.timestamp,
+                        results.completeness, results.matchedRelationships,
+                        syntaxErrors.length, semanticErrors.length
                     ])
-                })
+                    ;(results.matchingActors || []).forEach((m: any) => {
+                        resultsData.push([diagram.username, m.referenceActor, m.diagramActor?.name, "Actor"])
+                    })
+                    ;(results.matchingUseCases || []).forEach((m: any) => {
+                        resultsData.push([diagram.username, m.referenceUseCase, m.diagramUseCase?.name, "UseCase"])
+                    })
+                    ;(results.matchingSystems || []).forEach((m: any) => {
+                        resultsData.push([diagram.username, m.referenceSystem, m.diagramSystem?.name, "System"])
+                    })
+                } else {
+                    statsData.push([
+                        diagram.username, diagram.correctness, diagram.checks, diagram.experience, diagram.timestamp,
+                        results.completeness,
+                        (results.validBusinessEntities || []).length, (results.validActors || []).length,
+                        (results.correctlyModeledParts || []).length, (results.closeParts || []).length, (results.closeElements || []).length,
+                        syntaxErrors.length, semanticErrors.length
+                    ])
+                    ;(results.validBusinessEntities || []).forEach((m: any) => {
+                        resultsData.push([diagram.username, m.businessEntity?.name, m.element?.name, "BusinessEntity"])
+                    })
+                    ;(results.validActors || []).forEach((m: any) => {
+                        resultsData.push([diagram.username, m.actor?.name, m.element?.name, "Actor"])
+                    })
+                    ;(results.correctlyModeledParts || []).forEach((p: any) => {
+                        resultsData.push([diagram.username, p.name, p.name, "Part"])
+                    })
+                }
 
                 syntaxErrors.forEach((error: any) => {
-                    syntaxErrorsData.push([diagram.username, error.type, error.message])
+                    let { type, message, ...rest } = error
+                    syntaxErrorsData.push([diagram.username, type, message || "", JSON.stringify(rest)])
                 })
                 semanticErrors.forEach((error: any) => {
                     let { type, message, ...rest } = error
-                    semanticErrorsData.push([diagram.username, type, message, JSON.stringify(rest)])
+                    semanticErrorsData.push([diagram.username, type, message || "", JSON.stringify(rest)])
                 })
             })
             let statsSheet = XLSX.utils.aoa_to_sheet(statsData)
@@ -265,7 +300,7 @@ function DiagramView() {
         {exercise && currentDiagram && <Modal closeOnEscape={false} opened={showDiagram} onClose={closeDiagram} fullScreen transitionProps={{ transition: 'fade', duration: 300 }}>
             <Skeleton visible={loadModal} height="100%" >
                 <Stack align="center" justify="center">
-                    {exercise?.exType !== "BPMN" && <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
+                    <Grid my="md" grow justify="center" align="center" style={{ width: "100%" }}>
                         <Grid.Col span={3}>
                             <Center>
                                 <Stack align="center">
@@ -274,18 +309,52 @@ function DiagramView() {
                                 </Stack>
                             </Center>
                         </Grid.Col>
-                        <Grid.Col span={3}>
-                            <Center>
-                                <ClassDiagramSyntaxErrorsList syntaxErrors={currentDiagram.syntax_errors} />
-                            </Center>
-                        </Grid.Col>
-                        <Grid.Col span={3}>
-                            <ClassDiagramSemanticErrorsList semanticErrors={currentDiagram.semantic_errors} />
-                        </Grid.Col>
-                        <Grid.Col span={3}>
-                            <ClassDiagramMatchingElementsList results={currentDiagram.results} />
-                        </Grid.Col>
-                    </Grid>}
+                        {exercise?.exType === "ClassDiagram" && <>
+                            <Grid.Col span={3}>
+                                <Center>
+                                    <ClassDiagramSyntaxErrorsList syntaxErrors={currentDiagram.syntax_errors} />
+                                </Center>
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <ClassDiagramSemanticErrorsList semanticErrors={currentDiagram.semantic_errors} />
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <ClassDiagramMatchingElementsList results={currentDiagram.results} />
+                            </Grid.Col>
+                        </>}
+                        {exercise?.exType === "UseCaseDiagram" && <>
+                            <Grid.Col span={3}>
+                                <Center>
+                                    <UseCaseDiagramSyntaxErrorsList syntaxErrors={currentDiagram.syntax_errors} />
+                                </Center>
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <UseCaseDiagramSemanticErrorsList semanticErrors={currentDiagram.semantic_errors} />
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <UseCaseDiagramMatchingElementsList results={{ results: currentDiagram.results } as any} />
+                            </Grid.Col>
+                        </>}
+                        {exercise?.exType === "BPMN" && <>
+                            <Grid.Col span={3}>
+                                <Center>
+                                    <BPMNSyntaxErrorsList syntaxErrors={currentDiagram.syntax_errors} />
+                                </Center>
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <BPMNSemanticErrorsList semanticErrors={currentDiagram.semantic_errors} />
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <BPMNMatchingElementsList results={currentDiagram.results} />
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <BPMNClosePartsList results={currentDiagram.results} />
+                            </Grid.Col>
+                            <Grid.Col span={3}>
+                                <BPMNCloseElementsList results={currentDiagram.results} />
+                            </Grid.Col>
+                        </>}
+                    </Grid>
                     <div ref={apollonRef} id="apollon" className="canv" style={{ width: "100%", marginRight: "2px", marginLeft: "2px", marginTop: "0px" }}></div>
                 </Stack>
             </Skeleton>
