@@ -113,7 +113,14 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
                     <Badge style={{ cursor: "pointer" }} size="sm" variant='gradient' gradient={{ from: "cyan", to: "lime", deg: 90 }}
                         onClick={() => { props.remove(row.userId) }} > {row.username}</Badge>
                 </Tooltip>}
-                {row.role === Roles.TEACHER && <Badge size="sm" variant='gradient' gradient={{ from: 'red', to: 'yellow', deg: 90 }} >{row.username}</Badge>}
+                {row.role === Roles.TEACHER && props.location === "users" && <Tooltip label="Click to restore this teacher's password" position='right' withArrow>
+                    <Badge style={{ cursor: "pointer" }} size="sm" variant='gradient' gradient={{ from: 'red', to: 'yellow', deg: 90 }}
+                        onClick={() => {
+                            setCurrentStudent(row)
+                            open()
+                        }} >{row.username}</Badge>
+                </Tooltip>}
+                {row.role === Roles.TEACHER && props.location !== "users" && <Badge size="sm" variant='gradient' gradient={{ from: 'red', to: 'yellow', deg: 90 }} >{row.username}</Badge>}
             </Table.Td>
             <Table.Td>{row.userId}</Table.Td>
             <Table.Td>{row.name}</Table.Td>
@@ -155,13 +162,13 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
                 close()
                 setEditError("")
             }} title="User Operations" centered size="auto">
-                <Tabs defaultValue={"edit"}>
+                <Tabs defaultValue={currentStudent?.role === Roles.TEACHER ? "enroll" : "edit"}>
                     <Tabs.List>
-                        <Tabs.Tab value="edit" leftSection={<IconEdit size={16} stroke={1.5} />}>Edit student ID</Tabs.Tab>
-                        <Tabs.Tab value="delete" leftSection={<IconTrashXFilled size={16} stroke={1.5} />}>Delete</Tabs.Tab>
+                        {currentStudent?.role !== Roles.TEACHER && <Tabs.Tab value="edit" leftSection={<IconEdit size={16} stroke={1.5} />}>Edit student ID</Tabs.Tab>}
+                        {currentStudent?.role !== Roles.TEACHER && <Tabs.Tab value="delete" leftSection={<IconTrashXFilled size={16} stroke={1.5} />}>Delete</Tabs.Tab>}
                         <Tabs.Tab value="enroll" leftSection={<IconRestore size={16} stroke={1.5} />}>Restore Password</Tabs.Tab>
                     </Tabs.List>
-                    <Tabs.Panel value="edit">
+                    {currentStudent?.role !== Roles.TEACHER && <Tabs.Panel value="edit">
                         <Fieldset >
                             <Stack gap="sm" align='center' justify="center" >
                                 <Text>Current student ID: <b>{currentStudent?.userId}</b></Text>
@@ -198,8 +205,8 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
                                 {editError && <Alert variant="light" icon={<IconExclamationCircleFilled size={24} stroke={1.5} />} color="red" withCloseButton onClose={() => setEditError("")} >{editError}</Alert>}
                             </Stack>
                         </Fieldset>
-                    </Tabs.Panel>
-                    <Tabs.Panel value="delete">
+                    </Tabs.Panel>}
+                    {currentStudent?.role !== Roles.TEACHER && <Tabs.Panel value="delete">
                         <Stack gap="sm" align='center' justify="center" >
                             <Alert variant="light" color="red" title="Warning!" icon={<IconExclamationCircleFilled size={24} stroke={1.5} />}>
                                 Are you sure you want to delete student <b>{currentStudent?.username}</b>?
@@ -226,12 +233,12 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
                                 <Button variant="light" color="gray" onClick={close}>Cancel</Button>
                             </Group>
                         </Stack>
-                    </Tabs.Panel>
+                    </Tabs.Panel>}
                     <Tabs.Panel value="enroll">
                         <Stack gap="sm" align='center' justify="center">
                             <Alert variant="light" color="yellow" title="Warning!" icon={<IconExclamationCircleFilled size={24} stroke={1.5} />}>
-                                Are you sure you want to restore the password for student <b>{currentStudent?.username}</b>?
-                                This action will reset the student's password and cannot be undone.
+                                Are you sure you want to restore the password for {currentStudent?.role === Roles.TEACHER ? "teacher" : "student"} <b>{currentStudent?.username}</b>?
+                                This action will reset the {currentStudent?.role === Roles.TEACHER ? "teacher's" : "student's"} password and cannot be undone.
                             </Alert>
                             <Group mt="md" justify='flex-end'>
                                 <Button variant="light" color="yellow" rightSection={<IconRestore size={16} stroke={1.5} />} onClick={() => {
@@ -255,7 +262,7 @@ function UserTable(props: { users: User[], location: string, setUsers: React.Dis
             </Notification>}
 
             {restoreNotif && <Notification icon={<IconCheck size={20} />} color="teal" title="Success!" mt="md" className='notif' withCloseButton={false} >
-                <Text>Password restoration successful! The student's password has been reset to the default one.</Text>
+                <Text>Password restoration successful! The user's password has been reset to the default one.</Text>
             </Notification>}
         </>
     )
